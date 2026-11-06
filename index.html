@@ -356,6 +356,11 @@ details.sec:not([open])>.secb{display:none}
 .mres .thumb{width:96px;height:54px;border-radius:8px;flex:none;background:#333 center/cover}
 .mres .t{display:block;font-size:14px;line-height:1.25}.mres .s{display:block;font-size:12px;color:var(--muted)}
 .judge{display:flex;flex-direction:column;gap:14px}
+.judge.sm{gap:10px}.judge.sm button{font-size:19px;padding:14px}
+.pvid{display:none;position:relative;width:100%;aspect-ratio:16/9;background:#000}.pvid.on{display:block}
+.pvid .ytbox,.pvid iframe{width:100%;height:100%;border:0;display:block;pointer-events:none}
+.pvid .pvtap{display:none;position:absolute;inset:0;margin:auto;width:auto;height:auto;padding:12px 18px;font-size:16px;align-self:center}.pvid .pvtap.on{display:block;width:80%;height:56px}
+.micst{text-align:center;font-size:15px;padding:10px;border-radius:14px;background:var(--shade)}.micst.live{background:#c0262d;color:#fff;font-weight:900}
 .judge button{font-size:22px;padding:22px;border-radius:18px}
 .judge .j1{background:var(--good);color:#063;box-shadow:0 5px 0 #1f8a46}
 .judge .j2{background:var(--gold)}
@@ -443,7 +448,7 @@ const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
-  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6};
+  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6,mPhoneVideo:true,mMic:'stop'};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
 const BOTS = ['Ava','Leo','Mia','Sam'];
@@ -999,13 +1004,15 @@ function Player(code, mount, fixedPid){
   let R=null, loaded=false, pid=fixedPid||LS.get('hg_pid_'+code,null), msg='', psound=LS.get('hg_psound',false), pctx=null, lastPhase='',
       selEmoji=null, selPhoto=null, editing=false, lastReact=0, lfm={key:'',open:false,shown:[],cursor:0};
   mount.classList.add('phone'); if(!inApp) mount.classList.add('framed');
-  mount.innerHTML='<div class="pwrap" style="display:flex;flex-direction:column;flex:1"></div>';
-  const root=$('.pwrap',mount);
+  mount.innerHTML='<div class="pwrap" style="display:flex;flex-direction:column;flex:1"><div class="phd"></div><div class="pvid"><div class="ytbox"></div><button class="pvtap">▶ Tap to show the lyrics</button></div><div class="pmain" style="display:flex;flex-direction:column;flex:1"></div></div>';
+  const root=$('.pmain',mount), headEl=$('.phd',mount), pvEl=$('.pvid',mount);
+  const paint2=(h,b)=>{ patchHTML(headEl,h); patchHTML(root,b); };
   if(pid && !fixedPid) store.presence(`${P}/players/${pid}/on`);
-  const unsub=store.on(P, r=>{ R=r; loaded=true; if(r) applyTheme(r.settings&&r.settings.theme); render(); });
+  const unsub=store.on(P, r=>{ R=r; loaded=true; if(r) applyTheme(r.settings&&r.settings.theme); render(); micSync(r); });
   const iv=setInterval(()=>{ const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; }
+    pvSync();
     if(R&&R.game==='doodle'&&R.phase==='draw'&&!R.paused&&pid&&(R.dprompts||{})[pid]&&!(R.draws||{})[pid]){ padFor(R); if(!pad.sent && store.now()>=R.endsAt-800) submitDrawing(R); } },250);
-  CLEAN.push(unsub,()=>clearInterval(iv));
+  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ micStop(); try{ pv.yt&&pv.yt.destroy(); }catch(e){} });
   const upd=patch=>store.update(P,clone(patch));
   const beep=(f=880)=>{ if(!psound) return; try{ pctx=pctx||new (window.AudioContext||window.webkitAudioContext)(); const o=pctx.createOscillator(),g=pctx.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0.15,pctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,pctx.currentTime+0.15); o.connect(g); g.connect(pctx.destination); o.start(); o.stop(pctx.currentTime+0.2); }catch(e){} try{ navigator.vibrate&&navigator.vibrate(40); }catch(e){} };
 
@@ -1135,11 +1142,66 @@ function Player(code, mount, fixedPid){
   /* ---- Mic Drop phone screens ---- */
   let mic={key:'',results:null,busy:false,note:'',show:3};
   const micKey=r=>r.games+'_'+r.round+'_'+r.mi;
-  const MCLICK=new Set(['msearch','msurprise','mpick','mvote','mstop','mmore']);
+  /* Judges' phones: muted copy of the karaoke video kept in step with the TV. No blackout here. */
+  let pv={yt:null,ready:false,state:-1,loaded:'',lastSeek:0,want:0};
+  const pvTap=$('.pvtap',pvEl); pvTap.onclick=e=>{ e.stopPropagation(); try{ pv.yt&&(pv.yt.mute(),pv.yt.playVideo()); }catch(x){} pvTap.classList.remove('on'); };
+  function pvWanted(r){ return !!(r && r.game==='mic' && r.settings.mPhoneVideo!==false && !r.paused && ['sing','stop','judge'].includes(r.phase)
+    && r.song && okVid(r.song.id) && pid && r.players && r.players[pid] && (r.micQ||[])[r.mi]!==pid); }
+  function pvTarget(r){ const k=micKey(r)+'_'+r.song.id, n=store.now();
+    if(r.phase==='stop'){ const end=(r.stopAt||0)+Math.min(12,(r.settings.mFinishTime||10)+2), t=(r.stopAt||0)+Math.max(0,n-(r.phaseAt||n))/1000; return {t:Math.min(t,end),play:t<end}; }
+    const c=r.mclock; if(!c||c.k!==k) return {t:0,play:false,none:true};
+    return c.p?{t:c.t+Math.max(0,n-c.at)/1000,play:true}:{t:c.t,play:false}; }
+  function pvSync(){ const r=R, want=pvWanted(r);
+    pvEl.classList.toggle('on',want);
+    if(!want){ pvTap.classList.remove('on'); if(pv.loaded&&pv.yt&&pv.ready){ try{ pv.yt.stopVideo(); }catch(e){} pv.loaded=''; } return; }
+    if(!pv.yt){ pv.yt='loading'; loadYT().then(Y=>{ pv.yt=new Y.Player($('.ytbox',pvEl),{width:'100%',height:'100%',playerVars:{playsinline:1,rel:0,modestbranding:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,autoplay:1,mute:1},
+        events:{onReady:()=>{ pv.ready=true; try{ pv.yt.mute(); }catch(e){} pvSync(); }, onStateChange:e=>{ pv.state=e.data; if(e.data===1) pvTap.classList.remove('on'); }}}); })
+      .catch(()=>{ pv.yt=null; }); return; }
+    if(!pv.ready) return;
+    try{ const y=pv.yt, key=micKey(r)+'_'+r.song.id, g=pvTarget(r);
+      if(pv.loaded!==key){ pv.loaded=key; pv.lastSeek=Date.now(); pv.want=Date.now(); y.mute(); if(g.play) y.loadVideoById({videoId:r.song.id,startSeconds:g.t}); else y.cueVideoById({videoId:r.song.id,startSeconds:g.t}); return; }
+      if(!y.isMuted()) y.mute();
+      const cur=y.getCurrentTime()||0, off=Math.abs(cur-g.t);
+      if(g.play){ if(pv.state!==1 && pv.state!==3) y.playVideo();
+        if(off>1 && Date.now()-pv.lastSeek>3000){ pv.lastSeek=Date.now(); y.seekTo(g.t,true); }
+        if(pv.state===1) pv.want=Date.now(); else if(Date.now()-pv.want>5000) pvTap.classList.add('on'); }
+      else { pv.want=Date.now(); pvTap.classList.remove('on'); if(pv.state===1||pv.state===3) y.pauseVideo();
+        if(!g.none && off>1.5 && Date.now()-pv.lastSeek>3000){ pv.lastSeek=Date.now(); y.seekTo(g.t,true); } }
+    }catch(e){} }
+  /* Singer's phone as the mic: WebRTC to the TV, voice is muted on the TV until it goes live */
+  let rtc={k:'',pc:null,stream:null,state:'',err:'',answered:false};
+  const micLive=r=>!!r && !r.paused && (r.settings.mMic==='all'?['sing','stop'].includes(r.phase):r.phase==='stop');
+  const canMic=()=>!!(window.RTCPeerConnection && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  function micStop(){ try{ rtc.stream&&rtc.stream.getTracks().forEach(t=>t.stop()); }catch(e){} try{ rtc.pc&&rtc.pc.close(); }catch(e){} rtc={k:'',pc:null,stream:null,state:'',err:'',answered:false}; }
+  async function micStart(r){ const k=micKey(r); micStop(); rtc.k=k; rtc.state='asking'; render();
+    try{ const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+      if(rtc.k!==k){ stream.getTracks().forEach(t=>t.stop()); return; }
+      const pc=new RTCPeerConnection({iceServers:ICE}); rtc.pc=pc; rtc.stream=stream; rtc.state='connecting'; render();
+      stream.getTracks().forEach(t=>{ t.enabled=micLive(R); pc.addTrack(t,stream); });
+      pc.onconnectionstatechange=()=>{ if(rtc.pc!==pc) return; const c=pc.connectionState;
+        if(c==='connected') rtc.state='on'; else if(c==='failed'||c==='disconnected'){ rtc.state='fail'; rtc.err="Lost the TV. Make sure you're on the same Wi-Fi."; } render(); };
+      await pc.setLocalDescription(await pc.createOffer()); await iceDone(pc);
+      if(rtc.pc!==pc) return; await upd({rtc:{k,offer:pc.localDescription.sdp,from:pid}});
+      setTimeout(()=>{ if(rtc.pc===pc && rtc.state==='connecting'){ rtc.state='fail'; rtc.err="Couldn't reach the TV. Make sure you're on the same Wi-Fi."; render(); } },15000);
+    }catch(e){ rtc.state='fail'; rtc.err=/NotAllowed|Permission|denied/i.test((e.name||'')+(e.message||''))?'The mic is blocked. Allow it in Settings › Safari › Microphone, then try again.':"The mic didn't start: "+(e.message||e); render(); } }
+  function micSync(r){ if(!rtc.k) return;
+    const keep=r && r.game==='mic' && micKey(r)===rtc.k && ['pick','sing','stop'].includes(r.phase) && (r.micQ||[])[r.mi]===pid && r.settings.mMic!=='off';
+    if(!keep){ micStop(); return; }
+    if(rtc.pc && !rtc.answered && r.rtc && r.rtc.k===rtc.k && r.rtc.from===pid && r.rtc.answer){ rtc.answered=true; rtc.pc.setRemoteDescription({type:'answer',sdp:r.rtc.answer}).catch(e=>{ rtc.state='fail'; rtc.err="Couldn't connect to the TV."; render(); }); }
+    if(r.rtc && r.rtc.err && rtc.state!=='fail'){ rtc.state='fail'; rtc.err=r.rtc.err; render(); }
+    try{ rtc.stream&&rtc.stream.getTracks().forEach(t=>t.enabled=micLive(r)); }catch(e){} }
+  function micBox(r){ const st=r.settings; if(st.mMic==='off'||!canMic()) return '';
+    const mine=rtc.k===micKey(r);
+    if(!mine||!rtc.state) return '<button class="alt" data-p="mmic">🎙️ Use my phone as the mic</button>';
+    if(rtc.state==='fail') return `<div class="err">${esc(rtc.err)}</div><button class="alt" data-p="mmic">🎙️ Try the mic again</button>`;
+    if(rtc.state!=='on') return '<div class="micst">🎙️ Connecting the mic…</div>';
+    return micLive(r)?'<div class="micst live">🔴 Your mic is live on the TV</div>':`<div class="micst">🎙️ Mic ready · goes live ${st.mMic==='all'?'when the song starts':'when the music stops'}</div>`; }
+  const MCLICK=new Set(['msearch','msurprise','mpick','mvote','mstop','mmore','mmic']);
   async function micClick(k,b,r){ const st=r.settings;
     if(k==='mstop'){ beep(); return upd({cmd:{t:'stopnow',id:uid()}}); }
     if(k==='mvote'){ beep(900); return upd({[`mvotes/${pid}`]:b.dataset.v}); }
     if(k==='mmore'){ mic.show+=3; return render(); }
+    if(k==='mmic') return micStart(r);
     if(k==='mpick'){ const x=(mic.results||[])[Number(b.dataset.i)]; if(!x) return; beep(); return upd({song:{id:x.id,title:x.title,by:pid}}); }
     if(k==='msearch'){ const q=String(($('[data-keep^=mq]',root)||{}).value||'').trim(); if(!q){ msg='Type a song name or paste a YouTube link'; return render(); }
       const id=vidFromText(q); if(id){ beep(); return upd({song:{id,title:'Your YouTube pick',by:pid}}); }
@@ -1166,15 +1228,20 @@ function Player(code, mount, fixedPid){
           ${mic.busy?'<div class="muted">Looking…</div>':''}${mic.note?`<div class="small ok">${esc(mic.note)}</div>`:''}
           ${(mic.results||[]).slice(0,mic.show).map((x,i)=>`<button class="mres" data-p="mpick" data-i="${i}"><span class="thumb" style="background-image:url('https://i.ytimg.com/vi/${x.id}/mqdefault.jpg')"></span><span><span class="t">${esc(x.title)}</span><span class="s">${esc(x.channel||'')}</span></span></button>`).join('')}
           ${mic.results&&mic.results.length>mic.show?'<button class="alt" data-p="mmore" style="padding:10px;font-size:14px">Show more versions</button>':''}
-          ${mic.results?'':'<div class="small muted" style="text-align:center">We add "karaoke" to your search automatically</div>'}`;
-      case 'sing': if(r.mdark) return `<div class="bigmsg"><div class="em">🙈</div>${mine?'Lyrics off! Keep singing!':`Lyrics are off for ${sname}…`}<div class="small muted">The music is about to stop</div></div>`;
-        return `<div class="bigmsg"><div class="em">${mine?'🎤':'👂'}</div>${mine?'Sing! It could stop any second…':`${sname} is singing!`}<div class="small muted">${esc((r.song&&r.song.title)||'')}</div>${mine?'':'<div class="small muted">Send cheers to fill the applause meter</div>'}</div>
-          ${vip?'<button class="pink" data-p="mstop" style="font-size:22px;padding:20px">🛑 Stop now!</button>':''}`;
-      case 'stop': return `<div class="bigmsg"><div class="em">🎤</div>${mine?'KEEP SINGING!':`Can ${sname} finish the line?`}<div class="small muted">${mine?'Finish the line from memory':'Listen closely…'}</div></div>`;
+          ${mic.results?'':'<div class="small muted" style="text-align:center">We add "karaoke" to your search automatically</div>'}${micBox(r)}`;
+      case 'sing': { const pvOn=!mine&&st.mPhoneVideo!==false;
+        if(mine&&r.mdark) return `<div class="bigmsg"><div class="em">🙈</div>Lyrics off! Keep singing!<div class="small muted">The music is about to stop</div></div>${micBox(r)}`;
+        if(pvOn) return `<div class="bigmsg" style="flex:0;padding:4px 0">${r.mdark?`🙈 Lyrics are off on the TV`:`👂 ${sname} is singing!`}<div class="small muted">${r.mdark?'The music is about to stop. Watch the words!':'Send cheers to fill the applause meter'}</div></div>
+          ${vip?'<button class="pink" data-p="mstop" style="font-size:20px;padding:14px">🛑 Stop now!</button>':''}`;
+        return `<div class="bigmsg"><div class="em">${mine?'🎤':'👂'}</div>${mine?'Sing! It could stop any second…':r.mdark?`Lyrics are off for ${sname}…`:`${sname} is singing!`}<div class="small muted">${esc((r.song&&r.song.title)||'')}</div>${mine?'':'<div class="small muted">Send cheers to fill the applause meter</div>'}</div>
+          ${mine?micBox(r):''}${vip?'<button class="pink" data-p="mstop" style="font-size:22px;padding:20px">🛑 Stop now!</button>':''}`; }
+      case 'stop': if(!mine&&st.mPhoneVideo!==false) return `<div class="bigmsg" style="flex:0;padding:4px 0">🎤 Can ${sname} finish the line?<div class="small muted">The real words keep going above</div></div>`;
+        return `<div class="bigmsg"><div class="em">🎤</div>${mine?'KEEP SINGING!':`Can ${sname} finish the line?`}<div class="small muted">${mine?'Finish the line from memory':'Listen closely…'}</div></div>${mine?micBox(r):''}`;
       case 'judge': { if(mine) return `<div class="bigmsg"><div class="em">🙈</div>The room is judging…<div class="small muted">Watch the real line on the TV</div></div>`;
         const my=(r.mvotes||{})[pid];
-        return `<div class="ptimer"></div><div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">🎤</div>Did ${sname} finish the line?<div class="small muted">Listen to the real line on the TV</div></div>
-          <div class="judge"><button class="j1 ${my==='n'?'on':''}" data-p="mvote" data-v="n">✅ Nailed it!</button><button class="j2 ${my==='c'?'on':''}" data-p="mvote" data-v="c">🤏 Close</button><button class="j3 ${my==='m'?'on':''}" data-p="mvote" data-v="m">❌ Missed it</button></div>
+        const pvOn=st.mPhoneVideo!==false;
+        return `<div class="ptimer"></div>${pvOn?`<div class="bigmsg" style="flex:0;padding:2px 0">Did ${sname} finish the line?</div>`:`<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">🎤</div>Did ${sname} finish the line?<div class="small muted">Listen to the real line on the TV</div></div>`}
+          <div class="judge ${pvOn?'sm':''}"><button class="j1 ${my==='n'?'on':''}" data-p="mvote" data-v="n">✅ Nailed it!</button><button class="j2 ${my==='c'?'on':''}" data-p="mvote" data-v="c">🤏 Close</button><button class="j3 ${my==='m'?'on':''}" data-p="mvote" data-v="m">❌ Missed it</button></div>
           ${my?'<div class="ok small" style="text-align:center">Vote is in ✓ You can still change it.</div>':''}`; }
       case 'result': { const m=r.mres||{}; return `<div class="bigmsg"><div class="em">${m.drop?'🎤':'🎶'}</div>${mine?(m.drop?'MIC DROP!':'Nice singing!'):`${sname} scored`}<b style="color:var(--good);font-family:Bungee">+${m.pts||0}</b></div>`; }
       case 'scores': { const rank=players0(r).findIndex(([id])=>id===pid)+1; return `<div class="bigmsg"><div class="em">📊</div>You're #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b></div>`; }
@@ -1223,18 +1290,18 @@ function Player(code, mount, fixedPid){
       try{ selPhoto=await toAvatar(f); selEmoji=null; msg=''; }catch(e){ msg="Couldn't use that photo"; } render(); }; }); }
 
   function render(){ const r=R;
-    if(!loaded) return patchHTML(root,'<div class="bigmsg">Connecting…</div>');
-    if(!r) return patchHTML(root,`<div class="pbody"><div class="bigmsg"><div class="em">🤔</div>No game with code ${esc(code)}.<button data-p="home">Back</button></div></div>`);
+    if(!loaded) return paint2('','<div class="bigmsg">Connecting…</div>');
+    if(!r) return paint2('',`<div class="pbody"><div class="bigmsg"><div class="em">🤔</div>No game with code ${esc(code)}.<button data-p="home">Back</button></div></div>`);
     const err=msg?`<div class="err">${esc(msg)}</div>`:'';
     const me=pid && r.players && r.players[pid];
-    if(!me){ patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
+    if(!me){ paint2('',`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
       <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · ${GNAMES[r.game]||'Fibs'}</div>
       <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
     if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote','q','tvote','wcat','draw','judge'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
     const lfmOn=r.game==='doodle'?r.settings.dLieForMe!==false:r.settings.lieForMe!==false;
     const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote','q'].includes(r.phase);
     const head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
-    if(editing){ patchHTML(root, head+`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
+    if(editing){ paint2(head,`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
     let b='';
     if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
     else if(isLate) b=`<div class="bigmsg"><div class="em">🙌</div>You're in!<div class="small muted">You'll jump in on the next question.</div></div>`;
@@ -1272,7 +1339,7 @@ function Player(code, mount, fixedPid){
     const ctl = vip && !['lobby','final','loading','dgallery'].includes(r.phase) ? `<div class="vip"><button class="alt" data-p="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-p="skip">Skip</button></div>`
       : vip && r.phase==='final' ? `<div class="vip"><button data-p="again">Play again</button></div>` : '';
     const reacts = st.reactions!==false && r.phase!=='lobby' && !(r.game==='mic' && ['sing','stop'].includes(r.phase) && (r.micQ||[])[r.mi]===pid) ? `<div class="reacts">${REACTS.map(e=>`<button data-p="react" data-e="${e}">${e}</button>`).join('')}</div>` : '';
-    patchHTML(root, head+`<div class="pbody">${b}${ctl}${reacts}</div>`);
+    paint2(head,`<div class="pbody">${b}${ctl}${reacts}</div>`); pvSync();
     if(r.game==='doodle' && r.phase==='draw') bindPad();
   }
 }
@@ -1906,6 +1973,9 @@ async function micSurprise(st){
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return {song:j.song||null, results:(j.results||[]).filter(x=>okVid(x.id)).slice(0,8)};
 }
+const ICE=[{urls:'stun:stun.l.google.com:19302'}];
+function iceDone(pc){ return new Promise(res=>{ if(pc.iceGatheringState==='complete') return res();
+  const f=()=>{ if(pc.iceGatheringState==='complete'){ pc.removeEventListener('icegatheringstatechange',f); res(); } }; pc.addEventListener('icegatheringstatechange',f); setTimeout(res,2500); }); }
 /* Loads the YouTube player script once */
 let ytLoading=null;
 function loadYT(){ if(window.YT && window.YT.Player) return Promise.resolve(window.YT);
@@ -1934,7 +2004,7 @@ function MicHost(code, mount, opts){
   /* ---- YouTube player ---- */
   function ytInit(){ loadYT().then(Y=>{ if(yt) return;
       yt=new Y.Player($('.ytbox',mount),{width:'100%',height:'100%',playerVars:{playsinline:1,rel:0,modestbranding:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,autoplay:0},
-        events:{onReady:()=>{ ytReady=true; if(R) syncVideo(R); }, onStateChange:e=>{ ytState=e.data; if(ytState===1){ needPlay=false; onPlaying(); } if(R) render(R); }, onError:e=>onYtError(e.data)}}); })
+        events:{onReady:()=>{ ytReady=true; if(R) syncVideo(R); }, onStateChange:e=>{ ytState=e.data; if(ytState===1){ needPlay=false; onPlaying(); } if([1,2,3].includes(ytState)) pubClock(); if(R) render(R); }, onError:e=>onYtError(e.data)}}); })
     .catch(e=>{ console.warn(e); if(R && R.phase==='sing') upd({phase:'pick',song:null,merr:"YouTube didn't load. Check the connection and pick again."}); }); }
   function onYtError(code){ const r=R; if(!r||!['sing','judge'].includes(r.phase)) return; ytLoaded='';
     const why=(code===101||code===150)?"That video can't play outside YouTube. Pick another one.":"That video wouldn't play. Pick another one.";
@@ -1944,6 +2014,28 @@ function MicHost(code, mount, opts){
     let at=cur+(st.mDark||0)+st.mStopMin+Math.random()*Math.max(0,st.mStopMax-st.mStopMin);
     if(dur>30) at=Math.min(at,dur-12);
     upd({stopAt:Math.round(at*10)/10}); }
+  /* Video clock so the judges' phones can follow along */
+  let clockAt=0;
+  function pubClock(){ const r=R; if(!yt||!ytReady||!r||!r.song||!['sing','judge'].includes(r.phase)||forceCover) return;
+    if(r.settings.mPhoneVideo===false) return;
+    let t=0; try{ t=yt.getCurrentTime()||0; }catch(e){} clockAt=Date.now();
+    upd({mclock:{k:turnKey+'_'+r.song.id,t:Math.round(t*100)/100,at:now(),p:ytState===1?1:0}}); }
+  /* Singer's phone mic: answer its WebRTC offer, keep the voice muted until it goes live */
+  let hr={k:'',offer:'',pc:null,audio:null,on:false};
+  const micLiveH=r=>!!r && !r.paused && r.settings.mMic!=='off' && (r.settings.mMic==='all'?['sing','stop'].includes(r.phase):r.phase==='stop');
+  function hrClose(){ try{ hr.pc&&hr.pc.close(); }catch(e){} if(hr.audio){ try{ hr.audio.pause(); hr.audio.srcObject=null; }catch(e){} } hr.pc=null; hr.offer=''; hr.k=''; hr.on=false; }
+  async function hrAnswer(r){ hrClose(); const o=r.rtc, pc=new RTCPeerConnection({iceServers:ICE}); hr.pc=pc; hr.offer=o.offer; hr.k=o.k;
+    pc.ontrack=e=>{ if(hr.pc!==pc) return; if(!hr.audio){ hr.audio=document.createElement('audio'); hr.audio.autoplay=true; hr.audio.playsInline=true; hr.audio.style.display='none'; mount.appendChild(hr.audio); }
+      hr.audio.srcObject=e.streams[0]||new MediaStream([e.track]); hr.audio.muted=!micLiveH(R); hr.audio.play().catch(()=>{}); };
+    pc.onconnectionstatechange=()=>{ if(hr.pc!==pc) return; hr.on=pc.connectionState==='connected'; if(R) render(R); };
+    try{ await pc.setRemoteDescription({type:'offer',sdp:o.offer}); await pc.setLocalDescription(await pc.createAnswer()); await iceDone(pc);
+      if(hr.pc===pc) upd({'rtc/answer':pc.localDescription.sdp}); }
+    catch(e){ console.warn('mic',e); if(hr.pc===pc) upd({'rtc/err':"The TV couldn't start the mic. Try again."}); } }
+  function rtcSync(r){ if(!window.RTCPeerConnection) return;
+    const o=r.rtc, ok=r.settings.mMic!=='off' && ['pick','sing','stop'].includes(r.phase) && o && o.k===turnKey && o.offer && o.from===singer(r);
+    if(ok && o.offer!==hr.offer) hrAnswer(r);
+    else if(!ok && hr.pc && !(r.phase==='judge')) hrClose();
+    if(hr.audio){ const live=micLiveH(r); hr.audio.muted=!live; if(live&&hr.audio.paused) hr.audio.play().catch(()=>{}); } }
   function syncVideo(r){
     const show=['sing','stop','judge'].includes(r.phase) && r.song && okVid(r.song.id);
     vidwrap.classList.toggle('on',!!show && r.phase!=='stop' && !forceCover);
@@ -1955,7 +2047,7 @@ function MicHost(code, mount, opts){
         else if(r.paused) yt.pauseVideo(); else if(ytState===2) yt.playVideo(); }
       if(r.phase==='stop'){ if(ytState===1) yt.pauseVideo(); }
       if(r.phase==='judge'){ if(r.paused){ yt.pauseVideo(); return; }
-        if(replayEnd!==r.stopAt){ replayEnd=r.stopAt; yt.seekTo(Math.max(0,(r.stopAt||0)-(r.settings.mDark||0)-3),true); yt.playVideo(); } }
+        if(replayEnd!==r.stopAt){ replayEnd=r.stopAt; yt.seekTo(Math.max(0,(r.stopAt||0)-(r.settings.mDark||0)-3),true); yt.playVideo(); setTimeout(pubClock,300); } }
     }catch(e){ console.warn('video',e); } }
   function videoTick(r){ if(!yt||!ytReady||!r) return;
     try{
@@ -1965,6 +2057,7 @@ function MicHost(code, mount, opts){
         if(r.stopAt && lead>0 && !dark && t>=r.stopAt-lead){ goDark(r); }
         if(r.stopAt && t>=r.stopAt) beginStop(); }
       if(r.phase==='judge' && ytState===1 && r.stopAt && yt.getCurrentTime()>=r.stopAt+10) yt.pauseVideo();
+      if(ytState===1 && ['sing','judge'].includes(r.phase) && Date.now()-clockAt>4000) pubClock();
     }catch(e){} }
 
   function goDark(r){ if(dark) return; dark=true; Sound.sfx('whoosh'); render(r); if(!r.mdark) upd({mdark:true}); }
@@ -1976,10 +2069,11 @@ function MicHost(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     const tk=r.games+'_'+r.round+'_'+r.mi; if(tk!==turnKey){ turnKey=tk; applause=0; needPlay=false; replayEnd=0; dark=false; forceCover=false; }
     if(r.phase!=='sing'){ dark=false; forceCover=false; }
-    effects(prev,r); reactions(r); syncVideo(r); render(r);
+    if(hr.k && hr.k!==turnKey) hrClose();
+    effects(prev,r); reactions(r); syncVideo(r); rtcSync(r); render(r);
   });
   const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); videoTick(R); },200);
-  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; try{ yt&&yt.destroy(); }catch(e){} });
+  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; hrClose(); try{ yt&&yt.destroy(); }catch(e){} });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
   function act(t){ const r=R; if(!r) return; const n=now();
@@ -1998,7 +2092,7 @@ function MicHost(code, mount, opts){
       if(r.phase==='judge') return beginResult();
       if(r.phase==='result') return nextSinger();
       if(r.phase==='scores') return afterScores(); }
-    if(t==='again'){ done=new Set(); const p={phase:'lobby',round:0,micQ:null,mi:-1,song:null,stopAt:null,mvotes:null,mres:null,mstats:null,merr:null,paused:false,endsAt:null};
+    if(t==='again'){ done=new Set(); const p={phase:'lobby',round:0,micQ:null,mi:-1,song:null,stopAt:null,mclock:null,rtc:null,mvotes:null,mres:null,mstats:null,merr:null,paused:false,endsAt:null};
       for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; } return upd(p); }
   }
 
@@ -2015,10 +2109,10 @@ function MicHost(code, mount, opts){
   function beginPick(i){ const r=R; if(!once('p'+r.games+'_'+r.round+'_'+i)) return; const n=now();
     while(i<(r.micQ||[]).length && !(r.players[r.micQ[i]] && r.players[r.micQ[i]].on!==false)) i++;
     if(i>=(r.micQ||[]).length) return upd({phase:'scores',phaseAt:n,endsAt:n+7000});
-    upd({phase:'pick',mi:i,song:null,stopAt:null,mdark:null,mvotes:null,mres:null,merr:null,phaseAt:n,endsAt:n+r.settings.mPickTime*1000}); }
+    upd({phase:'pick',mi:i,song:null,stopAt:null,mdark:null,mclock:null,rtc:null,mvotes:null,mres:null,merr:null,phaseAt:n,endsAt:n+r.settings.mPickTime*1000}); }
   function beginSing(){ const r=R; if(!r.song||!okVid(r.song.id)||!once('s'+r.games+'_'+r.round+'_'+r.mi+'_'+r.song.id)) return; const n=now();
     const u=LS.get('hg_mused',[]); u.push(r.song.title); LS.set('hg_mused',u.slice(-60));
-    upd({phase:'sing',stopAt:null,mdark:null,merr:null,phaseAt:n,endsAt:null}); }
+    upd({phase:'sing',stopAt:null,mdark:null,mclock:null,merr:null,phaseAt:n,endsAt:null}); }
   function beginStop(){ const r=R; if(r.phase!=='sing'||!once('st'+r.games+'_'+r.round+'_'+r.mi)) return; const n=now();
     forceCover=true; vidwrap.classList.remove('on'); render(r);
     let at=r.stopAt; try{ if(yt&&ytReady){ at=Math.round(yt.getCurrentTime()*10)/10; yt.pauseVideo(); } }catch(e){}
@@ -2108,11 +2202,11 @@ function MicHost(code, mount, opts){
           ${nx.length?`<div class="upnext">Up next ${nx.map(p=>`<span class="vchip">${avatar(p)}${esc(p.name)}</span>`).join('')}</div>`:''}</div><div class="timer"></div>`; break; }
       case 'sing': case 'judge': { cls='mic-live'; const J=judges(r), V=r.mvotes||{};
         const meter=`<div class="meter">APPLAUSE<div class="m"><i style="width:${Math.min(100,applause*5)}%"></i></div></div>`;
-        body=`<div class="singer">${sp?avatar(sp):''}<div><div style="font-family:Bungee;color:var(--gold)">${esc(nm(r,sid)).toUpperCase()}</div><div class="small muted" style="font-size:1.4cqw">${esc((r.song&&r.song.title)||'')}${r.phase==='sing'?' · it could stop any second…':''}</div></div></div>
+        body=`<div class="singer">${sp?avatar(sp):''}<div><div style="font-family:Bungee;color:var(--gold)">${esc(nm(r,sid)).toUpperCase()}</div><div class="small muted" style="font-size:1.4cqw">${esc((r.song&&r.song.title)||'')}${r.phase==='sing'?' · it could stop any second…':''}${hr.on&&r.phase==='sing'?(micLiveH(r)?' · 🔴 mic live':' · 🎙️ phone mic ready'):''}</div></div></div>
           ${r.phase==='judge'?`<div class="judgebar"><b>Did ${esc(nm(r,sid))} nail it?</b> Vote on your phone ${J.map(id=>`<span class="jv ${V[id]?'on':''}">${avatar(r.players[id])}</span>`).join('')}</div><div class="timer"></div>`:meter}
           ${r.phase==='sing'&&dark?`<div class="darkcover"><div class="em">🙈</div><div class="big">LYRICS OFF!</div><div class="sub">${esc(nm(r,sid))}, keep singing…</div></div>`:''}
           ${r.phase==='sing'&&needPlay&&!dark?'<div class="needplay"><button data-act="ytplay">▶ Tap to play the video</button></div>':''}`; break; }
-      case 'stop': body=`<div class="cover"><div class="big">FINISH THE LINE!</div>${sp?`<div class="bigav">${avatar(sp)}</div>`:''}<div class="sub">${esc(nm(r,sid))}, keep singing!</div>${r.phase==='stop'?'<div class="timer"></div>':''}</div>`; cls='mic-stop'; break;
+      case 'stop': body=`<div class="cover"><div class="big">FINISH THE LINE!</div>${sp?`<div class="bigav">${avatar(sp)}</div>`:''}<div class="sub">${esc(nm(r,sid))}, keep singing!</div>${hr.on&&micLiveH(r)?'<div class="sub">🔴 Mic is live</div>':''}${r.phase==='stop'?'<div class="timer"></div>':''}</div>`; cls='mic-stop'; break;
       case 'result': { const m=r.mres||{counts:{}};
         body=`<div class="center">${sp?`<div class="bigav">${avatar(sp)}</div>`:''}${m.drop?'<div class="bigintro">🎤 MIC DROP!</div>':`<div class="bigintro" style="font-size:5cqw">${esc(nm(r,sid)).toUpperCase()}</div>`}
           <div class="note">${esc((r.song&&r.song.title)||'')}</div>
@@ -2229,6 +2323,7 @@ async function AdminPanel(locked){
     ${sec('mic','🎤 Mic Drop',`${num('mRounds','Rounds',1,4)}${num('mStopMin','Earliest the lyrics go dark (seconds into the song)',20,240,5)}${num('mStopMax','Latest the lyrics go dark (seconds into the song)',20,300,5)}
       ${num('mDark','Lyrics go dark before the stop (seconds, 0 = off)',0,20)}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
       <h4>Scoring</h4>${num('mNailed','Points for "Nailed it"',0,5000,50)}${num('mClose','Points for "Close"',0,5000,50)}${num('mApplause','Max applause bonus',0,2000,50)}${num('mMult','Last round multiplier',1,5)}
+      <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when the music stops'],['all','On for the whole song'],['off','Off']])}
       <h4>Songs</h4>${chk('mAI','"Surprise me" button (AI picks a song)')}<div class="small muted">Song search needs YOUTUBE_API_KEY in Cloudflare. Pasting a YouTube link always works.</div>`)}
     ${sec('doodle','🎨 Doodle Duel',`${num('dRounds','Rounds',1,4)}${num('dDrawTime','Seconds to draw',20,180,5)}${num('dFakeTime','Seconds to write a fake title',15,120,5)}${num('dVoteTime','Seconds to vote',10,90,5)}
       <h4>Scoring</h4>${num('dTruth','Points for spotting the real title',0,5000,50)}${num('dFool','Points per player fooled',0,5000,50)}${num('dArtist','Artist bonus per player who gets it',0,5000,50)}${num('dMult','Last round multiplier',1,5)}
