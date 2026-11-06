@@ -39,6 +39,12 @@ Add these in Cloudflare → Workers → games → **Settings → Variables and S
 - `ANTHROPIC_API_KEY`
 - `ALLOWED_ORIGINS` = `https://ech-technicalsolutions.com`
 
+**Quick checks in Safari:**
+- `https://games.erikchardin.workers.dev/` shows which secrets are set
+- `https://games.erikchardin.workers.dev/tts` plays a short test line in your voice, or shows ElevenLabs' exact error
+
+The ElevenLabs API key needs **Text to Speech** access (and **Voices → Read**).
+
 Then go to **Admin → Sound & Voice**, set Voice to **My cloned voice**, and tap **Test voice**. Set **AI questions** to "One per round" and tap **Test an AI question**.
 
 Spoken lines are cached at the Worker, so repeated phrases don't cost twice. If the Worker fails, the game falls back to the built-in voice and pack questions automatically.
