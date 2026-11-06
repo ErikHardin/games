@@ -491,6 +491,7 @@ async function toAvatar(file){ const url=URL.createObjectURL(file);
     const w=img.naturalWidth, h=img.naturalHeight, sz=Math.min(w,h), c=document.createElement('canvas'); c.width=c.height=160;
     c.getContext('2d').drawImage(img,(w-sz)/2,(h-sz)/2,sz,sz,0,0,160,160); return c.toDataURL('image/jpeg',0.72); }
   finally{ URL.revokeObjectURL(url); } }
+const voiceTag=st=>!st.readAloud?' · 🔇 Voice off':st.voice==='clone'?' · 🎙️ Your voice':' · 🤖 Built-in voice';
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
 function patchHTML(el, html){
   if(el._html===html) return;
@@ -611,26 +612,32 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 
 /* ============ Voice (built-in or your cloned voice via the Worker) ============ */
 const Voice = {
-  tok:0, el:null, cache:new Map(), pending:new Map(), voices:[], cancelled:false, last:{mode:'',error:''},
+  tok:0, el:null, cache:new Map(), pending:new Map(), voices:[], cancelled:false, last:{mode:'',error:''}, keep:false, active:0, queue:[], warned:'',
   unlock(){ playbackMode();
     try{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; }
       this.el.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='; this.el.play().catch(()=>{});
       if(window.speechSynthesis){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); } }catch(e){} },
   loadVoices(){ try{ this.voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); }catch(e){} return this.voices; },
-  stop(){ this.tok++;
+  stopSoft(){ if(!this.keep) this.stop(); },
+  stop(){ this.tok++; this.keep=false;
     try{ if(window.speechSynthesis && (speechSynthesis.speaking||speechSynthesis.pending)){ speechSynthesis.cancel(); this.cancelled=true; } }catch(e){}
     try{ this.el && this.el.pause(); }catch(e){} },
-  async say(text, st){ if(!st||!st.readAloud||!text) return this.last; this.stop(); const tok=this.tok; Sound.duck(true);
+  async say(text, st, opt={}){ if(!st||!st.readAloud||!text) return this.last; this.stop(); this.keep=!!opt.keep; const tok=this.tok; Sound.duck(true);
     try{ if(st.voice==='clone' && CONFIG.WORKER_URL){ const url=await this.tts(text); if(tok!==this.tok) return this.last; this.last={mode:'clone',error:''}; await this.play(url, st); }
          else { this.last={mode:'builtin',error:''}; await this.builtin(text, st, tok); } }
-    catch(e){ console.warn('voice fallback',e); this.last={mode:'builtin',error:e.message||String(e)}; if(tok===this.tok) await this.builtin(text, st, tok); }
-    finally{ if(tok===this.tok) Sound.duck(false); }
+    catch(e){ console.warn('voice fallback',e); const m=e.message||String(e); this.last={mode:'builtin',error:m};
+      if(!opt.quiet && this.warned!==m){ this.warned=m; toast(`Your voice failed: ${m.slice(0,90)} · using the built-in voice`); }
+      if(tok===this.tok) await this.builtin(text, st, tok); }
+    finally{ if(tok===this.tok){ Sound.duck(false); this.keep=false; } }
     return this.last; },
   tts(text){ if(this.cache.has(text)) return Promise.resolve(this.cache.get(text)); if(this.pending.has(text)) return this.pending.get(text);
-    const pr=(async()=>{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
-      if(!r.ok){ let m=''; try{ m=(await r.json()).error; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
-      const url=URL.createObjectURL(await r.blob()); this.cache.set(text,url); return url; })();
+    const pr=(async()=>{ await this.slot();
+      try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+        if(!r.ok){ let m=''; try{ m=(await r.json()).error; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
+        const url=URL.createObjectURL(await r.blob()); this.cache.set(text,url); return url; }
+      finally{ this.active--; const nx=this.queue.shift(); nx&&nx(); } })();
     this.pending.set(text,pr); pr.finally(()=>this.pending.delete(text)).catch(()=>{}); return pr; },
+  slot(){ if(this.active<2){ this.active++; return Promise.resolve(); } return new Promise(res=>this.queue.push(()=>{ this.active++; res(); })); },  /* at most 2 voice requests at a time */
   prefetch(text, st){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text).catch(()=>{}); },
   play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
       a.onended=a.onerror=()=>res(); a.play().catch(()=>res()); setTimeout(res,20000); }); },
@@ -679,7 +686,7 @@ function seeded(a, seed){ a=[...a]; let t=seed>>>0; const rnd=()=>{ t+=0x6D2B79F
 applyTheme(LS.get('hg_theme','sunset'));
 /* ============ Router ============ */
 let CLEAN=[]; let PARAMS=new URLSearchParams(location.search);
-function nav(params, replace){ CLEAN.forEach(f=>{ try{f();}catch(e){} }); CLEAN=[]; Voice.stop(); Sound.stopMusic(); Awake.off();
+function nav(params, replace){ CLEAN.forEach(f=>{ try{f();}catch(e){} }); CLEAN=[]; Voice.stopSoft(); Sound.stopMusic(); Awake.off();
   PARAMS=new URLSearchParams(params); const qs=PARAMS.toString();
   try{ history[replace?'replaceState':'pushState'](null,'',location.pathname+(qs?'?'+qs:'')); }catch(e){}
   route(); }
@@ -720,8 +727,13 @@ function Landing(){
   app.onclick=e=>{ const a=e.target.closest('[data-a]'); if(!a) return; const k=a.dataset.a;
     const g=a.dataset.g||'fibs'; if(k==='host') nav({host:'',game:g}); if(k==='demo') nav({demo:'1',game:g}); if(k==='admin') nav({admin:'1'});
     if(k==='join'){ const c=$('#jc').value.trim().toUpperCase(); if(c.length===4) nav({join:c}); else toast('Enter the 4-letter code'); } };
-  CLEAN.push(()=>app.onclick=null);
-  loadSettings().then(st=>applyTheme(st.theme)).catch(()=>{});
+  let hst=null, welcomed=false; try{ welcomed=sessionStorage.getItem('hg_welcomed')==='1'; }catch(e){}
+  const WELCOME='Welcome to Hardin Games!';
+  const greet=()=>{ if(welcomed||!hst) return; welcomed=true; try{ sessionStorage.setItem('hg_welcomed','1'); }catch(e){}
+    Voice.unlock(); Voice.say(WELCOME,hst,{keep:true,quiet:true}); };
+  app.addEventListener('pointerdown',greet,{capture:true});
+  CLEAN.push(()=>{ app.onclick=null; app.removeEventListener('pointerdown',greet,{capture:true}); });
+  loadSettings().then(st=>{ applyTheme(st.theme); hst=st; Voice.prefetch(WELCOME,st); }).catch(()=>{});
 }
 
 /* ============ Room creation ============ */
@@ -961,7 +973,7 @@ function Host(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname">FIBS</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player question${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}</div>
+          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player question${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'loading': body=`<div class="center"><div class="bigintro" style="font-size:5cqw">Getting questions ready…</div></div>`; break;
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your lies ready'}</div></div>`; break;
@@ -1625,7 +1637,7 @@ function TriviaHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmTrivia)">SMARTY PANTS</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'tvote': body=`<div class="center"><div class="bigintro" style="font-size:4.2cqw">PICK A CATEGORY</div>
           <div class="cats">${(r.cats||[]).map((c,i)=>{ const vs=Object.entries(r.tvotes||{}).filter(([,v])=>v===i).map(([id])=>id);
@@ -1908,7 +1920,7 @@ function DoodleHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmDoodle)">DOODLE DUEL</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your drawing fingers ready'}</div>${r.plist?'':'<div class="note late3">Thinking up prompts…</div>'}</div>`; break;
       case 'draw': { const ids=Object.keys(r.dprompts||{}); body=`<div class="center"><div class="bigintro">DRAW!</div><div class="subintro">Check your phone for your secret prompt</div>${tiles(r,id=>(r.draws||{})[id],ids)}</div><div class="timer"></div>`; break; }
@@ -2194,7 +2206,7 @@ function MicHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmMic)">MIC DROP</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Warm up those vocal cords'}</div></div>`; break;
       case 'pick': { const nx=(r.micQ||[]).slice(r.mi+1,r.mi+4).map(id=>r.players[id]).filter(Boolean);
@@ -2332,12 +2344,14 @@ async function AdminPanel(locked){
     <button id="save">Save settings</button></div>`;
     $('#back').onclick=()=>nav({});
     const ts=app.querySelector('[data-k=theme]'); if(ts) ts.onchange=()=>applyTheme(ts.value);
+    app.querySelectorAll('[data-k=voice],[data-k=readAloud]').forEach(i=>i.onchange=()=>save(i.dataset.k==='voice'?(i.value==='clone'?'Saved ✓ Games will use your voice':'Saved ✓ Games will use the built-in voice'):'Saved ✓'));
     app.querySelectorAll('details.sec').forEach(d=>d.addEventListener('toggle',()=>{ d.open?openS.add(d.dataset.sec):openS.delete(d.dataset.sec); LS.set('hg_admin_open',[...openS]); }));
     if($('#lockb')) $('#lockb').onclick=()=>{ LS.set('hg_admin_token',''); toast('Admin locked'); nav({}); };
     $('#save').onclick=save;
     $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); const o=$('#vout');
       o.textContent=st.voice==='clone'?'Calling your cloned voice…':'Speaking…';
-      const res=await Voice.say('Welcome to Hardin Games! Get ready to play Fibs.',{...st,readAloud:true});
+      const lines=['Welcome to Hardin Games!','Grab your phones, it is game time!','Who is ready to play?','Let the games begin!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const res=await Voice.say(`${lines[Math.floor(Math.random()*lines.length)]} Testing at ${tm}.`,{...st,readAloud:true},{quiet:true});
       o.innerHTML=res.error?`<span class="err">Cloned voice failed: ${esc(res.error)}</span> · used the built-in voice`:(res.mode==='clone'?'<span class="ok">✓ Played in your cloned voice</span>':'<span class="ok">✓ Played the built-in voice</span>'); };
     $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
     $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
@@ -2349,7 +2363,11 @@ async function AdminPanel(locked){
     app.querySelectorAll('[data-pack]').forEach(i=>st.packs[i.dataset.pack]=i.checked);
     if(st.maxPlayers<st.minPlayers) st.maxPlayers=st.minPlayers;
     if(st.mStopMax<st.mStopMin) st.mStopMax=st.mStopMin; }
-  async function save(){ collect(); await S.store.set(`${ROOT}/settings`,st); toast('Saved'); }
+  async function save(okMsg){ collect();
+    try{ await S.store.set(`${ROOT}/settings`,st); const back=(await S.store.get(`${ROOT}/settings`))||{};
+      if(back.voice!==st.voice||back.readAloud!==st.readAloud) throw new Error("the database didn't keep it");
+      toast(typeof okMsg==='string'?okMsg:'Saved ✓'); return true; }
+    catch(e){ toast("Couldn't save: "+(e.message||e)); return false; } }
   draw();
   try{ speechSynthesis.onvoiceschanged=()=>{ if(PARAMS.has('admin')){ collect(); draw(); } }; CLEAN.push(()=>speechSynthesis.onvoiceschanged=null); }catch(e){}
 }
