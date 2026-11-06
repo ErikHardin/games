@@ -236,15 +236,30 @@ Respond with only JSON, no other text: {"prompts":["...","..."]}`;
 
 // ---- Mic Drop: karaoke video search (YouTube Data API) ----
 const unent = s => String(s || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+// Karaoke channels that reliably have backing tracks with on-screen lyrics
+const GOOD_CHANNELS = /sing king|karafun|stingray karaoke|party tyme|zoom karaoke|karaoke version|sunfly|singsong|karaoke hits|lugn|bandaid|global karaoke|songjam|pro sound karaoke/i;
+function karaokeScore(x) {
+  const t = (x.title || '').toLowerCase(), c = x.channel || '';
+  let s = 0;
+  if (/karaoke/.test(t)) s += 4;
+  if (/instrumental|backing track|sing ?along|with lyrics/.test(t)) s += 1;
+  if (GOOD_CHANNELS.test(c)) s += 6;
+  if (/karaoke/i.test(c)) s += 2;
+  if (/\blyrics?\b/.test(t) && !/karaoke/.test(t)) s -= 4;   // lyric videos usually still have the original vocals
+  if (/\b(cover|live|reaction|tutorial|lesson|how to|official (music )?video|remix|piano|guitar|8d|slowed|sped up)\b/.test(t)) s -= 5;
+  return s;
+}
 async function ytSearch(q, family, env) {
   if (!env.YOUTUBE_API_KEY) throw new Error('YOUTUBE_API_KEY is not set in Cloudflare');
   if (!q) return [];
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
-  u.search = new URLSearchParams({ part: 'snippet', type: 'video', maxResults: '8', videoEmbeddable: 'true', safeSearch: family ? 'strict' : 'moderate', q, key: env.YOUTUBE_API_KEY }).toString();
+  u.search = new URLSearchParams({ part: 'snippet', type: 'video', maxResults: '15', videoEmbeddable: 'true', safeSearch: family ? 'strict' : 'moderate', q, key: env.YOUTUBE_API_KEY }).toString();
   const r = await fetch(u.toString());
   const j = await r.json();
   if (!r.ok) { console.error('YouTube error', r.status, JSON.stringify(j).slice(0, 300)); throw new Error((j.error && j.error.message) || `YouTube ${r.status}`); }
-  return (j.items || []).filter(x => x.id && x.id.videoId).map(x => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle) }));
+  const list = (j.items || []).filter(x => x.id && x.id.videoId).map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }));
+  return list.map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
+    .sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 9).map(({ id, title, channel }) => ({ id, title, channel }));
 }
 async function surprise(req, env, cors) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
