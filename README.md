@@ -10,7 +10,7 @@ One file (`index.html`) runs everything:
 | `?admin` | Settings, family question pack, voice and AI tests |
 | `?demo=1&game=fibs` or `&game=trivia` | Preview with 4 bot players, TV and your phone side by side |
 
-Games: **Fibs** (lie-guessing) and **Smarty Pants** (trivia: category vote, AI questions with a built-in backup bank, closest-number questions, final wager). **Doodle Duel** (draw a secret prompt, everyone writes fake titles, find the real one; gallery at the end).
+Games: **Fibs** (lie-guessing) and **Smarty Pants** (trivia: category vote, AI questions with a built-in backup bank, closest-number questions, final wager). **Doodle Duel** (draw a secret prompt, everyone writes fake titles, find the real one; gallery at the end), and **Mic Drop** (sing along to a YouTube karaoke video until it stops, then finish the line; the room judges).
 
 With no config it runs in **local mode**. That works for the demo, or for tabs on one device. Add Firebase to play across phones.
 
@@ -40,6 +40,7 @@ Add these in Cloudflare → Workers → games → **Settings → Variables and S
 - `ELEVEN_VOICE_ID`
 - `ANTHROPIC_API_KEY`
 - `ALLOWED_ORIGINS` = `https://ech-technicalsolutions.com`
+- `YOUTUBE_API_KEY` = YouTube Data API v3 key (Mic Drop song search; pasting a YouTube link works without it)
 - `ADMIN_PIN` = your 4-digit admin code (devices stay unlocked 30 days; changing it signs everyone out)
 
 **Quick checks in Safari:**
