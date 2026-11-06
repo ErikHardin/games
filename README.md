@@ -38,6 +38,7 @@ Add these in Cloudflare → Workers → games → **Settings → Variables and S
 - `ELEVEN_VOICE_ID`
 - `ANTHROPIC_API_KEY`
 - `ALLOWED_ORIGINS` = `https://ech-technicalsolutions.com`
+- `ADMIN_PIN` = your 4-digit admin code (devices stay unlocked 30 days; changing it signs everyone out)
 
 **Quick checks in Safari:**
 - `https://games.erikchardin.workers.dev/` shows which secrets are set

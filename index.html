@@ -197,6 +197,16 @@ input:focus,select:focus{border-color:var(--teal)}
 .gamecard.soon{align-items:center;justify-content:center;text-align:center;opacity:.6;border-style:dashed;min-height:120px}
 .gamecard.soon .em{font-size:40px}
 @media (min-width:720px){.landing{max-width:820px}.games{grid-template-columns:1fr 1fr}}
+
+.pinsec{align-items:center;text-align:center;max-width:340px;margin:0 auto;width:100%}
+.pindots{display:flex;gap:16px;margin:6px 0}
+.pindots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted)}
+.pindots i.on{background:var(--gold);border-color:var(--gold)}
+.pinpad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center}
+.pinpad button{height:64px;font-size:26px;padding:0;border-radius:18px}
+.pinhome{color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;margin-top:4px}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
 </style>
 </head>
 <body>
@@ -214,8 +224,7 @@ const CONFIG = {
     appId: "1:664212547524:web:42156378f30691b9256691"
   },
   DB_ROOT: 'hardinGames',
-  WORKER_URL: 'https://games.erikchardin.workers.dev',
-  ADMIN_PIN: ''        // optional PIN for the admin page
+  WORKER_URL: 'https://games.erikchardin.workers.dev'   // admin PIN lives in the Worker as the ADMIN_PIN secret
 };
 
 /* ============ Question packs ============ */
@@ -910,15 +919,51 @@ async function Demo(){
 }
 
 /* ============ ADMIN ============ */
+/* ---- Admin lock: 4-digit PIN checked by the Worker (ADMIN_PIN secret) ---- */
+async function adminCheck(body){
+  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j={}; try{ j=await r.json(); }catch(e){} return {ok:r.ok&&j.ok, open:!!j.open, token:j.token, error:j.error||('HTTP '+r.status), status:r.status};
+}
 async function Admin(){
-  if(CONFIG.ADMIN_PIN && sessionStorage.getItem('hg_pin')!==CONFIG.ADMIN_PIN){
-    app.innerHTML=`<div class="admin"><div class="logo">HARDIN<span>GAMES</span></div><div class="sec"><h3>Admin PIN</h3><input id="pin" type="password" inputmode="numeric"><button id="pb">Unlock</button></div></div>`;
-    $('#pb').onclick=()=>{ try{ sessionStorage.setItem('hg_pin',$('#pin').value); }catch(e){} Admin(); }; return; }
+  if(!CONFIG.WORKER_URL) return AdminPanel(false);
+  app.innerHTML=`<div class="admin"><div class="logo">HARDIN<span>GAMES</span></div><div class="muted" style="text-align:center">Checking…</div></div>`;
+  const tok=LS.get('hg_admin_token','');
+  let res; try{ res=await adminCheck(tok?{token:tok}:{}); }catch(e){ return AdminOffline(); }
+  if(!PARAMS.has('admin')) return;
+  if(res.open) return AdminPanel(false);
+  if(res.ok) return AdminPanel(true);
+  LS.set('hg_admin_token',''); PinPad();
+}
+function AdminOffline(){
+  app.innerHTML=`<div class="admin"><div class="logo">HARDIN<span>GAMES</span></div><div class="sec" style="align-items:center;text-align:center"><h3>Admin is locked</h3><div class="muted">Can't reach the lock right now. Check your connection.</div><div class="row" style="width:100%"><button class="alt" id="hm">Home</button><button id="rt">Try again</button></div></div></div>`;
+  $('#rt').onclick=()=>Admin(); $('#hm').onclick=()=>nav({});
+}
+function PinPad(){
+  let code='', busy=false;
+  app.innerHTML=`<div class="admin"><div class="logo">HARDIN<span>GAMES</span></div>
+    <div class="sec pinsec"><h3>Admin code</h3><div class="pindots">${'<i></i>'.repeat(4)}</div><div class="pinmsg muted small">&nbsp;</div>
+    <div class="pinpad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button class="alt" data-k="${k}">${k}</button>`).join('')}</div>
+    <a class="pinhome" data-home>Back to games</a></div></div>`;
+  const dots=[...app.querySelectorAll('.pindots i')], msgEl=$('.pinmsg',app), sec=$('.pinsec',app);
+  const show=()=>dots.forEach((d,i)=>d.classList.toggle('on',i<code.length));
+  const press=async k=>{ if(busy) return;
+    if(k==='⌫'){ code=code.slice(0,-1); return show(); }
+    if(code.length>=4) return; code+=k; show(); if(code.length<4) return;
+    busy=true; msgEl.textContent='Checking…';
+    let res; try{ res=await adminCheck({pin:code}); }catch(e){ res={ok:false,error:"Can't reach the lock — try again"}; }
+    if(res.ok){ LS.set('hg_admin_token',res.token||''); return AdminPanel(!res.open); }
+    msgEl.textContent=res.status===401?'Wrong code':res.error; sec.classList.remove('shake'); void sec.offsetWidth; sec.classList.add('shake');
+    try{ navigator.vibrate&&navigator.vibrate(120); }catch(e){} code=''; show(); busy=false; };
+  app.onclick=e=>{ if(e.target.closest('[data-home]')) return nav({}); const b=e.target.closest('[data-k]'); if(b) press(b.dataset.k); };
+  const kb=e=>{ if(/^[0-9]$/.test(e.key)) press(e.key); else if(e.key==='Backspace') press('⌫'); };
+  document.addEventListener('keydown',kb); CLEAN.push(()=>{ app.onclick=null; document.removeEventListener('keydown',kb); });
+}
+async function AdminPanel(locked){
   const st=await loadSettings(); let fam=(await S.store.get(`${ROOT}/packs/family`))||{};
   const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
   const chk=(k,l)=>`<div class="fld"><label>${l}</label><input type="checkbox" data-k="${k}" ${st[k]?'checked':''}></div>`;
   const sel=(k,l,opts)=>`<div class="fld"><label>${l}</label><select data-k="${k}">${opts.map(([v,t])=>`<option value="${v}" ${String(st[k])===v?'selected':''}>${t}</option>`).join('')}</select></div>`;
-  const draw=()=>{ app.innerHTML=`<div class="admin"><div class="row" style="align-items:center"><div class="logo" style="text-align:left">HARDIN<span>GAMES</span></div><button class="alt" id="back" style="flex:0 0 auto">Done</button></div>
+  const draw=()=>{ app.innerHTML=`<div class="admin"><div class="row" style="align-items:center"><div class="logo" style="text-align:left">HARDIN<span>GAMES</span></div>${locked?'<button class="alt" id="lockb" style="flex:0 0 auto">🔒 Lock</button>':''}<button class="alt" id="back" style="flex:0 0 auto">Done</button></div>
     <div class="sec"><h3>Fibs · Game</h3>${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}
       ${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}
       ${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('playerQuestions','Players can add questions in the lobby')}</div>
@@ -942,6 +987,7 @@ async function Admin(){
       <div class="fld"><label>OK for kids</label><input type="checkbox" id="fsafe" checked></div><button id="fadd">Add to family pack</button></div>
     <button id="save">Save settings</button></div>`;
     $('#back').onclick=()=>nav({});
+    if($('#lockb')) $('#lockb').onclick=()=>{ LS.set('hg_admin_token',''); toast('Admin locked'); nav({}); };
     $('#save').onclick=save;
     $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); const o=$('#vout');
       o.textContent=st.voice==='clone'?'Calling your cloned voice…':'Speaking…';

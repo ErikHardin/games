@@ -4,7 +4,7 @@
 //   POST /question  { count, topic, family, avoid }  -> { questions: [{ text, answer, decoys }] } (Claude)
 //
 // Secrets / vars (wrangler secret put ...):
-//   ELEVENLABS_API_KEY, ELEVEN_VOICE_ID, ANTHROPIC_API_KEY
+//   ELEVENLABS_API_KEY, ELEVEN_VOICE_ID, ANTHROPIC_API_KEY, ADMIN_PIN (4-digit admin code)
 //   ALLOWED_ORIGINS  e.g. "https://ech-technicalsolutions.com"
 //   ELEVEN_MODEL (optional, default eleven_multilingual_v2), CLAUDE_MODEL (optional)
 //
@@ -34,7 +34,8 @@ export default {
       if (path === '/tts' && req.method === 'POST') { const { text } = await req.json(); return await tts(text, env, ctx, cors); }
       if (path === '/tts' && req.method === 'GET') return await tts('Testing, testing. This is Hardin Games!', env, ctx, cors);
       if (path === '/question' && req.method === 'POST') return await question(req, env, cors);
-      return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0 }, cors);
+      if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
+      return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN }, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, cors, 500);
     }
@@ -108,4 +109,30 @@ Respond with only JSON, no other text:
     .filter(q => q && /_{3,}/.test(q.text || '') && q.answer)
     .map(q => ({ text: q.text, answer: String(q.answer), decoys: (q.decoys || []).map(String).slice(0, 3) }));
   return json({ questions }, cors);
+}
+
+// ---- Admin lock ----
+// POST /admin {pin}   -> {ok, token} (token good for 30 days on that device)
+// POST /admin {token} -> {ok} if still valid. Changing ADMIN_PIN signs everyone out.
+const DAY = 24 * 3600 * 1000;
+async function sign(secret, msg) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('hg-admin:' + secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function same(a, b) { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+async function admin(req, env, cors) {
+  if (!env.ADMIN_PIN) return json({ ok: true, open: true }, cors);
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  if (typeof body.token === 'string' && body.token.includes('.')) {
+    const [exp, sig] = body.token.split('.');
+    if (Number(exp) > Date.now() && same(sig, await sign(env.ADMIN_PIN, exp))) return json({ ok: true }, cors);
+    return json({ ok: false, error: 'Signed out' }, cors, 401);
+  }
+  if (typeof body.pin === 'string' && same(body.pin, String(env.ADMIN_PIN))) {
+    const exp = String(Date.now() + 30 * DAY);
+    return json({ ok: true, token: exp + '.' + await sign(env.ADMIN_PIN, exp) }, cors);
+  }
+  if (body.pin) await new Promise(r => setTimeout(r, 1000));   // slow down guessing
+  return json({ ok: false, error: 'Wrong code' }, cors, 401);
 }
