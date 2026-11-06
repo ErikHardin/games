@@ -30,16 +30,14 @@ With no config it runs in **local mode**. That works for the demo, or for tabs o
 
 ## 3. Cloudflare Worker (voice + AI questions)
 
-```bash
-wrangler init hardin-games-worker   # paste worker.js as the entry file
-wrangler secret put ELEVENLABS_API_KEY
-wrangler secret put ELEVEN_VOICE_ID
-wrangler secret put ANTHROPIC_API_KEY
-wrangler secret put ALLOWED_ORIGINS   # https://ech-technicalsolutions.com
-wrangler deploy
-```
+The Worker **games** (https://games.erikchardin.workers.dev) deploys automatically from this repo via Cloudflare Workers Builds, using `wrangler.toml`.
 
-Put the Worker URL in `CONFIG.WORKER_URL`.
+Add these in Cloudflare → Workers → games → **Settings → Variables and Secrets** (type: Secret):
+
+- `ELEVENLABS_API_KEY`
+- `ELEVEN_VOICE_ID`
+- `ANTHROPIC_API_KEY`
+- `ALLOWED_ORIGINS` = `https://ech-technicalsolutions.com`
 
 Then go to **Admin → Sound & Voice**, set Voice to **My cloned voice**, and tap **Test voice**. Set **AI questions** to "One per round" and tap **Test an AI question**.
 

@@ -1,0 +1,8 @@
+# Cloudflare Worker for Hardin Games (cloned voice + AI questions).
+# GitHub Pages ignores this file; Cloudflare Workers Builds uses it.
+name = "games"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+# Keep variables and secrets you set in the Cloudflare dashboard on every deploy
+keep_vars = true
