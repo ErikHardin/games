@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#170c2e">
+<title>Hardin Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#170c2e;--bg2:#24124a;--card:#2f1a5e;--card2:#3b2275;--gold:#ffd23f;--pink:#ff4f8b;--teal:#2de2c8;--text:#fff7ea;--muted:#c3b4ea;--bad:#ff6b6b;--good:#5ef08a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(ellipse at 50% -10%,#4a2496 0%,var(--bg) 55%) fixed,var(--bg);color:var(--text);font-family:Nunito,system-ui,sans-serif;font-weight:800;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:14px 20px;background:var(--gold);color:#2a1700;font-weight:900;letter-spacing:.02em;box-shadow:0 4px 0 #b88d00;transition:transform .08s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #b88d00}
+button.alt{background:var(--card2);color:var(--text);box-shadow:0 4px 0 #1d0f3d}
+button.pink{background:var(--pink);color:#fff;box-shadow:0 4px 0 #a8204f}
+button:disabled{opacity:.45;pointer-events:none}
+input,select,textarea{font:inherit;font-weight:800;width:100%;padding:13px 14px;border-radius:12px;border:2px solid #4b3290;background:#1c0f3a;color:var(--text);outline:none}
+input:focus,select:focus{border-color:var(--teal)}
+.logo{font-family:Bungee,sans-serif;line-height:.95;text-align:center;color:var(--gold);text-shadow:0 4px 0 #a8204f,0 0 30px #ff4f8b66}
+.logo span{display:block;color:var(--teal);text-shadow:0 4px 0 #1b6e63}
+.muted{color:var(--muted)}
+.blank{display:inline-block;min-width:3.5em;border-bottom:.12em solid var(--gold);margin:0 .15em}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-family:Bungee;color:#1a0b33;flex:none}
+/* landing */
+.landing{max-width:440px;margin:0 auto;padding:40px 20px 30px;display:flex;flex-direction:column;gap:22px}
+.landing .logo{font-size:52px}
+.gamecard{background:var(--card);border-radius:22px;padding:22px;border:2px solid #5a3aa8;display:flex;flex-direction:column;gap:12px}
+.gamecard h2{font-family:Bungee;font-size:34px;color:var(--pink)}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.links{text-align:center;display:flex;gap:18px;justify-content:center}
+.links a{color:var(--muted);text-decoration:underline;cursor:pointer}
+.modeline{text-align:center;font-size:13px}
+/* TV */
+.tv{position:relative;container-type:inline-size;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#5a2aa8 0%,#1d0f3d 60%,#120826 100%);color:var(--text)}
+.tv.full{width:100vw;height:100vh;height:100dvh}
+.tv.framed{width:100%;aspect-ratio:16/10;border-radius:16px;border:3px solid #4b3290;box-shadow:0 10px 40px #0008}
+.stage{position:absolute;inset:0;display:flex;flex-direction:column;padding:3cqw 4cqw}
+.tvtop{display:flex;justify-content:space-between;align-items:center;font-size:1.6cqw;color:var(--muted);letter-spacing:.1em}
+.tvtop b{font-family:Bungee;color:var(--gold);letter-spacing:.05em}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2cqw;min-height:0}
+.lobby{flex:1;display:grid;grid-template-columns:1.1fr 1fr;gap:4cqw;align-items:center;min-height:0}
+.lobby .logo{font-size:6cqw;text-align:left}
+.gname{font-family:Bungee;font-size:3.4cqw;color:var(--pink);margin-top:1cqw}
+.codebox{background:#0008;border-radius:2cqw;padding:2cqw;margin-top:2cqw;display:flex;gap:2cqw;align-items:center}
+.codebox .lbl{font-size:1.5cqw;color:var(--muted)}
+.code{font-family:Bungee;font-size:7cqw;color:var(--gold);letter-spacing:.08em;line-height:1}
+.url{font-size:1.4cqw;color:var(--teal);word-break:break-all}
+.qr{background:#fff;padding:.8cqw;border-radius:1cqw;width:12cqw;height:12cqw;flex:none}
+.qr img,.qr canvas{width:100%!important;height:100%!important}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4cqw}
+.tile{background:#ffffff12;border-radius:1.4cqw;padding:1.2cqw .6cqw;display:flex;flex-direction:column;align-items:center;gap:.6cqw;font-size:1.5cqw;position:relative;min-width:0}
+.tile .av{width:5cqw;height:5cqw;font-size:2.4cqw}
+.tile.off{opacity:.35}
+.tile .nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .chk{position:absolute;top:-.6cqw;right:-.6cqw;background:var(--good);color:#063;border-radius:50%;width:2.4cqw;height:2.4cqw;font-size:1.4cqw;display:flex;align-items:center;justify-content:center}
+.tile.empty{border:.2cqw dashed #ffffff30;background:none;color:#ffffff40;justify-content:center;min-height:9cqw}
+.tvbtns{display:flex;gap:1.2cqw;justify-content:center}
+.tvbtns button{font-size:1.6cqw;padding:1cqw 2.2cqw;border-radius:1.2cqw}
+.note{font-size:1.5cqw;color:var(--muted)}
+.question{font-size:3.6cqw;line-height:1.25;max-width:85cqw;font-weight:900}
+.qsrc{font-size:1.4cqw;color:var(--teal);letter-spacing:.12em;text-transform:uppercase}
+.timer{position:absolute;right:3cqw;bottom:3cqw;width:7cqw;height:7cqw;border-radius:50%;background:var(--pink);color:#fff;font-family:Bungee;font-size:3cqw;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 .5cqw #ff4f8b44}
+.timer.low{animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.1)}}
+.strip{display:flex;gap:1cqw;justify-content:center;flex-wrap:wrap}
+.strip .tile{width:9cqw}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:1.4cqw;width:100%;max-width:88cqw}
+.opt{background:var(--card2);border-radius:1.4cqw;padding:1.6cqw;font-size:2.4cqw;text-transform:uppercase;font-weight:900;border:.25cqw solid #6a48c0}
+.bigintro{font-family:Bungee;font-size:9cqw;color:var(--gold);text-shadow:0 .6cqw 0 #a8204f;animation:pop .6s}
+.subintro{font-size:2.6cqw;color:var(--teal)}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.revcard{background:var(--card2);border-radius:2cqw;padding:2.5cqw 4cqw;font-size:4.4cqw;text-transform:uppercase;font-weight:900;border:.4cqw solid #6a48c0;animation:pop .45s;max-width:80cqw}
+.revcard.truth{background:var(--good);color:#06301a;border-color:#fff}
+.revlbl{font-family:Bungee;font-size:3cqw;animation:pop .5s .9s both}
+.revlbl.lie{color:var(--pink)}.revlbl.house{color:var(--teal)}.revlbl.tr{color:var(--good)}
+.pts{font-family:Bungee;color:var(--gold);font-size:2.2cqw;animation:pop .4s 1.3s both}
+.board{width:100%;max-width:70cqw;display:flex;flex-direction:column;gap:1cqw}
+.brow{display:flex;align-items:center;gap:1.4cqw;background:#ffffff10;border-radius:1.2cqw;padding:.9cqw 1.4cqw;font-size:2.2cqw}
+.brow .av{width:3.6cqw;height:3.6cqw;font-size:1.8cqw}
+.brow .nm{flex:1;text-align:left}
+.brow .sc{font-family:Bungee;color:var(--gold)}
+.brow .dl{font-family:Bungee;color:var(--good);font-size:1.6cqw;min-width:8cqw;text-align:right}
+.podium{display:flex;align-items:flex-end;gap:2cqw}
+.pod{display:flex;flex-direction:column;align-items:center;gap:1cqw;font-size:2cqw}
+.pod .av{width:7cqw;height:7cqw;font-size:3.4cqw}
+.pod .blk{width:14cqw;border-radius:1cqw 1cqw 0 0;background:var(--card2);display:flex;align-items:flex-start;justify-content:center;padding-top:1cqw;font-family:Bungee;font-size:3.4cqw;color:var(--gold)}
+.tap{position:absolute;inset:0;background:#120826ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2cqw;z-index:5;cursor:pointer}
+.tap .logo{font-size:7cqw}
+.tap button{font-size:2.4cqw;padding:1.4cqw 3.4cqw}
+.paused{position:absolute;inset:0;background:#120826cc;display:flex;align-items:center;justify-content:center;font-family:Bungee;font-size:6cqw;color:var(--gold);z-index:4}
+.hostctl{position:absolute;left:3cqw;bottom:3cqw;display:flex;gap:1cqw;z-index:3}
+.hostctl button{font-size:1.3cqw;padding:.8cqw 1.6cqw;border-radius:1cqw;opacity:.75}
+/* phone */
+.phone{max-width:460px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.phone.framed{border-radius:24px;border:3px solid #4b3290;background:var(--bg);min-height:560px;overflow:hidden}
+.phead{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#0005}
+.phead .av{width:34px;height:34px;font-size:15px}
+.phead .nm{flex:1}
+.phead .sc{font-family:Bungee;color:var(--gold)}
+.phead .snd{background:none;box-shadow:none;padding:4px 6px;font-size:18px;color:var(--text)}
+.pbody{flex:1;padding:20px 18px;display:flex;flex-direction:column;gap:14px}
+.pbody h3{font-family:Bungee;font-size:24px;color:var(--gold);font-weight:400}
+.pq{font-size:19px;line-height:1.35}
+.ptimer{font-family:Bungee;color:var(--pink);font-size:18px;text-align:right}
+.pchoice{background:var(--card2);color:var(--text);box-shadow:0 4px 0 #1d0f3d;text-transform:uppercase;text-align:left;font-size:17px}
+.pchoice.sel{background:var(--teal);color:#032;box-shadow:0 4px 0 #157}
+.err{color:var(--bad);font-size:15px}
+.ok{color:var(--good)}
+.bigmsg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;font-size:20px}
+.bigmsg .em{font-size:54px}
+.vip{border-top:2px dashed #4b3290;padding-top:14px;display:flex;gap:10px}
+.vip button{flex:1;padding:11px;font-size:15px}
+.small{font-size:13px}
+.addq{background:#ffffff0c;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+/* demo */
+.demo{display:grid;grid-template-columns:1fr 380px;gap:18px;padding:16px;max-width:1500px;margin:0 auto;align-items:start}
+.demobar{grid-column:1/-1;display:flex;align-items:center;gap:12px}
+.demobar .logo{font-size:22px;text-align:left}
+.demobar .sp{flex:1}
+.demobar button{padding:9px 14px;font-size:14px}
+.plabel{font-size:13px;color:var(--muted);margin:0 0 6px 4px;letter-spacing:.1em}
+@media (max-width:900px){.demo{grid-template-columns:1fr;padding:10px}.tv.framed{aspect-ratio:4/3}}
+/* admin */
+.admin{max-width:640px;margin:0 auto;padding:24px 18px 60px;display:flex;flex-direction:column;gap:18px}
+.admin .logo{font-size:30px}
+.sec{background:var(--card);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.sec h3{font-family:Bungee;font-weight:400;color:var(--pink);font-size:20px}
+.fld{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.fld>label{flex:1}
+.fld input[type=number]{width:96px}
+.fld select{width:auto;max-width:60%}
+.fld input[type=checkbox]{width:24px;height:24px;accent-color:var(--teal)}
+.fld input[type=range]{width:45%}
+.qlist{display:flex;flex-direction:column;gap:8px}
+.qitem{background:#ffffff0c;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:15px}
+.qitem div{flex:1}
+.qitem button{padding:6px 10px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--teal);color:#032;padding:12px 20px;border-radius:12px;z-index:50}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============ CONFIG: fill these in when you host it ============ */
+const CONFIG = {
+  FIREBASE: null,      // paste your Firebase web config object here, e.g. {apiKey:'...', authDomain:'...', databaseURL:'...', projectId:'...'}
+  DB_ROOT: 'hardinGames',
+  WORKER_URL: '',      // your Cloudflare Worker URL, e.g. 'https://hardin-games.yourname.workers.dev'
+  ADMIN_PIN: ''        // optional PIN for the admin page
+};
+
+/* ============ Question packs ============ */
+const PACKS = {
+  weird: { name: 'Weird but True', q: [
+    {t:'In the 1830s, ketchup was sold in pharmacies as a _____.',a:'medicine',d:['hair tonic','bug spray']},
+    {t:'The dot over a lowercase "i" is called a _____.',a:'tittle',d:['speck','pip']},
+    {t:'The plastic tip on the end of a shoelace is called an _____.',a:'aglet',d:['eyelet','ingot']},
+    {t:"In Switzerland, it's illegal to own just one _____.",a:'guinea pig',d:['hamster','cow']},
+    {t:'The "M" in M&M\'s stands for Mars and _____.',a:'Murrie',d:['Milton','Mallory']},
+    {t:'The name LEGO comes from Danish words meaning _____.',a:'play well',d:['build big','little bricks']},
+    {t:'Before it was called Google, the search engine was named _____.',a:'BackRub',d:['Spyder','PageHound']},
+    {t:'The first product ever scanned with a barcode was a pack of _____.',a:'chewing gum',alt:['gum'],d:['cigarettes','batteries']},
+    {t:"Cap'n Crunch's full name is Horatio Magellan _____.",a:'Crunch',d:['Barnacle','Biscuit']},
+    {t:'Play-Doh was originally sold as a _____.',a:'wallpaper cleaner',d:['denture adhesive','window putty']},
+    {t:'Bubble Wrap was first invented to be _____.',a:'wallpaper',d:['a pool cover','a raincoat']},
+    {t:'The inventor of the Pringles can had some of his ashes buried in a _____.',a:'Pringles can',d:['chip bag','pizza box']},
+    {t:'Pluto is smaller than the country of _____.',a:'Russia',d:['Canada','Brazil']},
+    {t:'The Eiffel Tower can grow about _____ taller in summer.',a:'6 inches',alt:['six inches'],d:['2 feet','1 inch']}
+  ]},
+  history: { name: 'History & Inventions', q: [
+    {t:'Nintendo was founded in 1889 as a company that made _____.',a:'playing cards',alt:['cards'],d:['umbrellas','rice cookers']},
+    {t:'Abraham Lincoln is in the National _____ Hall of Fame.',a:'Wrestling',d:['Bowling','Axe Throwing']},
+    {t:"The Hundred Years' War actually lasted _____ years.",a:'116',alt:['one hundred sixteen'],d:['99','83']},
+    {t:'Cleopatra lived closer in time to the _____ than to the building of the Great Pyramid.',a:'moon landing',d:['invention of writing','last woolly mammoth']},
+    {t:'Oxford University is older than the _____ Empire.',a:'Aztec',d:['Roman','Byzantine']},
+    {t:"The world's first speeding ticket, in 1896, was for going _____ mph.",a:'8',alt:['eight'],d:['15','25']},
+    {t:'Mr. Potato Head was the first toy ever advertised on _____.',a:'TV',alt:['television'],d:['radio','billboards']},
+    {t:"Thomas Edison's last breath is kept in a _____ at the Henry Ford Museum.",a:'test tube',d:['light bulb','snow globe']},
+    {t:'The first food an American astronaut ate in space was _____.',a:'applesauce',d:['a hot dog','beef jerky']},
+    {t:'The Statue of Liberty\'s official name is "Liberty _____ the World."',a:'Enlightening',d:['Welcoming','Guarding']},
+    {t:'Before rubber erasers, people erased pencil marks with _____.',a:'bread',d:['sand','candle wax']},
+    {t:'The shortest war in history, Britain vs. Zanzibar in 1896, lasted about _____.',a:'38 minutes',alt:['thirty eight minutes'],d:['6 hours','2 days']}
+  ]},
+  animals: { name: 'Animals & Nature', q: [
+    {t:'A group of flamingos is called a _____.',a:'flamboyance',d:['parade','blush']},
+    {t:'A group of owls is called a _____.',a:'parliament',d:['council','hoot']},
+    {t:'Botanically speaking, a banana is a _____.',a:'berry',d:['legume','drupe']},
+    {t:'An octopus has _____ hearts.',a:'three',alt:['3'],d:['two','five']},
+    {t:'The national animal of Scotland is the _____.',a:'unicorn',d:['red deer','Loch Ness Monster']},
+    {t:'Wombat poop is shaped like _____.',a:'cubes',alt:['cube','squares'],d:['stars','pyramids']},
+    {t:'Sea otters hold hands while they _____.',a:'sleep',d:['swim','eat']},
+    {t:'A baby puffin is called a _____.',a:'puffling',d:['pufflet','chickpuff']},
+    {t:'Butterflies taste things with their _____.',a:'feet',d:['wings','antennas']},
+    {t:"A shrimp's heart is located in its _____.",a:'head',d:['tail','legs']},
+    {t:'Sharks have been around longer than _____.',a:'trees',d:['jellyfish','sponges']},
+    {t:'A day on Venus is longer than its _____.',a:'year',d:['winter','eclipse']},
+    {t:'Honey found in ancient Egyptian tombs was still _____.',a:'edible',d:['poisonous','glowing']},
+    {t:'Measured from base to peak, the tallest mountain on Earth is _____.',a:'Mauna Kea',d:['K2','Denali']}
+  ]}
+};
+
+const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
+  minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
+  music:true,sfx:true,volume:0.7,readAloud:true,readAnswers:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true};
+
+const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
+const BOTS = ['Ava','Leo','Mia','Sam'];
+const BOT_LIES = ['a rubber chicken','spaghetti','a tiny hat','jazz hands','mayonnaise','a haunted toaster','seven','Kevin','the moon','grandma\'s casserole','glitter','a kazoo'];
+const BAD_WORDS = ['fuck','shit','bitch','ass','asshole','damn','hell','crap','sex','sexy','dick','penis','vagina','boob','boobs','piss','bastard','slut','whore','cock','nude','naked','butt'];
+const WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
+
+/* ============ Utilities ============ */
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => o == null ? o : JSON.parse(JSON.stringify(o));
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const uid = () => Math.random().toString(36).slice(2,10);
+const LS = { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+const hash = s => { let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h); };
+const norm = s => String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\b(a|an|the)\b/g,' ').replace(/\s+/g,' ').trim();
+function lev(a,b){ const m=a.length,n=b.length; if(Math.abs(m-n)>1) return 2; const d=Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[m][n]; }
+function isTruth(text,q){ const n=norm(text); if(!n) return false; return [q.a,...(q.alt||[])].map(norm).some(x => x===n || (x.length>=5 && lev(x,n)<=1)); }
+function isNaughty(text){ const w=norm(text).split(' '); return w.some(x=>BAD_WORDS.includes(x)); }
+const fixBlank = t => { t=String(t||'').trim(); return /_{3,}/.test(t) ? t.replace(/_{3,}/g,'_____') : null; };
+const showQ = t => esc(t).replace(/_____/g,'<span class="blank"></span>');
+const readQ = t => String(t).replace(/_____/g,' blank ');
+const listNames = a => a.length<=1 ? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+const avatar = (p,extra='') => `<span class="av" style="background:${COLORS[(p&&p.color)||0]}${extra}">${esc(((p&&p.name)||'?')[0].toUpperCase())}</span>`;
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
+function patchHTML(el, html){
+  if(el._html===html) return;
+  const keep={}; el.querySelectorAll('[data-keep]').forEach(i=>keep[i.dataset.keep]=i.value);
+  const ae=document.activeElement, f=ae&&el.contains(ae)&&ae.dataset?ae.dataset.keep:null;
+  el.innerHTML=html; el._html=html;
+  for(const k in keep){ const i=el.querySelector(`[data-keep="${k}"]`); if(i) i.value=keep[k]; }
+  if(f){ const i=el.querySelector(`[data-keep="${f}"]`); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length,i.value.length); }catch(e){} } }
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+
+/* ============ Data stores (local for preview, Firebase for real) ============ */
+class LocalStore {
+  constructor(key){ this.key=key; this.data=LS.get(key,{}); this.subs=new Set(); this.pending=false;
+    try{ this.bc=new BroadcastChannel(key); this.bc.onmessage=e=>{ this.data=e.data; this.emitSoon(); }; }catch(e){} }
+  _walk(path,create){ const parts=path.split('/').filter(Boolean); let o=this.data;
+    for(let i=0;i<parts.length-1;i++){ if(o[parts[i]]==null||typeof o[parts[i]]!=='object'){ if(!create) return [null,null]; o[parts[i]]={}; } o=o[parts[i]]; }
+    return [o,parts[parts.length-1]]; }
+  _peek(path){ const [o,k]=this._walk(path,false); return o ? clone(o[k] ?? null) : null; }
+  _set(path,val){ const [o,k]=this._walk(path,true); if(val==null) delete o[k]; else o[k]=clone(val); }
+  get(path){ return Promise.resolve(this._peek(path)); }
+  set(path,val){ this._set(path,val); this.commit(); return Promise.resolve(); }
+  update(path,obj){ for(const k in obj) this._set(path+'/'+k,obj[k]); this.commit(); return Promise.resolve(); }
+  remove(path){ return this.set(path,null); }
+  commit(){ LS.set(this.key,this.data); try{ this.bc && this.bc.postMessage(this.data); }catch(e){} this.emitSoon(); }
+  emitSoon(){ if(this.pending) return; this.pending=true; queueMicrotask(()=>{ this.pending=false; for(const s of [...this.subs]) s.cb(this._peek(s.path)); }); }
+  on(path,cb){ const s={path,cb}; this.subs.add(s); setTimeout(()=>{ if(this.subs.has(s)) cb(this._peek(path)); },0); return ()=>this.subs.delete(s); }
+  now(){ return Date.now(); }
+  presence(){}
+}
+class FireStore {
+  constructor(db){ this.db=db; this.offset=0; db.ref('.info/serverTimeOffset').on('value',s=>this.offset=s.val()||0); }
+  get(p){ return this.db.ref(p).get().then(s=>s.val()); }
+  set(p,v){ return this.db.ref(p).set(v ?? null); }
+  update(p,o){ return this.db.ref(p).update(o); }
+  remove(p){ return this.db.ref(p).remove(); }
+  on(p,cb){ const r=this.db.ref(p), f=s=>cb(s.val()); r.on('value',f); return ()=>r.off('value',f); }
+  now(){ return Date.now()+this.offset; }
+  presence(p){ const r=this.db.ref(p); this.db.ref('.info/connected').on('value',s=>{ if(s.val()){ r.onDisconnect().set(false); r.set(true); } }); }
+}
+const S = { store:null, mode:'local' };
+const ROOT = CONFIG.DB_ROOT;
+const roomPath = c => `${ROOT}/rooms/${c}`;
+async function initStore(forceLocal, key='hg_local'){
+  if(!forceLocal && CONFIG.FIREBASE){
+    try{
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js');
+      const app = firebase.apps.find(a=>a.name==='hardin-games') || firebase.initializeApp(CONFIG.FIREBASE,'hardin-games');
+      S.store=new FireStore(app.database()); S.mode='firebase'; return;
+    }catch(e){ console.warn('Firebase failed, using local mode',e); }
+  }
+  S.store=new LocalStore(key); S.mode=forceLocal?'demo':'local';
+}
+async function loadSettings(){ return Object.assign({}, clone(DEFAULTS), (await S.store.get(`${ROOT}/settings`))||{}, {packs:Object.assign({},DEFAULTS.packs,((await S.store.get(`${ROOT}/settings`))||{}).packs||{})}); }
+
+/* ============ Sound (music + effects, host only) ============ */
+const Sound = {
+  ctx:null, master:null, musicGain:null, sfxGain:null, noise:null, st:null, playing:false, step:0, nextT:0, timer:null, level:1, ducked:false,
+  init(st){ if(this.ctx){ this.apply(st); return; }
+    try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+    const c=this.ctx; this.master=c.createGain(); this.master.connect(c.destination);
+    this.musicGain=c.createGain(); this.musicGain.connect(this.master); this.sfxGain=c.createGain(); this.sfxGain.connect(this.master);
+    const b=c.createBuffer(1,c.sampleRate*0.5,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; this.noise=b;
+    this.apply(st); c.resume && c.resume(); },
+  apply(st){ this.st=st; if(!this.ctx) return; this.master.gain.value=st.volume??0.7; this.sfxGain.gain.value=st.sfx?0.9:0; this.setMusicLevel(this.level); if(st.music) this.startMusic(); else this.stopMusic(); },
+  setMusicLevel(l){ this.level=l; if(!this.ctx) return; const v=(this.st&&this.st.music?0.32:0)*l*(this.ducked?0.3:1); this.musicGain.gain.setTargetAtTime(v,this.ctx.currentTime,0.25); },
+  duck(on){ this.ducked=on; this.setMusicLevel(this.level); },
+  mtof:m=>440*Math.pow(2,(m-69)/12),
+  tone(f,t,dur,type='sine',g=0.2,dest){ const c=this.ctx,o=c.createOscillator(),a=c.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
+    a.gain.setValueAtTime(0.0001,t); a.gain.exponentialRampToValueAtTime(g,t+0.01); a.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(a); a.connect(dest||this.sfxGain); o.start(t); o.stop(t+dur+0.05); return o; },
+  noiseHit(t,dur,g,freq,dest,type='highpass'){ const c=this.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),a=c.createGain(); s.buffer=this.noise; f.type=type; f.frequency.value=freq;
+    a.gain.setValueAtTime(g,t); a.gain.exponentialRampToValueAtTime(0.0001,t+dur); s.connect(f); f.connect(a); a.connect(dest||this.sfxGain); s.start(t); s.stop(t+dur+0.05); return f; },
+  startMusic(){ if(this.playing||!this.ctx) return; this.playing=true; this.step=0; this.nextT=this.ctx.currentTime+0.1; this.timer=setInterval(()=>this.sched(),60); },
+  stopMusic(){ this.playing=false; clearInterval(this.timer); },
+  sched(){ const c=this.ctx, spb=60/104/4; const chords=[[60,64,67,71],[57,60,64,67],[53,57,60,64],[55,59,62,65]], bass=[36,33,29,31];
+    const mel=[72,null,74,76,null,79,76,null,74,null,72,null,71,null,67,null];
+    while(this.nextT<c.currentTime+0.25){ const t=this.nextT, s=this.step%16, bar=Math.floor(this.step/16)%4, M=this.musicGain;
+      if(s===0||s===8) { const o=this.tone(120,t,0.25,'sine',0.5,M); o.frequency.exponentialRampToValueAtTime(45,t+0.2); }
+      if(s===4||s===12) this.noiseHit(t,0.12,0.25,1500,M,'bandpass');
+      if(s%2===0) this.noiseHit(t,0.04,0.08,7000,M);
+      if([0,3,6,8,11,14].includes(s)) this.tone(this.mtof(bass[bar]+(s===6||s===14?12:0)),t,0.22,'triangle',0.35,M);
+      if(s===2||s===10) chords[bar].forEach(n=>this.tone(this.mtof(n),t,0.35,'square',0.025,M));
+      if(bar%2===1 && mel[s]) this.tone(this.mtof(mel[s]-(bar===3?2:0)),t,0.2,'triangle',0.06,M);
+      this.nextT+=spb; this.step++; } },
+  sfx(name){ if(!this.ctx||!this.st||!this.st.sfx) return; const t=this.ctx.currentTime, m=f=>this.mtof(f);
+    switch(name){
+      case 'join': this.tone(m(76),t,0.12,'square',0.08); this.tone(m(83),t+0.08,0.18,'square',0.08); break;
+      case 'lock': this.tone(m(72),t,0.08,'triangle',0.2); this.tone(m(79),t+0.06,0.14,'triangle',0.2); break;
+      case 'tick': this.tone(1300,t,0.05,'sine',0.15); break;
+      case 'whoosh': { const f=this.noiseHit(t,0.5,0.35,300,null,'bandpass'); f.frequency.exponentialRampToValueAtTime(3000,t+0.45); break; }
+      case 'ding': [84,88,91].forEach((n,i)=>this.tone(m(n),t+i*0.07,0.7,'sine',0.18)); break;
+      case 'buzz': this.tone(110,t,0.45,'sawtooth',0.15); this.tone(116,t,0.45,'sawtooth',0.12); break;
+      case 'points': [79,84].forEach((n,i)=>this.tone(m(n),t+i*0.09,0.25,'square',0.06)); break;
+      case 'fanfare': [60,64,67,72,67,72,76].forEach((n,i)=>this.tone(m(n),t+i*0.13,i===6?1:0.2,'square',0.07)); break;
+      case 'start': [67,72].forEach((n,i)=>this.tone(m(n),t+i*0.1,0.3,'triangle',0.2)); break;
+    } }
+};
+
+/* ============ Voice (built-in or your cloned voice via the Worker) ============ */
+const Voice = {
+  tok:0, el:null, cache:new Map(), voices:[],
+  unlock(){ try{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; }
+      this.el.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='; this.el.play().catch(()=>{});
+      if(window.speechSynthesis){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); } }catch(e){} },
+  loadVoices(){ try{ this.voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); }catch(e){} return this.voices; },
+  stop(){ this.tok++; try{ window.speechSynthesis && speechSynthesis.cancel(); }catch(e){} try{ this.el && this.el.pause(); }catch(e){} },
+  async say(text, st){ if(!st||!st.readAloud||!text) return; this.stop(); const tok=this.tok; Sound.duck(true);
+    try{ if(st.voice==='clone' && CONFIG.WORKER_URL){ const url=await this.tts(text); if(tok!==this.tok) return; await this.play(url, st); }
+         else await this.builtin(text, st, tok); }
+    catch(e){ console.warn('voice fallback',e); if(tok===this.tok) await this.builtin(text, st, tok); }
+    finally{ if(tok===this.tok) Sound.duck(false); } },
+  async tts(text){ if(this.cache.has(text)) return this.cache.get(text);
+    const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    if(!r.ok) throw new Error('tts '+r.status); const url=URL.createObjectURL(await r.blob()); this.cache.set(text,url); return url; },
+  prefetch(text, st){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text).catch(()=>{}); },
+  play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
+      a.onended=a.onerror=()=>res(); a.play().catch(()=>res()); setTimeout(res,20000); }); },
+  builtin(text, st, tok){ return new Promise(res=>{ if(!window.speechSynthesis) return res();
+      const u=new SpeechSynthesisUtterance(text); u.rate=st.voiceRate||1; u.volume=Math.min(1,(st.volume??0.7)+0.3);
+      const v=this.loadVoices().find(v=>v.name===st.voiceName); if(v) u.voice=v;
+      u.onend=u.onerror=()=>res(); if(tok===this.tok) speechSynthesis.speak(u); setTimeout(res,Math.max(4000,text.length*110)); }); }
+};
+
+/* ============ AI questions via the Worker ============ */
+async function fetchAI(st, count){
+  if(!CONFIG.WORKER_URL) throw new Error('No WORKER_URL set');
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),20000);
+  try{
+    const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/question',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({count, topic:st.aiTopic||'', family:st.audience==='family', avoid:LS.get('hg_used',[]).slice(-25)})});
+    const j=await r.json(); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+    return (j.questions||[]).map(x=>({t:fixBlank(x.text), a:String(x.answer||'').trim(), d:(x.decoys||[]).slice(0,3), src:'ai'})).filter(x=>x.t&&x.a);
+  } finally { clearTimeout(to); }
+}
+
+/* ============ Router ============ */
+let CLEAN=[]; let PARAMS=new URLSearchParams(location.search);
+function nav(params, replace){ CLEAN.forEach(f=>{ try{f();}catch(e){} }); CLEAN=[]; Voice.stop(); Sound.stopMusic();
+  PARAMS=new URLSearchParams(params); const qs=PARAMS.toString();
+  try{ history[replace?'replaceState':'pushState'](null,'',location.pathname+(qs?'?'+qs:'')); }catch(e){}
+  route(); }
+window.addEventListener('popstate',()=>{ CLEAN.forEach(f=>{try{f();}catch(e){}}); CLEAN=[]; PARAMS=new URLSearchParams(location.search); route(); });
+const app = $('#app');
+async function route(){
+  app.className=''; app.innerHTML=''; app._html=null; document.body.style.overflow='';
+  if(PARAMS.has('demo')){ await initStore(true,'hg_demo'); return Demo(); }
+  if(!S.store || S.mode==='demo') await initStore(false);
+  if(PARAMS.has('admin')) return Admin();
+  if(PARAMS.has('host')) return Host(PARAMS.get('host')||null, app, {});
+  const c=(PARAMS.get('play')||PARAMS.get('join')||'').toUpperCase();
+  if(c) return Player(c, app, null);
+  Landing();
+}
+function joinUrl(code){ return /^https?:/.test(location.protocol) ? `${location.origin}${location.pathname}?join=${code}` : ''; }
+
+/* ============ Landing ============ */
+function Landing(){
+  app.innerHTML=`<div class="landing">
+    <div class="logo" style="font-size:52px">HARDIN<span>GAMES</span></div>
+    <div class="gamecard"><h2>Fibs</h2><div class="muted">Fake the facts. Find the truth.</div>
+      <button data-a="host">Host on this screen</button></div>
+    <div class="gamecard"><div class="muted">Joining a game?</div>
+      <div class="row"><input id="jc" maxlength="4" placeholder="CODE" autocapitalize="characters" style="text-transform:uppercase;font-family:Bungee;letter-spacing:.2em"><button data-a="join" style="flex:0 0 auto">Join</button></div></div>
+    <button class="pink" data-a="demo">Try it now with bots</button>
+    <div class="links"><a data-a="admin">Admin settings</a></div>
+    <div class="modeline muted">${S.mode==='firebase'?'Online mode':'Local mode — add Firebase to play across devices'}</div></div>`;
+  app.onclick=e=>{ const a=e.target.closest('[data-a]'); if(!a) return; const k=a.dataset.a;
+    if(k==='host') nav({host:''}); if(k==='demo') nav({demo:'1'}); if(k==='admin') nav({admin:'1'});
+    if(k==='join'){ const c=$('#jc').value.trim().toUpperCase(); if(c.length===4) nav({join:c}); else toast('Enter the 4-letter code'); } };
+  CLEAN.push(()=>app.onclick=null);
+}
+
+/* ============ Room creation ============ */
+function randCode(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let s=''; for(let i=0;i<4;i++) s+=L[Math.floor(Math.random()*L.length)]; return s; }
+async function createRoom(demo){
+  const settings=await loadSettings();
+  if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2; }
+  let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
+  const now=S.store.now();
+  const room={code,created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
+  if(demo) BOTS.forEach((n,i)=>room.players['bot'+i]={name:n,color:i+1,score:0,bot:true,joined:now+i,on:true});
+  await S.store.set(roomPath(code),room);
+  return code;
+}
+
+/* ============ HOST (the TV screen + game engine) ============ */
+function Host(code, mount, opts){
+  if(!code){ mount.innerHTML='<div class="landing"><div class="logo" style="font-size:40px">HARDIN<span>GAMES</span></div><div class="muted" style="text-align:center">Setting up a room…</div></div>';
+    createRoom(false).then(c=>nav({host:c},true)); return; }
+  const store=S.store, P=roomPath(code);
+  mount.classList.add('tv'); if(mount===app){ mount.classList.add('full'); document.body.style.overflow='hidden'; }
+  mount.innerHTML=`<div class="stage"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
+  const stage=$('.stage',mount), tap=$('.tap',mount);
+  let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false;
+  const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
+  const upd=patch=>store.update(P,clone(patch));
+  const now=()=>store.now();
+  const multFor=r=> (r.settings.rounds>1 && r.round===r.settings.rounds) ? r.settings.finalMult : 1;
+  const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
+  const eligible=r=>players(r).filter(([id,p])=>p.on!==false && !(r.q && r.q.author===id)).map(([id])=>id);
+  const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
+  const voters=(r,oid)=>Object.keys(r.votes||{}).filter(p=>r.votes[p]===oid);
+
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); if(R) { Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+
+  const unsub=store.on(P, r=>{
+    if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
+    const prev=R; R=r;
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    effects(prev,r); render(r);
+  });
+  const iv=setInterval(()=>{ tick(); timerUI(); },200);
+  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
+
+  mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
+
+  function act(t){ const r=R; if(!r) return; const n=now();
+    if(t==='home') return nav({});
+    if(t==='start') return startGame();
+    if(t==='pause' && !r.paused && r.phase!=='lobby' && r.phase!=='final') return upd({paused:true,remaining:Math.max(0,(r.endsAt||n)-n)});
+    if(t==='resume' && r.paused) return upd({paused:false,endsAt:n+(r.remaining||0)});
+    if(t==='skip'){ if(r.paused) upd({paused:false});
+      if(r.phase==='intro') return beginQuestion();
+      if(['lie','vote','reveal'].includes(r.phase)) return upd({phase:'scores',deltas:null,scored:r.qi,phaseAt:n,endsAt:n+2500});
+      if(r.phase==='scores') return afterScores(); }
+    if(t==='again'){ done=new Set(); const p={phase:'lobby',queue:null,q:null,qi:-1,round:0,lies:null,votes:null,options:null,items:null,deltas:null,scored:null,submitted:null,paused:false,endsAt:null};
+      for(const id in r.players) p[`players/${id}/score`]=0; return upd(p); }
+  }
+
+  /* ---- engine ---- */
+  async function startGame(){
+    const r=R; if(!r||r.phase!=='lobby') return;
+    const count=players(r).filter(([,p])=>p.on!==false).length;
+    if(count<r.settings.minPlayers){ toast(`Need at least ${r.settings.minPlayers} players`); return; }
+    if(!once('start'+(r.games||0))) return;
+    const st=r.settings, total=st.rounds*st.perRound;
+    upd({phase:'loading',phaseAt:now()});
+    let pool=[]; for(const k in PACKS) if(st.packs[k]) pool.push(...PACKS[k].q.map(x=>({...x,src:k})));
+    if(st.packs.family){ const fam=(await store.get(`${ROOT}/packs/family`))||{};
+      pool.push(...Object.values(fam).filter(x=>st.audience!=='family'||x.safe!==false).map(x=>({t:x.t,a:x.a,d:x.d||[],src:'family'}))); }
+    const used=LS.get('hg_used',[]); pool=shuffle(pool).sort((a,b)=>(used.includes(a.t)?1:0)-(used.includes(b.t)?1:0));
+    const subs=shuffle(Object.values(r.submitted||{})).slice(0,total).map(x=>({t:x.t,a:x.a,d:[],author:x.author,by:x.by,src:'player'}));
+    let aiN=({off:0,one:st.rounds,half:Math.ceil(total/2),all:total})[st.aiMix]||0; aiN=Math.min(aiN,total-subs.length);
+    let ai=[]; if(aiN>0 && CONFIG.WORKER_URL){ try{ ai=await fetchAI(st,aiN); }catch(e){ console.warn('AI questions failed',e); } }
+    const slots=new Array(total).fill(null);
+    subs.forEach((s,i)=>{ let pos=Math.floor((i+0.5)*total/subs.length)%total; while(slots[pos]) pos=(pos+1)%total; slots[pos]=s; });
+    ai.forEach((a,i)=>{ const free=slots.map((x,k)=>x?-1:k).filter(k=>k>=0); if(!free.length) return;
+      const inR=free.filter(k=>Math.floor(k/st.perRound)===i%st.rounds); const arr=inR.length?inR:free; slots[arr[Math.floor(Math.random()*arr.length)]]=a; });
+    for(let k=0;k<total;k++) if(!slots[k]) slots[k]=pool.shift()||null;
+    const queue=slots.filter(Boolean);
+    if(!queue.length){ upd({phase:'lobby'}); toast('No questions — turn on a pack in Admin'); done.delete('start'+(r.games||0)); return; }
+    const n=now(), p={phase:'intro',round:1,qi:-1,queue,q:null,scored:null,lies:null,votes:null,phaseAt:n,endsAt:n+4500,games:(r.games||0)+1,paused:false};
+    for(const id in r.players) p[`players/${id}/score`]=0;
+    upd(p);
+  }
+  function beginQuestion(){ const r=R, qi=(r.qi??-1)+1; if(!r.queue||!r.queue[qi]||!once('q'+r.games+'_'+qi)) return;
+    const st=r.settings, n=now(), q=r.queue[qi], f=st.audience==='family'?1.5:1;
+    upd({phase:'lie',qi,q,lies:null,votes:null,options:null,items:null,step:0,deltas:null,phaseAt:n,endsAt:n+st.lieTime*1000*f});
+    const u=LS.get('hg_used',[]).filter(x=>x!==q.t); u.push(q.t); LS.set('hg_used',u.slice(-200)); }
+  function beginVote(){ const r=R; if(!once('v'+r.games+'_'+r.qi)) return;
+    const q=r.q, groups=new Map();
+    for(const [pid,txt] of Object.entries(r.lies||{})){ const k=norm(txt); if(!k) continue; if(!groups.has(k)) groups.set(k,{text:String(txt).trim(),owners:[]}); groups.get(k).owners.push(pid); }
+    const opts=[{id:'truth',text:q.a,truth:true}]; let i=0; for(const g of groups.values()) opts.push({id:'l'+(i++),text:g.text,owners:g.owners});
+    const usedN=new Set([norm(q.a),...groups.keys()]); let j=0;
+    for(const d of shuffle(q.d||[])){ if(opts.length>=4) break; const k=norm(d); if(usedN.has(k)) continue; usedN.add(k); opts.push({id:'h'+(j++),text:d,house:true}); }
+    const st=r.settings, n=now(), f=st.audience==='family'?1.5:1;
+    upd({phase:'vote',options:shuffle(opts),votes:null,phaseAt:n,endsAt:n+st.voteTime*1000*f}); }
+  function beginReveal(){ const r=R; if(!once('r'+r.games+'_'+r.qi)) return;
+    const st=r.settings, mult=multFor(r), opts=r.options||[], deltas={}; let fooled=0;
+    const add=(p,v)=>{ if(r.players[p]&&v) deltas[p]=(deltas[p]||0)+v; };
+    for(const o of opts){ const vs=voters(r,o.id);
+      if(o.truth) vs.forEach(p=>add(p,st.pointsTruth*mult));
+      else { fooled+=vs.length; (o.owners||[]).forEach(ow=>add(ow,st.pointsFool*mult*vs.filter(v=>v!==ow).length)); } }
+    if(r.q.author && fooled) add(r.q.author,st.authorBonus*mult*fooled);
+    const items=opts.filter(o=>!o.truth && voters(r,o.id).length).sort((a,b)=>voters(r,a.id).length-voters(r,b.id).length).map(o=>o.id);
+    items.push('truth'); const n=now();
+    upd({phase:'reveal',items,step:0,deltas,phaseAt:n,endsAt:n+(items[0]==='truth'?5500:4800)}); }
+  function nextReveal(){ const r=R; if(!once('s'+r.games+'_'+r.qi+'_'+r.step)) return; const n=now();
+    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?5500:4800)});
+    const p={phase:'scores',phaseAt:n,endsAt:n+6500};
+    if(r.scored!==r.qi){ for(const [id,d] of Object.entries(r.deltas||{})) if(r.players[id]) p[`players/${id}/score`]=(r.players[id].score||0)+d; p.scored=r.qi; }
+    upd(p); }
+  function afterScores(){ const r=R; if(!once('a'+r.games+'_'+r.qi)) return; const st=r.settings, n=now(), nq=r.qi+1;
+    if(nq>=(r.queue||[]).length) return upd({phase:'final',phaseAt:n,endsAt:null});
+    const nr=Math.floor(nq/st.perRound)+1;
+    if(nr!==r.round) return upd({phase:'intro',round:nr,phaseAt:n,endsAt:n+4500});
+    beginQuestion(); }
+  function tick(){ const r=R; if(!r||r.paused||['lobby','final','loading'].includes(r.phase)) return; const n=now();
+    if(r.demo) botTick(r,n);
+    if(r.phase==='intro' && n>=r.endsAt) beginQuestion();
+    else if(r.phase==='lie'){ const el=eligible(r), L=r.lies||{}; if((el.length && el.every(id=>L[id])) || n>=r.endsAt) beginVote(); }
+    else if(r.phase==='vote'){ const el=eligible(r), V=r.votes||{}; if((el.length && el.every(id=>V[id])) || n>=r.endsAt) beginReveal(); }
+    else if(r.phase==='reveal' && n>=r.endsAt) nextReveal();
+    else if(r.phase==='scores' && n>=r.endsAt) afterScores(); }
+  function botTick(r,n){ for(const [id,p] of Object.entries(r.players||{})){ if(!p.bot) continue; const delay=1800+hash(id+r.qi+r.games)%7000, k=r.games+'_'+r.qi+id;
+      if(r.phase==='lie' && !(r.lies||{})[id] && n-r.phaseAt>delay && !botMark.has('l'+k)){ botMark.add('l'+k);
+        const taken=new Set(Object.values(r.lies||{}).map(norm)); const pick=shuffle([...BOT_LIES,...(r.q.d||[])]).find(c=>!isTruth(c,r.q)&&!taken.has(norm(c)))||'a llama';
+        upd({[`lies/${id}`]:pick}); }
+      if(r.phase==='vote' && !(r.votes||{})[id] && n-r.phaseAt>delay*0.6 && !botMark.has('v'+k)){ botMark.add('v'+k);
+        const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(id)); const lies=opts.filter(o=>!o.truth);
+        const pick=(Math.random()<0.4||!lies.length)?'truth':lies[Math.floor(Math.random()*lies.length)].id; upd({[`votes/${id}`]:pick}); } } }
+
+  /* ---- effects: sound + voice ---- */
+  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['lie','vote'].includes(r.phase)?0.55:1); }
+  function effects(prev,r){
+    const c={p:Object.keys(r.players||{}).length,l:Object.keys(r.lies||{}).length,v:Object.keys(r.votes||{}).length};
+    if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.l>lastCounts.l||c.v>lastCounts.v) Sound.sfx('lock'); }
+    lastCounts=c;
+    if(prev && unlocked && (prev.phase!==r.phase || prev.step!==r.step)){
+      setMusicFor(r);
+      if(r.phase==='intro') Sound.sfx('start');
+      if(r.phase==='reveal'){ const o=(r.options||[]).find(o=>o.id===r.items[r.step]); Sound.sfx('whoosh'); if(o) setTimeout(()=>Sound.sfx(o.truth?'ding':o.house?'buzz':'points'),900); }
+      if(r.phase==='scores') Sound.sfx('points');
+      if(r.phase==='final') Sound.sfx('fanfare');
+    }
+    if(r.phase==='intro' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings);
+    if(r.phase==='vote' && r.q) Voice.prefetch(`The truth is… ${r.q.a}!`, r.settings);
+    if(unlocked) maybeSpeak(r);
+  }
+  function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
+  function speechFor(r){ const st=r.settings;
+    switch(r.phase){
+      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Fibs! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
+      case 'lie': return ['l'+r.games+'_'+r.qi, readQ(r.q.t)];
+      case 'vote': return ['v'+r.games+'_'+r.qi, ''];
+      case 'reveal': { const o=(r.options||[]).find(x=>x.id===r.items[r.step]); return ['r'+r.games+'_'+r.qi+'_'+r.step, o&&o.truth?`The truth is… ${o.text}!`:'']; }
+      case 'scores': return ['sc'+r.games+'_'+r.qi, ''];
+      case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
+    } return null; }
+
+  /* ---- rendering ---- */
+  function timerUI(){ const r=R, el=$('.timer',stage); if(!r||!el) return; const left=r.paused?(r.remaining||0):Math.max(0,(r.endsAt||0)-now()); const s=Math.ceil(left/1000);
+    if(el.textContent!==String(s)) el.textContent=s; el.classList.toggle('low',s<=5&&!r.paused);
+    if(s<=5 && s>0 && s!==lastTick && !r.paused && unlocked){ Sound.sfx('tick'); } lastTick=s; }
+  function top(r){ const lbl=r.phase==='lobby'||r.phase==='final'?'':(r.round?`ROUND ${r.round}${multFor(r)>1?' · DOUBLE POINTS':''}`:'');
+    return `<div class="tvtop"><span><b>HARDIN GAMES</b> · FIBS</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
+  function tiles(r, mark){ return `<div class="strip">${players(r).map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
+  function ctl(r){ if(['lobby','final','loading'].includes(r.phase)) return ''; return `<div class="hostctl"><button class="alt" data-act="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-act="skip">Skip</button></div>`; }
+  function render(r){ let body='';
+    const st=r.settings;
+    switch(r.phase){
+      case 'lobby': { const url=joinUrl(r.code), ps=players(r), max=st.maxPlayers, subs=Object.keys(r.submitted||{}).length;
+        const tl=ps.map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${avatar(p)}<span class="nm">${esc(p.name)}${p.bot?' 🤖':''}${r.vip===id?' ⭐':''}</span></div>`).join('')+
+          Array.from({length:Math.max(0,Math.min(8,max)-ps.length)},()=>'<div class="tile empty">open</div>').join('');
+        body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname">FIBS</div>
+          <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
+          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player question${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}</div>
+          <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
+      case 'loading': body=`<div class="center"><div class="bigintro" style="font-size:5cqw">Getting questions ready…</div></div>`; break;
+      case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your lies ready'}</div></div>`; break;
+      case 'lie': body=`<div class="center"><div class="qsrc">${r.q.src==='ai'?'Fresh AI question':r.q.by?'Written by '+esc(r.q.by):'Question '+(r.qi+1)}</div>
+          <div class="question">${showQ(r.q.t)}</div><div class="note">Write a lie that sounds true!</div>${tiles(r,id=>(r.lies||{})[id]||(r.q.author===id))}</div><div class="timer"></div>`; break;
+      case 'vote': body=`<div class="center"><div class="question" style="font-size:2.6cqw">${showQ(r.q.t)}</div>
+          <div class="opts">${(r.options||[]).map(o=>`<div class="opt">${esc(o.text)}</div>`).join('')}</div>${tiles(r,id=>(r.votes||{})[id]||(r.q.author===id))}</div><div class="timer"></div>`; break;
+      case 'reveal': { const id=r.items[r.step], o=(r.options||[]).find(x=>x.id===id)||{text:''}, vs=voters(r,id);
+        const lbl=o.truth?'<div class="revlbl tr">THE TRUTH!</div>':o.house?'<div class="revlbl house">A HARDIN HOUSE LIE!</div>':`<div class="revlbl lie">${esc(listNames((o.owners||[]).map(p=>nm(r,p))).toUpperCase())}'S LIE!</div>`;
+        const mult=multFor(r), pts=o.truth?(vs.length?`+${st.pointsTruth*mult} each`:''):(!o.house&&vs.length?`+${st.pointsFool*mult*vs.length} to the liar`:'');
+        body=`<div class="center" data-k="${esc(id)}"><div class="question" style="font-size:2.2cqw;opacity:.8">${showQ(r.q.t)}</div>
+          <div class="revcard ${o.truth?'truth':''}">${esc(o.text)}</div>
+          <div class="strip">${vs.length?vs.map(p=>`<div class="tile">${avatar(r.players[p])}<span class="nm">${esc(nm(r,p))}</span></div>`).join(''):'<div class="note">Nobody picked this</div>'}</div>
+          ${lbl}${pts?`<div class="pts">${pts}</div>`:''}</div>`; break; }
+      case 'scores': { const d=r.deltas||{}; const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+        body=`<div class="center"><div class="bigintro" style="font-size:4.5cqw">SCORES</div><div class="board">${rows.map(([id,p])=>`<div class="brow">${avatar(p)}<span class="nm">${esc(p.name)}</span><span class="dl">${d[id]?'+'+d[id]:''}</span><span class="sc">${p.score||0}</span></div>`).join('')}</div></div>`; break; }
+      case 'final': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); const pod=[rows[1],rows[0],rows[2]];
+        body=`<div class="center"><div class="bigintro" style="font-size:5cqw">${rows[0]?esc(rows[0][1].name)+' WINS!':'GAME OVER'}</div>
+          <div class="podium">${pod.map((x,i)=>x?`<div class="pod">${avatar(x[1])}<div>${esc(x[1].name)}</div><div class="blk" style="height:${[9,14,6][i]}cqw">${x[1].score||0}</div></div>`:'').join('')}</div>
+          <div class="tvbtns"><button data-act="again">Play again</button><button class="alt" data-act="home">Exit</button></div></div>`; break; }
+    }
+    patchHTML(stage, top(r)+body+ctl(r)+(r.paused?'<div class="paused">PAUSED</div>':''));
+    const qr=$('#qr',stage); if(qr && !qr.firstChild && window.QRCode){ try{ new QRCode(qr,{text:joinUrl(r.code),width:256,height:256,colorDark:'#170c2e',colorLight:'#ffffff'}); }catch(e){} }
+    timerUI();
+  }
+}
+
+/* ============ PLAYER (phone controller) ============ */
+function Player(code, mount, fixedPid){
+  const store=S.store, P=roomPath(code);
+  let R=null, loaded=false, pid=fixedPid||LS.get('hg_pid_'+code,null), msg='', psound=LS.get('hg_psound',false), pctx=null, lastPhase='';
+  mount.classList.add('phone'); if(mount!==app) mount.classList.add('framed');
+  mount.innerHTML='<div class="pwrap" style="display:flex;flex-direction:column;flex:1"></div>';
+  const root=$('.pwrap',mount);
+  if(pid && !fixedPid) store.presence(`${P}/players/${pid}/on`);
+  const unsub=store.on(P, r=>{ R=r; loaded=true; render(); });
+  const iv=setInterval(()=>{ const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; } },250);
+  CLEAN.push(unsub,()=>clearInterval(iv));
+  const upd=patch=>store.update(P,clone(patch));
+  const beep=(f=880)=>{ if(!psound) return; try{ pctx=pctx||new (window.AudioContext||window.webkitAudioContext)(); const o=pctx.createOscillator(),g=pctx.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0.15,pctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,pctx.currentTime+0.15); o.connect(g); g.connect(pctx.destination); o.start(); o.stop(pctx.currentTime+0.2); }catch(e){} try{ navigator.vibrate&&navigator.vibrate(40); }catch(e){} };
+
+  mount.onclick=async e=>{ const b=e.target.closest('[data-p]'); if(!b) return; const k=b.dataset.p, r=R; msg='';
+    if(k==='join') return join($('[data-keep=name]',root).value);
+    if(k==='home') return nav({});
+    if(k==='snd'){ psound=!psound; LS.set('hg_psound',psound); beep(); return render(); }
+    if(k==='lie'){ const inp=$('[data-keep^=lie]',root), t=(inp.value||'').trim();
+      if(!t) msg='Type a lie first!'; else if(t.length>40) msg='Keep it under 40 characters.';
+      else if(isTruth(t,r.q)) msg="That's actually the truth! Try a different lie.";
+      else if(r.settings.audience==='family'&&isNaughty(t)) msg="Let's keep it family friendly!";
+      else { beep(); await upd({[`lies/${pid}`]:t}); return; } return render(); }
+    if(k==='vote'){ if(!(r.votes||{})[pid]){ beep(660); upd({[`votes/${pid}`]:b.dataset.o}); } return; }
+    if(k==='addq'){ const t=fixBlank($('[data-keep=qt]',root).value), a=$('[data-keep=qa]',root).value.trim();
+      if(!t) msg='Put ___ where the answer goes.'; else if(!a) msg='Add the real answer.';
+      else if(r.settings.audience==='family'&&(isNaughty(t)||isNaughty(a))) msg="Let's keep it family friendly!";
+      else { await upd({[`submitted/${uid()}`]:{t,a,author:pid,by:r.players[pid].name}}); $('[data-keep=qt]',root).value=''; $('[data-keep=qa]',root).value=''; toast('Question added!'); }
+      return render(); }
+    if(['start','pause','resume','skip','again'].includes(k)) return upd({cmd:{t:k,id:uid()}});
+  };
+  CLEAN.push(()=>mount.onclick=null);
+
+  async function join(name){ name=String(name||'').trim().slice(0,12); const r=R;
+    if(!name){ msg='Enter your name'; return render(); }
+    if(r.settings.audience==='family'&&isNaughty(name)){ msg='Pick a different name'; return render(); }
+    const ps=r.players||{}; const ex=Object.entries(ps).find(([,p])=>!p.bot&&p.name.toLowerCase()===name.toLowerCase());
+    if(ex){ pid=ex[0]; await upd({[`players/${pid}/on`]:true}); }
+    else { if(Object.keys(ps).length>=r.settings.maxPlayers){ msg='Sorry, this room is full.'; return render(); }
+      const usedC=new Set(Object.values(ps).map(p=>p.color)); let color=0; while(usedC.has(color)&&color<COLORS.length-1) color++;
+      pid=uid(); const patch={[`players/${pid}`]:{name,color,score:0,joined:store.now(),on:true}}; if(!r.vip) patch.vip=pid; await upd(patch); }
+    LS.set('hg_pid_'+code,pid); store.presence(`${P}/players/${pid}/on`);
+    try{ history.replaceState(null,'',location.pathname+'?play='+code); }catch(e){}
+    render(); }
+
+  function render(){ const r=R;
+    if(!loaded) return patchHTML(root,'<div class="bigmsg">Connecting…</div>');
+    if(!r) return patchHTML(root,`<div class="pbody"><div class="bigmsg"><div class="em">🤔</div>No game with code ${esc(code)}.<button data-p="home">Back</button></div></div>`);
+    const me=pid && r.players && r.players[pid];
+    if(!me) return patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:10px 0">HARDIN<span>GAMES</span></div>
+      <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · Fibs</div>
+      <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${msg?`<div class="err">${esc(msg)}</div>`:''}<button data-p="join">Join game</button></div>`);
+    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote'].includes(r.phase)) beep(1000); lastPhase=r.phase; }
+    const st=r.settings, vip=r.vip===pid, head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
+    const err=msg?`<div class="err">${esc(msg)}</div>`:'';
+    let b='';
+    if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
+    else switch(r.phase){
+      case 'lobby': { const mine=Object.values(r.submitted||{}).filter(q=>q.author===pid).length, n=Object.keys(r.players||{}).length;
+        b=`<div class="bigmsg" style="flex:0;padding:10px 0"><div class="em">🎉</div>You're in! Watch the TV.</div>
+          ${st.playerQuestions?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
+          <textarea data-keep="qt" rows="2" placeholder="My first car was a ___"></textarea><input data-keep="qa" placeholder="The real answer" autocomplete="off">${err}
+          <button class="alt" data-p="addq">Add question${mine?` (${mine} added)`:''}</button></div>`:''}
+          ${vip?`<div class="vip"><button data-p="start" ${n<st.minPlayers?'disabled':''}>Start game</button></div><div class="small muted">${n<st.minPlayers?`Need ${st.minPlayers} players to start`:'You have the ⭐ — start when everyone is in'}</div>`:''}`; break; }
+      case 'loading': b=`<div class="bigmsg"><div class="em">⏳</div>Getting questions ready…</div>`; break;
+      case 'intro': b=`<div class="bigmsg"><div class="em">📺</div>${r.settings.rounds>1&&r.round===st.rounds?'Final round — double points!':'Round '+r.round}</div>`; break;
+      case 'lie': if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">✍️</div>This is your question!<div class="small muted">Sit back and watch them squirm.</div></div>`; break; }
+        b=(r.lies||{})[pid] ? `<div class="bigmsg"><div class="em">🤥</div>Lie locked in:<b style="color:var(--gold)">${esc(r.lies[pid])}</b><div class="small muted">Waiting for everyone…</div></div>`
+          : `<div class="ptimer"></div><div class="pq">${showQ(r.q.t)}</div><input data-keep="lie${r.games}_${r.qi}" maxlength="40" placeholder="Your convincing lie" autocomplete="off" autocorrect="off">${err}<button data-p="lie">Lock it in</button>`; break;
+      case 'vote': { if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">😏</div>You know this one. Watch the TV!</div>`; break; }
+        const my=(r.votes||{})[pid]; const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(pid));
+        b=`<div class="ptimer"></div><div class="pq" style="font-size:16px">${showQ(r.q.t)}</div><b>Find the truth:</b>${opts.map(o=>`<button class="pchoice ${my===o.id?'sel':''}" data-p="vote" data-o="${esc(o.id)}" ${my?'disabled':''}>${esc(o.text)}</button>`).join('')}${my?'<div class="ok">Vote locked in ✓</div>':''}`; break; }
+      case 'reveal': case 'scores': { const d=(r.deltas||{})[pid]; b=`<div class="bigmsg"><div class="em">👀</div>Eyes on the TV!${r.phase==='scores'&&d?`<b style="color:var(--good)">+${d} points</b>`:''}</div>`; break; }
+      case 'final': { const rank=Object.values(r.players).sort((a,b)=>(b.score||0)-(a.score||0)).findIndex(p=>p===r.players[pid]||(p.name===me.name&&p.joined===me.joined))+1;
+        b=`<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b></div>`; break; }
+    }
+    const ctl = vip && !['lobby','final','loading'].includes(r.phase) ? `<div class="vip"><button class="alt" data-p="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-p="skip">Skip</button></div>`
+      : vip && r.phase==='final' ? `<div class="vip"><button data-p="again">Play again</button></div>` : '';
+    patchHTML(root, head+`<div class="pbody">${b}${ctl}</div>`);
+  }
+}
+
+/* ============ DEMO (preview with bots) ============ */
+async function Demo(){
+  app.innerHTML=`<div class="demo"><div class="demobar"><div class="logo">HARDIN<span>GAMES</span></div><div class="sp"></div><button class="alt" data-d="reset">New demo</button><button class="alt" data-d="exit">Exit</button></div>
+    <div><div class="plabel">TV SCREEN</div><div id="dtv" class="framed"></div></div><div><div class="plabel">YOUR PHONE</div><div id="dph"></div></div></div>`;
+  app.onclick=e=>{ const b=e.target.closest('[data-d]'); if(!b) return; if(b.dataset.d==='exit') nav({}); else { LS.set('hg_demo',{}); nav({demo:'1'},true); } };
+  CLEAN.push(()=>app.onclick=null);
+  S.store.data={}; S.store.commit();
+  const code=await createRoom(true), n=S.store.now();
+  await S.store.update(roomPath(code),{'players/you':{name:'You',color:0,score:0,joined:n-10,on:true},vip:'you'});
+  Host(code,$('#dtv'),{demo:true}); Player(code,$('#dph'),'you');
+}
+
+/* ============ ADMIN ============ */
+async function Admin(){
+  if(CONFIG.ADMIN_PIN && sessionStorage.getItem('hg_pin')!==CONFIG.ADMIN_PIN){
+    app.innerHTML=`<div class="admin"><div class="logo">HARDIN<span>GAMES</span></div><div class="sec"><h3>Admin PIN</h3><input id="pin" type="password" inputmode="numeric"><button id="pb">Unlock</button></div></div>`;
+    $('#pb').onclick=()=>{ try{ sessionStorage.setItem('hg_pin',$('#pin').value); }catch(e){} Admin(); }; return; }
+  const st=await loadSettings(); let fam=(await S.store.get(`${ROOT}/packs/family`))||{};
+  const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
+  const chk=(k,l)=>`<div class="fld"><label>${l}</label><input type="checkbox" data-k="${k}" ${st[k]?'checked':''}></div>`;
+  const sel=(k,l,opts)=>`<div class="fld"><label>${l}</label><select data-k="${k}">${opts.map(([v,t])=>`<option value="${v}" ${String(st[k])===v?'selected':''}>${t}</option>`).join('')}</select></div>`;
+  const draw=()=>{ app.innerHTML=`<div class="admin"><div class="row" style="align-items:center"><div class="logo" style="text-align:left">HARDIN<span>GAMES</span></div><button class="alt" id="back" style="flex:0 0 auto">Done</button></div>
+    <div class="sec"><h3>Fibs · Game</h3>${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}
+      ${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}
+      ${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('playerQuestions','Players can add questions in the lobby')}</div>
+    <div class="sec"><h3>Scoring</h3>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}</div>
+    <div class="sec"><h3>Questions</h3>${Object.entries(PACKS).map(([k,p])=>`<div class="fld"><label>${p.name} <span class="muted small">(${p.q.length})</span></label><input type="checkbox" data-pack="${k}" ${st.packs[k]?'checked':''}></div>`).join('')}
+      <div class="fld"><label>Family pack <span class="muted small">(${Object.keys(fam).length})</span></label><input type="checkbox" data-pack="family" ${st.packs.family?'checked':''}></div>
+      ${sel('aiMix','AI questions',[['off','Off'],['one','One per round'],['half','About half'],['all','All of them']])}
+      <div class="fld"><label>AI topic</label><input data-k="aiTopic" placeholder="Random" value="${esc(st.aiTopic)}" style="width:55%"></div>
+      <button class="alt" id="testai">Test an AI question</button><div id="aiout" class="small muted"></div></div>
+    <div class="sec"><h3>Sound & Voice</h3>${chk('music','Music')}${chk('sfx','Sound effects')}
+      <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
+      ${chk('readAloud','Read questions and answers aloud')}
+      ${sel('voice','Voice',[['builtin','Built-in voice'],['clone','My cloned voice (AI)']])}
+      <div class="fld"><label>Built-in voice</label><select data-k="voiceName"><option value="">Default</option>${Voice.loadVoices().map(v=>`<option ${v.name===st.voiceName?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div>
+      <div class="fld"><label>Speed</label><input type="range" data-k="voiceRate" min="0.7" max="1.3" step="0.05" value="${st.voiceRate}"></div>
+      ${!CONFIG.WORKER_URL?'<div class="small muted">Cloned voice and AI questions turn on once WORKER_URL is set.</div>':''}
+      <button class="alt" id="testv">Test voice</button></div>
+    <div class="sec"><h3>Family pack</h3><div class="qlist">${Object.entries(fam).map(([id,q])=>`<div class="qitem"><div>${showQ(q.t)}<br><span class="ok small">${esc(q.a)}</span>${q.safe===false?' <span class="small muted">· adults only</span>':''}</div><button class="alt" data-del="${id}">Delete</button></div>`).join('')||'<div class="muted small">No family questions yet.</div>'}</div>
+      <textarea id="ft" rows="2" placeholder="Grandpa's first car was a ___"></textarea><input id="fa" placeholder="Real answer"><div class="row"><input id="fd1" placeholder="Fake answer (optional)"><input id="fd2" placeholder="Fake answer (optional)"></div>
+      <div class="fld"><label>OK for kids</label><input type="checkbox" id="fsafe" checked></div><button id="fadd">Add to family pack</button></div>
+    <button id="save">Save settings</button></div>`;
+    $('#back').onclick=()=>nav({});
+    $('#save').onclick=save;
+    $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); await Voice.say('Welcome to Hardin Games! Get ready to play Fibs.',{...st,readAloud:true}); };
+    $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
+    $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
+      const id=uid(); fam[id]={t,a,d:[$('#fd1').value.trim(),$('#fd2').value.trim()].filter(Boolean),safe:$('#fsafe').checked}; await S.store.set(`${ROOT}/packs/family/${id}`,fam[id]); collect(); draw(); toast('Added'); };
+    app.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.del; delete fam[id]; await S.store.remove(`${ROOT}/packs/family/${id}`); collect(); draw(); });
+  };
+  function collect(){ app.querySelectorAll('[data-k]').forEach(i=>{ const k=i.dataset.k; st[k]= i.type==='checkbox'?i.checked : (i.type==='number'||i.type==='range')?Number(i.value) : i.value; });
+    app.querySelectorAll('[data-pack]').forEach(i=>st.packs[i.dataset.pack]=i.checked);
+    if(st.maxPlayers<st.minPlayers) st.maxPlayers=st.minPlayers; }
+  async function save(){ collect(); await S.store.set(`${ROOT}/settings`,st); toast('Saved'); }
+  draw();
+  try{ speechSynthesis.onvoiceschanged=()=>{ if(PARAMS.has('admin')){ collect(); draw(); } }; CLEAN.push(()=>speechSynthesis.onvoiceschanged=null); }catch(e){}
+}
+
+route();
+</script>
+</body>
+</html>
