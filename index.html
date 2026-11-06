@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#170c2e">
+<meta name="apple-mobile-web-app-title" content="Hardin Games">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Hardin Games</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -142,6 +147,56 @@ input:focus,select:focus{border-color:var(--teal)}
 .qitem div{flex:1}
 .qitem button{padding:6px 10px;font-size:13px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--teal);color:#032;padding:12px 20px;border-radius:12px;z-index:50}
+
+/* v2: avatars, fx, reveal drama, awards, picker */
+.av{overflow:hidden}
+.av.ph{background-size:cover;background-position:center}
+.av.em i{font-style:normal;font-size:1.3em;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
+.floater{position:absolute;bottom:-6cqw;font-size:5cqw;animation:floatUp 3s ease-out forwards}
+@keyframes floatUp{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1;transform:translate(0,-8cqw) scale(1.15)}100%{transform:translate(var(--dx),-48cqw) scale(1);opacity:0}}
+.conf{position:absolute;top:-3cqw;width:1.1cqw;height:1.7cqw;border-radius:.2cqw;animation:fall 2.7s ease-in both}
+@keyframes fall{to{transform:translate(var(--dx),75cqw) rotate(var(--r))}}
+.drum{font-family:Bungee;font-size:3.4cqw;color:var(--teal);animation:drum .1s 16 alternate}
+@keyframes drum{to{transform:scale(1.05) rotate(-1deg)}}
+.revcard.late1{animation:pop .45s 1.6s both}
+.late2{display:flex;flex-direction:column;align-items:center;gap:1.2cqw;animation:pop .4s 2s both}
+.late2 .revlbl{animation:none}
+.cardwrap{position:relative}
+.stamp{position:absolute;right:-6cqw;bottom:-2.2cqw;font-family:Bungee;font-size:2.8cqw;color:var(--pink);border:.4cqw solid var(--pink);border-radius:1cqw;padding:.2cqw 1.4cqw;transform:rotate(-12deg);background:#170c2edd;animation:stamp .3s 1.2s both;white-space:nowrap}
+.stamp.house{color:var(--teal);border-color:var(--teal)}
+@keyframes stamp{from{transform:rotate(-12deg) scale(3);opacity:0}to{transform:rotate(-12deg) scale(1);opacity:1}}
+.quip{font-family:Bungee;color:var(--pink);font-size:2.3cqw}
+.lq{font-size:1.9cqw;background:#ffffff14;border-radius:1.2cqw;padding:1cqw 2cqw;max-width:75cqw}
+.lq b{color:var(--good)}
+.final{gap:1.4cqw}
+.final .pod{font-size:1.6cqw;gap:.6cqw}
+.final .pod .av{width:5cqw;height:5cqw;font-size:2.4cqw}
+.final .pod .blk{width:11cqw;font-size:2.4cqw}
+.awards{display:flex;gap:1.4cqw;justify-content:center;flex-wrap:wrap;max-width:92cqw}
+.award{background:#ffffff12;border-radius:1.4cqw;padding:1cqw 1.2cqw;width:19cqw;display:flex;flex-direction:column;align-items:center;gap:.3cqw;animation:pop .5s both}
+.award:nth-child(2){animation-delay:.3s}.award:nth-child(3){animation-delay:.6s}.award:nth-child(4){animation-delay:.9s}
+.award .ai{font-size:2.8cqw}.award .at{font-family:Bungee;font-size:1.4cqw;color:var(--gold)}.award .an{font-size:1.6cqw}
+.award .ad{font-size:1.2cqw;color:var(--muted);text-align:center;overflow-wrap:anywhere}
+.look{background:#ffffff0c;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.lookhead{display:flex;align-items:center;gap:10px}
+.lookhead .av{width:44px;height:44px;font-size:20px}
+.emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.emo{background:#ffffff10;box-shadow:none;padding:6px 0;font-size:22px;border-radius:10px;border:2px solid transparent;line-height:1.2}
+.emo.sel{border-color:var(--teal);background:#2de2c833}
+.emo:disabled{opacity:.18}
+.filebtn{flex:1;text-align:center;background:var(--card2);border-radius:14px;padding:12px;position:relative;overflow:hidden;cursor:pointer}
+.filebtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.reacts{display:flex;gap:8px;justify-content:center;margin-top:auto;padding-top:10px}
+.reacts button{background:#ffffff10;box-shadow:none;font-size:26px;padding:8px 14px;border-radius:14px}
+.reacts button.bump{animation:pop .3s}
+.pchoice.like.sel{background:var(--gold);color:#2a1700;box-shadow:0 4px 0 #b88d00}
+.awlist{display:flex;flex-direction:column;gap:6px;font-size:17px;margin-top:6px}
+.pick{text-align:center;font-family:Bungee;color:var(--muted);letter-spacing:.12em;font-size:14px}
+.games{display:grid;gap:18px}
+.gamecard.soon{align-items:center;justify-content:center;text-align:center;opacity:.6;border-style:dashed;min-height:120px}
+.gamecard.soon .em{font-size:40px}
+@media (min-width:720px){.landing{max-width:820px}.games{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -215,10 +270,16 @@ const PACKS = {
 
 const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
-  music:true,sfx:true,volume:0.7,readAloud:true,readAnswers:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true};
+  music:true,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
+  likes:true,likePoints:100,reactions:true,lieForMe:true,photos:true};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
 const BOTS = ['Ava','Leo','Mia','Sam'];
+const BOT_EMOJI = ['🦖','🐙','🌮','👽'];
+const EMOJIS = ['🦖','🐙','🌮','👽','🤠','🦄','🐸','🦊','🐼','🐨','🐯','🦁','🐵','🐧','🦉','🐢','🦈','🐳','🦩','🐝','🍕','🍩','🌶️','🥑','🍔','🧁','🍿','🎸','🚀','🛸','👑','🎩','🤖','👻','💀','🎃','🌵','🌈','⚡','🔥'];
+const REACTS = ['😂','😱','🤯','👏'];
+const QUIPS = ["You're all terrible liars!","Not one person fooled. Impressive. Or sad.","Too honest for this game!","The truth wins again!"];
+const DRUM_MS = 1600, TRUTH_MS = 7000, LIE_MS = 4800;
 const BOT_LIES = ['a rubber chicken','spaghetti','a tiny hat','jazz hands','mayonnaise','a haunted toaster','seven','Kevin','the moon','grandma\'s casserole','glitter','a kazoo'];
 const BAD_WORDS = ['fuck','shit','bitch','ass','asshole','damn','hell','crap','sex','sexy','dick','penis','vagina','boob','boobs','piss','bastard','slut','whore','cock','nude','naked','butt'];
 const WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
@@ -239,7 +300,17 @@ const fixBlank = t => { t=String(t||'').trim(); return /_{3,}/.test(t) ? t.repla
 const showQ = t => esc(t).replace(/_____/g,'<span class="blank"></span>');
 const readQ = t => String(t).replace(/_____/g,' blank ');
 const listNames = a => a.length<=1 ? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1];
-const avatar = (p,extra='') => `<span class="av" style="background:${COLORS[(p&&p.color)||0]}${extra}">${esc(((p&&p.name)||'?')[0].toUpperCase())}</span>`;
+const okPhoto = s => typeof s==='string' && s.length<80000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
+const avatar = p => { const bg=COLORS[(p&&p.color)||0];
+  if(p && okPhoto(p.photo)) return `<span class="av ph" style="background-color:${bg};background-image:url('${p.photo}')"></span>`;
+  if(p && p.emoji) return `<span class="av em" style="background:${bg}"><i>${esc(p.emoji)}</i></span>`;
+  return `<span class="av" style="background:${bg}">${esc(((p&&p.name)||'?')[0].toUpperCase())}</span>`; };
+const takenEmojis = (r, except) => new Set(Object.entries((r&&r.players)||{}).filter(([id])=>id!==except).map(([,p])=>p.emoji).filter(Boolean));
+async function toAvatar(file){ const url=URL.createObjectURL(file);
+  try{ const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const w=img.naturalWidth, h=img.naturalHeight, sz=Math.min(w,h), c=document.createElement('canvas'); c.width=c.height=160;
+    c.getContext('2d').drawImage(img,(w-sz)/2,(h-sz)/2,sz,sz,0,0,160,160); return c.toDataURL('image/jpeg',0.72); }
+  finally{ URL.revokeObjectURL(url); } }
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
 function patchHTML(el, html){
   if(el._html===html) return;
@@ -337,6 +408,9 @@ const Sound = {
       case 'points': [79,84].forEach((n,i)=>this.tone(m(n),t+i*0.09,0.25,'square',0.06)); break;
       case 'fanfare': [60,64,67,72,67,72,76].forEach((n,i)=>this.tone(m(n),t+i*0.13,i===6?1:0.2,'square',0.07)); break;
       case 'start': [67,72].forEach((n,i)=>this.tone(m(n),t+i*0.1,0.3,'triangle',0.2)); break;
+      case 'drumroll': for(let i=0;i<24;i++) this.noiseHit(t+i*0.065,0.06,0.05+i*0.012,900,null,'bandpass'); this.noiseHit(t+1.58,1.1,0.35,5000); break;
+      case 'stamp': { const o=this.tone(170,t,0.25,'sine',0.5); o.frequency.exponentialRampToValueAtTime(50,t+0.2); this.noiseHit(t,0.12,0.4,800,null,'lowpass'); break; }
+      case 'pop': this.tone(m(84)+Math.random()*200,t,0.08,'sine',0.07); break;
     } }
 };
 
@@ -397,15 +471,18 @@ async function route(){
 }
 function joinUrl(code){ return /^https?:/.test(location.protocol) ? `${location.origin}${location.pathname}?join=${code}` : ''; }
 
-/* ============ Landing ============ */
+/* ============ Landing (game picker) ============ */
 function Landing(){
   app.innerHTML=`<div class="landing">
     <div class="logo" style="font-size:52px">HARDIN<span>GAMES</span></div>
-    <div class="gamecard"><h2>Fibs</h2><div class="muted">Fake the facts. Find the truth.</div>
-      <button data-a="host">Host on this screen</button></div>
+    <div class="pick">PICK A GAME</div>
+    <div class="games">
+      <div class="gamecard"><h2>Fibs</h2><div class="muted">Fake the facts. Find the truth.</div>
+        <button data-a="host">Host on this screen</button><button class="alt" data-a="demo">Try it with bots</button></div>
+      <div class="gamecard soon"><div class="em">🎲</div><div class="muted">More games coming soon</div></div>
+    </div>
     <div class="gamecard"><div class="muted">Joining a game?</div>
       <div class="row"><input id="jc" maxlength="4" placeholder="CODE" autocapitalize="characters" style="text-transform:uppercase;font-family:Bungee;letter-spacing:.2em"><button data-a="join" style="flex:0 0 auto">Join</button></div></div>
-    <button class="pink" data-a="demo">Try it now with bots</button>
     <div class="links"><a data-a="admin">Admin settings</a></div>
     <div class="modeline muted">${S.mode==='firebase'?'Online mode':'Local mode — add Firebase to play across devices'}</div></div>`;
   app.onclick=e=>{ const a=e.target.closest('[data-a]'); if(!a) return; const k=a.dataset.a;
@@ -416,15 +493,34 @@ function Landing(){
 
 /* ============ Room creation ============ */
 function randCode(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let s=''; for(let i=0;i<4;i++) s+=L[Math.floor(Math.random()*L.length)]; return s; }
+async function cleanupRooms(){
+  try{ const rooms=(await S.store.get(`${ROOT}/rooms`))||{}, cut=S.store.now()-24*3600*1000, p={};
+    for(const [c,r] of Object.entries(rooms)) if(!r||!r.created||r.created<cut) p[c]=null;
+    if(Object.keys(p).length) await S.store.update(`${ROOT}/rooms`,p);
+  }catch(e){ console.warn('room cleanup failed',e); }
+}
 async function createRoom(demo){
+  await cleanupRooms();
   const settings=await loadSettings();
   if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2; }
   let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
   const now=S.store.now();
-  const room={code,created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
-  if(demo) BOTS.forEach((n,i)=>room.players['bot'+i]={name:n,color:i+1,score:0,bot:true,joined:now+i,on:true});
+  const room={code,game:'fibs',created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
+  if(demo) BOTS.forEach((n,i)=>room.players['bot'+i]={name:n,color:i+1,emoji:BOT_EMOJI[i],score:0,bot:true,joined:now+i,on:true,from:0});
   await S.store.set(roomPath(code),room);
   return code;
+}
+
+/* ============ Awards (end of game) ============ */
+function awards(r){
+  const ps=r.players||{}, St=r.stats||{}, out=[];
+  const best=k=>{ let m=0, ids=[]; for(const id in St){ if(!ps[id]) continue; const v=(St[id]||{})[k]||0; if(v>m){ m=v; ids=[id]; } else if(v===m&&v>0) ids.push(id); } return {m,ids}; };
+  const names=ids=>listNames(ids.map(i=>ps[i].name));
+  let b=best('fooled'); if(b.m) out.push({icon:'🤥',title:'Best Liar',ids:b.ids,names:names(b.ids),detail:`Fooled ${b.m} ${b.m===1?'time':'times'}`});
+  b=best('truth'); if(b.m) out.push({icon:'🕵️',title:'Truth Detective',ids:b.ids,names:names(b.ids),detail:`Found the truth ${b.m}×`});
+  b=best('gullible'); if(b.m) out.push({icon:'🐟',title:'Most Gullible',ids:b.ids,names:names(b.ids),detail:`Fell for ${b.m} ${b.m===1?'lie':'lies'}`});
+  if(r.best) out.push({icon:'😂',title:'Funniest Lie',ids:r.best.owners||[],names:r.best.names,detail:`“${r.best.text}” · ${r.best.likes} 👍`});
+  return out;
 }
 
 /* ============ HOST (the TV screen + game engine) ============ */
@@ -433,15 +529,16 @@ function Host(code, mount, opts){
     createRoom(false).then(c=>nav({host:c},true)); return; }
   const store=S.store, P=roomPath(code);
   mount.classList.add('tv'); if(mount===app){ mount.classList.add('full'); document.body.style.overflow='hidden'; }
-  mount.innerHTML=`<div class="stage"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
-  const stage=$('.stage',mount), tap=$('.tap',mount);
-  let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false;
+  mount.innerHTML=`<div class="stage"></div><div class="fx"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
+  const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
+  let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
   const upd=patch=>store.update(P,clone(patch));
   const now=()=>store.now();
   const multFor=r=> (r.settings.rounds>1 && r.round===r.settings.rounds) ? r.settings.finalMult : 1;
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
-  const eligible=r=>players(r).filter(([id,p])=>p.on!==false && !(r.q && r.q.author===id)).map(([id])=>id);
+  const late=(r,p)=>(p.from||0)>(r.qi??-1);
+  const eligible=r=>players(r).filter(([id,p])=>p.on!==false && !late(r,p) && !(r.q && r.q.author===id)).map(([id])=>id);
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
   const voters=(r,oid)=>Object.keys(r.votes||{}).filter(p=>r.votes[p]===oid);
 
@@ -450,11 +547,11 @@ function Host(code, mount, opts){
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r;
-    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); }
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
-    effects(prev,r); render(r);
+    effects(prev,r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); },200);
+  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
 
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
@@ -466,10 +563,10 @@ function Host(code, mount, opts){
     if(t==='resume' && r.paused) return upd({paused:false,endsAt:n+(r.remaining||0)});
     if(t==='skip'){ if(r.paused) upd({paused:false});
       if(r.phase==='intro') return beginQuestion();
-      if(['lie','vote','reveal'].includes(r.phase)) return upd({phase:'scores',deltas:null,scored:r.qi,phaseAt:n,endsAt:n+2500});
+      if(['lie','vote','reveal'].includes(r.phase)) return upd({phase:'scores',deltas:null,lq:null,scored:r.qi,phaseAt:n,endsAt:n+2500});
       if(r.phase==='scores') return afterScores(); }
-    if(t==='again'){ done=new Set(); const p={phase:'lobby',queue:null,q:null,qi:-1,round:0,lies:null,votes:null,options:null,items:null,deltas:null,scored:null,submitted:null,paused:false,endsAt:null};
-      for(const id in r.players) p[`players/${id}/score`]=0; return upd(p); }
+    if(t==='again'){ done=new Set(); const p={phase:'lobby',queue:null,q:null,qi:-1,round:0,lies:null,auto:null,votes:null,likes:null,options:null,items:null,deltas:null,scored:null,submitted:null,paused:false,endsAt:null,stats:null,best:null,lq:null};
+      for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; } return upd(p); }
   }
 
   /* ---- engine ---- */
@@ -494,13 +591,13 @@ function Host(code, mount, opts){
     for(let k=0;k<total;k++) if(!slots[k]) slots[k]=pool.shift()||null;
     const queue=slots.filter(Boolean);
     if(!queue.length){ upd({phase:'lobby'}); toast('No questions — turn on a pack in Admin'); done.delete('start'+(r.games||0)); return; }
-    const n=now(), p={phase:'intro',round:1,qi:-1,queue,q:null,scored:null,lies:null,votes:null,phaseAt:n,endsAt:n+4500,games:(r.games||0)+1,paused:false};
-    for(const id in r.players) p[`players/${id}/score`]=0;
+    const n=now(), p={phase:'intro',round:1,qi:-1,queue,q:null,scored:null,lies:null,auto:null,votes:null,likes:null,stats:null,best:null,lq:null,phaseAt:n,endsAt:n+4500,games:(r.games||0)+1,paused:false};
+    for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; }
     upd(p);
   }
   function beginQuestion(){ const r=R, qi=(r.qi??-1)+1; if(!r.queue||!r.queue[qi]||!once('q'+r.games+'_'+qi)) return;
     const st=r.settings, n=now(), q=r.queue[qi], f=st.audience==='family'?1.5:1;
-    upd({phase:'lie',qi,q,lies:null,votes:null,options:null,items:null,step:0,deltas:null,phaseAt:n,endsAt:n+st.lieTime*1000*f});
+    upd({phase:'lie',qi,q,lies:null,auto:null,votes:null,likes:null,lq:null,options:null,items:null,step:0,deltas:null,phaseAt:n,endsAt:n+st.lieTime*1000*f});
     const u=LS.get('hg_used',[]).filter(x=>x!==q.t); u.push(q.t); LS.set('hg_used',u.slice(-200)); }
   function beginVote(){ const r=R; if(!once('v'+r.games+'_'+r.qi)) return;
     const q=r.q, groups=new Map();
@@ -510,20 +607,33 @@ function Host(code, mount, opts){
     for(const d of shuffle(q.d||[])){ if(opts.length>=4) break; const k=norm(d); if(usedN.has(k)) continue; usedN.add(k); opts.push({id:'h'+(j++),text:d,house:true}); }
     const st=r.settings, n=now(), f=st.audience==='family'?1.5:1;
     upd({phase:'vote',options:shuffle(opts),votes:null,phaseAt:n,endsAt:n+st.voteTime*1000*f}); }
+  const lieShare=(r,o,ow,n)=>Math.round(r.settings.pointsFool*multFor(r)*n*((r.auto||{})[ow]?0.5:1));
   function beginReveal(){ const r=R; if(!once('r'+r.games+'_'+r.qi)) return;
-    const st=r.settings, mult=multFor(r), opts=r.options||[], deltas={}; let fooled=0;
+    const st=r.settings, mult=multFor(r), opts=r.options||[], deltas={}, stats=clone(r.stats||{}); let fooledAll=0;
     const add=(p,v)=>{ if(r.players[p]&&v) deltas[p]=(deltas[p]||0)+v; };
+    const bump=(p,k,v=1)=>{ if(!r.players[p]||!v) return; stats[p]=stats[p]||{}; stats[p][k]=(stats[p][k]||0)+v; };
     for(const o of opts){ const vs=voters(r,o.id);
-      if(o.truth) vs.forEach(p=>add(p,st.pointsTruth*mult));
-      else { fooled+=vs.length; (o.owners||[]).forEach(ow=>add(ow,st.pointsFool*mult*vs.filter(v=>v!==ow).length)); } }
-    if(r.q.author && fooled) add(r.q.author,st.authorBonus*mult*fooled);
+      if(o.truth){ vs.forEach(p=>{ add(p,st.pointsTruth*mult); bump(p,'truth'); }); continue; }
+      fooledAll+=vs.length; vs.forEach(p=>bump(p,'gullible'));
+      if(!o.house) (o.owners||[]).forEach(ow=>{ const n=vs.filter(v=>v!==ow).length; add(ow,lieShare(r,o,ow,n)); bump(ow,'fooled',n); }); }
+    if(r.q.author && fooledAll) add(r.q.author,st.authorBonus*mult*fooledAll);
     const items=opts.filter(o=>!o.truth && voters(r,o.id).length).sort((a,b)=>voters(r,a.id).length-voters(r,b.id).length).map(o=>o.id);
     items.push('truth'); const n=now();
-    upd({phase:'reveal',items,step:0,deltas,phaseAt:n,endsAt:n+(items[0]==='truth'?5500:4800)}); }
+    upd({phase:'reveal',items,step:0,deltas,stats,phaseAt:n,endsAt:n+(items[0]==='truth'?TRUTH_MS:LIE_MS)}); }
   function nextReveal(){ const r=R; if(!once('s'+r.games+'_'+r.qi+'_'+r.step)) return; const n=now();
-    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?5500:4800)});
+    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?TRUTH_MS:LIE_MS)});
     const p={phase:'scores',phaseAt:n,endsAt:n+6500};
-    if(r.scored!==r.qi){ for(const [id,d] of Object.entries(r.deltas||{})) if(r.players[id]) p[`players/${id}/score`]=(r.players[id].score||0)+d; p.scored=r.qi; }
+    if(r.scored!==r.qi){ const st=r.settings, deltas=Object.assign({},r.deltas||{}), opts=r.options||[], cnt={}, lp=st.likePoints||0;
+      if(st.likes!==false) for(const [who,m] of Object.entries(r.likes||{})) for(const oid in (m||{})){ const o=opts.find(x=>x.id===oid);
+        if(!m[oid]||!o||o.truth||o.house||(o.owners||[]).includes(who)) continue; cnt[oid]=(cnt[oid]||0)+1; }
+      let topL=null;
+      for(const [oid,c] of Object.entries(cnt)){ const o=opts.find(x=>x.id===oid);
+        (o.owners||[]).forEach(ow=>{ if(r.players[ow]&&lp) deltas[ow]=(deltas[ow]||0)+c*lp; });
+        if(!topL||c>topL.likes) topL={text:o.text,owners:o.owners||[],names:listNames((o.owners||[]).map(x=>nm(r,x))),likes:c,pts:c*lp}; }
+      p.lq=topL; if(topL && (!r.best || topL.likes>r.best.likes)) p.best=topL;
+      p.deltas=deltas;
+      for(const [id,d] of Object.entries(deltas)) if(r.players[id]) p[`players/${id}/score`]=(r.players[id].score||0)+d;
+      p.scored=r.qi; }
     upd(p); }
   function afterScores(){ const r=R; if(!once('a'+r.games+'_'+r.qi)) return; const st=r.settings, n=now(), nq=r.qi+1;
     if(nq>=(r.queue||[]).length) return upd({phase:'final',phaseAt:n,endsAt:null});
@@ -537,13 +647,30 @@ function Host(code, mount, opts){
     else if(r.phase==='vote'){ const el=eligible(r), V=r.votes||{}; if((el.length && el.every(id=>V[id])) || n>=r.endsAt) beginReveal(); }
     else if(r.phase==='reveal' && n>=r.endsAt) nextReveal();
     else if(r.phase==='scores' && n>=r.endsAt) afterScores(); }
-  function botTick(r,n){ for(const [id,p] of Object.entries(r.players||{})){ if(!p.bot) continue; const delay=1800+hash(id+r.qi+r.games)%7000, k=r.games+'_'+r.qi+id;
+  function botTick(r,n){ const st=r.settings;
+    for(const [id,p] of Object.entries(r.players||{})){ if(!p.bot) continue; const delay=1800+hash(id+r.qi+r.games)%7000, k=r.games+'_'+r.qi+id;
       if(r.phase==='lie' && !(r.lies||{})[id] && n-r.phaseAt>delay && !botMark.has('l'+k)){ botMark.add('l'+k);
         const taken=new Set(Object.values(r.lies||{}).map(norm)); const pick=shuffle([...BOT_LIES,...(r.q.d||[])]).find(c=>!isTruth(c,r.q)&&!taken.has(norm(c)))||'a llama';
         upd({[`lies/${id}`]:pick}); }
       if(r.phase==='vote' && !(r.votes||{})[id] && n-r.phaseAt>delay*0.6 && !botMark.has('v'+k)){ botMark.add('v'+k);
         const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(id)); const lies=opts.filter(o=>!o.truth);
-        const pick=(Math.random()<0.4||!lies.length)?'truth':lies[Math.floor(Math.random()*lies.length)].id; upd({[`votes/${id}`]:pick}); } } }
+        const pick=(Math.random()<0.4||!lies.length)?'truth':lies[Math.floor(Math.random()*lies.length)].id; upd({[`votes/${id}`]:pick}); }
+      if(r.phase==='reveal' && st.likes!==false && n-r.phaseAt>2500 && !botMark.has('k'+k)){ botMark.add('k'+k);
+        const ls=(r.options||[]).filter(o=>!o.truth&&!o.house&&!(o.owners||[]).includes(id));
+        if(ls.length && Math.random()<0.5) upd({[`likes/${id}/${ls[Math.floor(Math.random()*ls.length)].id}`]:true}); }
+      if(['reveal','scores'].includes(r.phase) && st.reactions!==false && Math.random()<0.005) upd({[`reactions/${uid()}`]:{e:REACTS[Math.floor(Math.random()*REACTS.length)],t:n,p:id}}); } }
+
+  /* ---- reactions + confetti ---- */
+  function reactions(r){ const rs=r.reactions||{}, n=now();
+    for(const [id,x] of Object.entries(rs)){ if(seenR.has(id)) continue; seenR.add(id);
+      if(!x||!REACTS.includes(x.e)||n-(x.t||0)>5000||fx.childElementCount>60) continue; floatEmoji(x.e); } }
+  function cleanReacts(){ const r=R, n=now(); if(!r||!r.reactions||n-lastClean<3000) return; lastClean=n;
+    const p={}; for(const [id,x] of Object.entries(r.reactions)) if(!x||n-(x.t||0)>6000) p[`reactions/${id}`]=null; if(Object.keys(p).length) upd(p); }
+  function floatEmoji(e){ const d=document.createElement('div'); d.className='floater'; d.textContent=e; d.style.left=(6+Math.random()*86)+'%';
+    d.style.setProperty('--dx',(Math.random()*16-8)+'cqw'); fx.appendChild(d); setTimeout(()=>d.remove(),3200); Sound.sfx('pop'); }
+  function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8];
+      c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg');
+      fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
 
   /* ---- effects: sound + voice ---- */
   function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['lie','vote'].includes(r.phase)?0.55:1); }
@@ -551,19 +678,21 @@ function Host(code, mount, opts){
     const c={p:Object.keys(r.players||{}).length,l:Object.keys(r.lies||{}).length,v:Object.keys(r.votes||{}).length};
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.l>lastCounts.l||c.v>lastCounts.v) Sound.sfx('lock'); }
     lastCounts=c;
-    if(prev && unlocked && (prev.phase!==r.phase || prev.step!==r.step)){
+    if(prev && (prev.phase!==r.phase || prev.step!==r.step)){
       setMusicFor(r);
       if(r.phase==='intro') Sound.sfx('start');
-      if(r.phase==='reveal'){ const o=(r.options||[]).find(o=>o.id===r.items[r.step]); Sound.sfx('whoosh'); if(o) setTimeout(()=>Sound.sfx(o.truth?'ding':o.house?'buzz':'points'),900); }
+      if(r.phase==='reveal'){ const o=(r.options||[]).find(o=>o.id===r.items[r.step]);
+        if(o && o.truth){ const found=voters(r,o.id).length; Sound.sfx('drumroll'); setTimeout(()=>{ Sound.sfx('ding'); if(found) confetti(); },DRUM_MS); }
+        else { Sound.sfx('whoosh'); setTimeout(()=>Sound.sfx(o&&o.house?'buzz':'stamp'),1200); } }
       if(r.phase==='scores') Sound.sfx('points');
-      if(r.phase==='final') Sound.sfx('fanfare');
+      if(r.phase==='final'){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); }
     }
     if(r.phase==='intro' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings);
     if(r.phase==='vote' && r.q) Voice.prefetch(`The truth is… ${r.q.a}!`, r.settings);
     if(unlocked) maybeSpeak(r);
   }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
-  function speechFor(r){ const st=r.settings;
+  function speechFor(r){
     switch(r.phase){
       case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
       case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Fibs! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
@@ -580,7 +709,7 @@ function Host(code, mount, opts){
     if(s<=5 && s>0 && s!==lastTick && !r.paused && unlocked){ Sound.sfx('tick'); } lastTick=s; }
   function top(r){ const lbl=r.phase==='lobby'||r.phase==='final'?'':(r.round?`ROUND ${r.round}${multFor(r)>1?' · DOUBLE POINTS':''}`:'');
     return `<div class="tvtop"><span><b>HARDIN GAMES</b> · FIBS</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
-  function tiles(r, mark){ return `<div class="strip">${players(r).map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
+  function tiles(r, mark){ return `<div class="strip">${players(r).map(([id,p])=>`<div class="tile ${p.on===false||late(r,p)?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
   function ctl(r){ if(['lobby','final','loading'].includes(r.phase)) return ''; return `<div class="hostctl"><button class="alt" data-act="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-act="skip">Skip</button></div>`; }
   function render(r){ let body='';
     const st=r.settings;
@@ -599,18 +728,27 @@ function Host(code, mount, opts){
           <div class="question">${showQ(r.q.t)}</div><div class="note">Write a lie that sounds true!</div>${tiles(r,id=>(r.lies||{})[id]||(r.q.author===id))}</div><div class="timer"></div>`; break;
       case 'vote': body=`<div class="center"><div class="question" style="font-size:2.6cqw">${showQ(r.q.t)}</div>
           <div class="opts">${(r.options||[]).map(o=>`<div class="opt">${esc(o.text)}</div>`).join('')}</div>${tiles(r,id=>(r.votes||{})[id]||(r.q.author===id))}</div><div class="timer"></div>`; break;
-      case 'reveal': { const id=r.items[r.step], o=(r.options||[]).find(x=>x.id===id)||{text:''}, vs=voters(r,id);
-        const lbl=o.truth?'<div class="revlbl tr">THE TRUTH!</div>':o.house?'<div class="revlbl house">A HARDIN HOUSE LIE!</div>':`<div class="revlbl lie">${esc(listNames((o.owners||[]).map(p=>nm(r,p))).toUpperCase())}'S LIE!</div>`;
-        const mult=multFor(r), pts=o.truth?(vs.length?`+${st.pointsTruth*mult} each`:''):(!o.house&&vs.length?`+${st.pointsFool*mult*vs.length} to the liar`:'');
-        body=`<div class="center" data-k="${esc(id)}"><div class="question" style="font-size:2.2cqw;opacity:.8">${showQ(r.q.t)}</div>
-          <div class="revcard ${o.truth?'truth':''}">${esc(o.text)}</div>
-          <div class="strip">${vs.length?vs.map(p=>`<div class="tile">${avatar(r.players[p])}<span class="nm">${esc(nm(r,p))}</span></div>`).join(''):'<div class="note">Nobody picked this</div>'}</div>
-          ${lbl}${pts?`<div class="pts">${pts}</div>`:''}</div>`; break; }
+      case 'reveal': { const id=r.items[r.step], o=(r.options||[]).find(x=>x.id===id)||{text:''}, vs=voters(r,id), mult=multFor(r);
+        const strip=vs.length?`<div class="strip">${vs.map(p=>`<div class="tile">${avatar(r.players[p])}<span class="nm">${esc(nm(r,p))}</span></div>`).join('')}</div>`:'';
+        const qline=`<div class="question" style="font-size:2.2cqw;opacity:.8">${showQ(r.q.t)}</div>`;
+        if(o.truth){ const total=Object.keys(r.votes||{}).length, fooledP=(r.options||[]).filter(x=>!x.truth&&!x.house).reduce((a,x)=>a+voters(r,x.id).length,0);
+          const quip=total&&!fooledP?QUIPS[((r.qi||0)+(r.games||0))%QUIPS.length]:'';
+          body=`<div class="center" data-k="truth">${qline}<div class="drum">The truth is…</div><div class="revcard truth late1">${esc(o.text)}</div>
+            <div class="late2">${vs.length?strip+`<div class="revlbl tr">FOUND IT! +${st.pointsTruth*mult} each</div>`:'<div class="revlbl lie">NOBODY FOUND IT!</div>'}
+            ${quip?`<div class="quip">${esc(quip)}</div>`:''}${r.q.by?`<div class="note">Question by ${esc(r.q.by)}</div>`:''}</div></div>`;
+        } else { const owners=o.owners||[], who=o.house?'A HARDIN HOUSE LIE!':`${listNames(owners.map(p=>nm(r,p))).toUpperCase()}'S LIE!`;
+          const amt=!o.house&&vs.length&&owners[0]?lieShare(r,o,owners[0],vs.length):0;
+          body=`<div class="center" data-k="${esc(id)}">${qline}<div class="cardwrap"><div class="revcard">${esc(o.text)}</div><div class="stamp ${o.house?'house':''}">${o.house?'HOUSE LIE':'BUSTED!'}</div></div>
+            ${strip}<div class="revlbl ${o.house?'house':'lie'}">${esc(who)}</div>${amt?`<div class="pts">+${amt}${owners.length>1?' each':''}</div>`:''}</div>`; }
+        break; }
       case 'scores': { const d=r.deltas||{}; const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
-        body=`<div class="center"><div class="bigintro" style="font-size:4.5cqw">SCORES</div><div class="board">${rows.map(([id,p])=>`<div class="brow">${avatar(p)}<span class="nm">${esc(p.name)}</span><span class="dl">${d[id]?'+'+d[id]:''}</span><span class="sc">${p.score||0}</span></div>`).join('')}</div></div>`; break; }
-      case 'final': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); const pod=[rows[1],rows[0],rows[2]];
-        body=`<div class="center"><div class="bigintro" style="font-size:5cqw">${rows[0]?esc(rows[0][1].name)+' WINS!':'GAME OVER'}</div>
-          <div class="podium">${pod.map((x,i)=>x?`<div class="pod">${avatar(x[1])}<div>${esc(x[1].name)}</div><div class="blk" style="height:${[9,14,6][i]}cqw">${x[1].score||0}</div></div>`:'').join('')}</div>
+        body=`<div class="center"><div class="bigintro" style="font-size:4.5cqw">SCORES</div>
+          ${r.lq?`<div class="lq">😂 Funniest lie: “${esc(r.lq.text)}” — ${esc(r.lq.names)} <b>+${r.lq.pts}</b></div>`:''}
+          <div class="board">${rows.map(([id,p])=>`<div class="brow">${avatar(p)}<span class="nm">${esc(p.name)}</span><span class="dl">${d[id]?'+'+d[id]:''}</span><span class="sc">${p.score||0}</span></div>`).join('')}</div></div>`; break; }
+      case 'final': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); const pod=[rows[1],rows[0],rows[2]], aw=awards(r);
+        body=`<div class="center final"><div class="bigintro" style="font-size:4.2cqw">${rows[0]?esc(rows[0][1].name)+' WINS!':'GAME OVER'}</div>
+          <div class="podium">${pod.map((x,i)=>x?`<div class="pod">${avatar(x[1])}<div>${esc(x[1].name)}</div><div class="blk" style="height:${[6,9,4][i]}cqw">${x[1].score||0}</div></div>`:'').join('')}</div>
+          ${aw.length?`<div class="awards">${aw.map(a=>`<div class="award"><div class="ai">${a.icon}</div><div class="at">${a.title}</div><div class="an">${esc(a.names)}</div><div class="ad">${esc(a.detail)}</div></div>`).join('')}</div>`:''}
           <div class="tvbtns"><button data-act="again">Play again</button><button class="alt" data-act="home">Exit</button></div></div>`; break; }
     }
     patchHTML(stage, top(r)+body+ctl(r)+(r.paused?'<div class="paused">PAUSED</div>':''));
@@ -621,9 +759,10 @@ function Host(code, mount, opts){
 
 /* ============ PLAYER (phone controller) ============ */
 function Player(code, mount, fixedPid){
-  const store=S.store, P=roomPath(code);
-  let R=null, loaded=false, pid=fixedPid||LS.get('hg_pid_'+code,null), msg='', psound=LS.get('hg_psound',false), pctx=null, lastPhase='';
-  mount.classList.add('phone'); if(mount!==app) mount.classList.add('framed');
+  const store=S.store, P=roomPath(code), inApp=mount===app;
+  let R=null, loaded=false, pid=fixedPid||LS.get('hg_pid_'+code,null), msg='', psound=LS.get('hg_psound',false), pctx=null, lastPhase='',
+      selEmoji=null, selPhoto=null, editing=false, sugg='', lastReact=0;
+  mount.classList.add('phone'); if(!inApp) mount.classList.add('framed');
   mount.innerHTML='<div class="pwrap" style="display:flex;flex-direction:column;flex:1"></div>';
   const root=$('.pwrap',mount);
   if(pid && !fixedPid) store.presence(`${P}/players/${pid}/on`);
@@ -637,12 +776,25 @@ function Player(code, mount, fixedPid){
     if(k==='join') return join($('[data-keep=name]',root).value);
     if(k==='home') return nav({});
     if(k==='snd'){ psound=!psound; LS.set('hg_psound',psound); beep(); return render(); }
+    if(k==='emo'){ selEmoji=selEmoji===b.dataset.e?null:b.dataset.e; selPhoto=null; return render(); }
+    if(k==='edit'){ const me=r.players[pid]; editing=true; selEmoji=me.emoji||null; selPhoto=me.photo||null; return render(); }
+    if(k==='canceledit'){ editing=false; return render(); }
+    if(k==='savelook'){ if(selEmoji && takenEmojis(r,pid).has(selEmoji)){ msg='Someone just grabbed that one!'; return render(); }
+      await upd({[`players/${pid}/emoji`]:selEmoji, [`players/${pid}/photo`]:r.settings.photos!==false?selPhoto:null}); editing=false; return render(); }
+    if(k==='lieforme'){ const inp=$('[data-keep^=lie]',root); if(!inp) return;
+      const taken=new Set(Object.entries(r.lies||{}).filter(([p])=>p!==pid).map(([,t])=>norm(t)));
+      const pool=shuffle([...(r.q.d||[]),...BOT_LIES]).filter(c=>!isTruth(c,r.q)&&!taken.has(norm(c))&&norm(c)!==norm(inp.value));
+      sugg=pool[0]||'a llama'; inp.value=sugg; return; }
     if(k==='lie'){ const inp=$('[data-keep^=lie]',root), t=(inp.value||'').trim();
       if(!t) msg='Type a lie first!'; else if(t.length>40) msg='Keep it under 40 characters.';
       else if(isTruth(t,r.q)) msg="That's actually the truth! Try a different lie.";
       else if(r.settings.audience==='family'&&isNaughty(t)) msg="Let's keep it family friendly!";
-      else { beep(); await upd({[`lies/${pid}`]:t}); return; } return render(); }
+      else { beep(); const auto=!!sugg&&norm(t)===norm(sugg); sugg=''; await upd({[`lies/${pid}`]:t,[`auto/${pid}`]:auto||null}); return; } return render(); }
     if(k==='vote'){ if(!(r.votes||{})[pid]){ beep(660); upd({[`votes/${pid}`]:b.dataset.o}); } return; }
+    if(k==='like'){ const cur=((r.likes||{})[pid]||{})[b.dataset.o]; beep(1200); return upd({[`likes/${pid}/${b.dataset.o}`]:cur?null:true}); }
+    if(k==='react'){ const n=Date.now(), em=b.dataset.e; if(n-lastReact<600||!REACTS.includes(em)) return; lastReact=n;
+      try{ navigator.vibrate&&navigator.vibrate(15); }catch(x){} b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+      return upd({[`reactions/${uid()}`]:{e:em,t:store.now(),p:pid}}); }
     if(k==='addq'){ const t=fixBlank($('[data-keep=qt]',root).value), a=$('[data-keep=qa]',root).value.trim();
       if(!t) msg='Put ___ where the answer goes.'; else if(!a) msg='Add the real answer.';
       else if(r.settings.audience==='family'&&(isNaughty(t)||isNaughty(a))) msg="Let's keep it family friendly!";
@@ -655,51 +807,73 @@ function Player(code, mount, fixedPid){
   async function join(name){ name=String(name||'').trim().slice(0,12); const r=R;
     if(!name){ msg='Enter your name'; return render(); }
     if(r.settings.audience==='family'&&isNaughty(name)){ msg='Pick a different name'; return render(); }
-    const ps=r.players||{}; const ex=Object.entries(ps).find(([,p])=>!p.bot&&p.name.toLowerCase()===name.toLowerCase());
-    if(ex){ pid=ex[0]; await upd({[`players/${pid}/on`]:true}); }
+    const ps=r.players||{}, photo=r.settings.photos!==false?selPhoto:null; const ex=Object.entries(ps).find(([,p])=>!p.bot&&p.name.toLowerCase()===name.toLowerCase());
+    if(ex){ pid=ex[0]; const patch={[`players/${pid}/on`]:true};
+      if((selEmoji&&!takenEmojis(r,pid).has(selEmoji))||photo){ patch[`players/${pid}/emoji`]=selEmoji; patch[`players/${pid}/photo`]=photo; } await upd(patch); }
     else { if(Object.keys(ps).length>=r.settings.maxPlayers){ msg='Sorry, this room is full.'; return render(); }
+      if(selEmoji && takenEmojis(r,null).has(selEmoji)){ msg='Someone just grabbed that emoji!'; selEmoji=null; return render(); }
       const usedC=new Set(Object.values(ps).map(p=>p.color)); let color=0; while(usedC.has(color)&&color<COLORS.length-1) color++;
-      pid=uid(); const patch={[`players/${pid}`]:{name,color,score:0,joined:store.now(),on:true}}; if(!r.vip) patch.vip=pid; await upd(patch); }
+      pid=uid(); const pl={name,color,score:0,joined:store.now(),on:true,from:r.phase==='lobby'?0:(r.qi??-1)+1};
+      if(selEmoji) pl.emoji=selEmoji; if(photo) pl.photo=photo;
+      const patch={[`players/${pid}`]:pl}; if(!r.vip) patch.vip=pid; await upd(patch); }
     LS.set('hg_pid_'+code,pid); store.presence(`${P}/players/${pid}/on`);
-    try{ history.replaceState(null,'',location.pathname+'?play='+code); }catch(e){}
+    if(inApp){ try{ history.replaceState(null,'',location.pathname+'?play='+code); }catch(e){} }
     render(); }
+
+  function picker(r, mine){ const taken=takenEmojis(r,mine), photos=r.settings.photos!==false;
+    const prev={name:'?',color:mine&&r.players[mine]?r.players[mine].color:0,emoji:selEmoji,photo:selPhoto};
+    return `<div class="look"><div class="lookhead">${avatar(prev)}<b>Pick your look</b></div>
+      <div class="emojis">${EMOJIS.map(e=>`<button class="emo ${selEmoji===e?'sel':''}" data-p="emo" data-e="${e}" ${taken.has(e)?'disabled':''}>${e}</button>`).join('')}</div>
+      ${photos?`<div class="row"><label class="filebtn">📷 Selfie<input type="file" accept="image/*" capture="user"></label><label class="filebtn">🖼️ Photo<input type="file" accept="image/*"></label></div>`:''}</div>`; }
+  function bindFiles(){ root.querySelectorAll('input[type=file]').forEach(i=>{ i.onchange=async()=>{ const f=i.files&&i.files[0]; if(!f) return;
+      try{ selPhoto=await toAvatar(f); selEmoji=null; msg=''; }catch(e){ msg="Couldn't use that photo"; } render(); }; }); }
 
   function render(){ const r=R;
     if(!loaded) return patchHTML(root,'<div class="bigmsg">Connecting…</div>');
     if(!r) return patchHTML(root,`<div class="pbody"><div class="bigmsg"><div class="em">🤔</div>No game with code ${esc(code)}.<button data-p="home">Back</button></div></div>`);
-    const me=pid && r.players && r.players[pid];
-    if(!me) return patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:10px 0">HARDIN<span>GAMES</span></div>
-      <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · Fibs</div>
-      <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${msg?`<div class="err">${esc(msg)}</div>`:''}<button data-p="join">Join game</button></div>`);
-    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote'].includes(r.phase)) beep(1000); lastPhase=r.phase; }
-    const st=r.settings, vip=r.vip===pid, head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
     const err=msg?`<div class="err">${esc(msg)}</div>`:'';
+    const me=pid && r.players && r.players[pid];
+    if(!me){ patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
+      <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · Fibs</div>
+      <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
+    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
+    const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote'].includes(r.phase);
+    const head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
+    if(editing){ patchHTML(root, head+`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
     let b='';
     if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
+    else if(isLate) b=`<div class="bigmsg"><div class="em">🙌</div>You're in!<div class="small muted">You'll jump in on the next question.</div></div>`;
     else switch(r.phase){
       case 'lobby': { const mine=Object.values(r.submitted||{}).filter(q=>q.author===pid).length, n=Object.keys(r.players||{}).length;
-        b=`<div class="bigmsg" style="flex:0;padding:10px 0"><div class="em">🎉</div>You're in! Watch the TV.</div>
+        b=`<div class="bigmsg" style="flex:0;padding:8px 0"><div class="em">🎉</div>You're in! Watch the TV.<button class="alt small" data-p="edit" style="padding:8px 14px">Change look</button></div>
           ${st.playerQuestions?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
           <textarea data-keep="qt" rows="2" placeholder="My first car was a ___"></textarea><input data-keep="qa" placeholder="The real answer" autocomplete="off">${err}
           <button class="alt" data-p="addq">Add question${mine?` (${mine} added)`:''}</button></div>`:''}
           ${vip?`<div class="vip"><button data-p="start" ${n<st.minPlayers?'disabled':''}>Start game</button></div><div class="small muted">${n<st.minPlayers?`Need ${st.minPlayers} players to start`:'You have the ⭐ — start when everyone is in'}</div>`:''}`; break; }
       case 'loading': b=`<div class="bigmsg"><div class="em">⏳</div>Getting questions ready…</div>`; break;
-      case 'intro': b=`<div class="bigmsg"><div class="em">📺</div>${r.settings.rounds>1&&r.round===st.rounds?'Final round — double points!':'Round '+r.round}</div>`; break;
+      case 'intro': b=`<div class="bigmsg"><div class="em">📺</div>${st.rounds>1&&r.round===st.rounds?'Final round — double points!':'Round '+r.round}</div>`; break;
       case 'lie': if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">✍️</div>This is your question!<div class="small muted">Sit back and watch them squirm.</div></div>`; break; }
-        b=(r.lies||{})[pid] ? `<div class="bigmsg"><div class="em">🤥</div>Lie locked in:<b style="color:var(--gold)">${esc(r.lies[pid])}</b><div class="small muted">Waiting for everyone…</div></div>`
-          : `<div class="ptimer"></div><div class="pq">${showQ(r.q.t)}</div><input data-keep="lie${r.games}_${r.qi}" maxlength="40" placeholder="Your convincing lie" autocomplete="off" autocorrect="off">${err}<button data-p="lie">Lock it in</button>`; break;
+        b=(r.lies||{})[pid] ? `<div class="bigmsg"><div class="em">🤥</div>Lie locked in:<b style="color:var(--gold)">${esc(r.lies[pid])}</b>${(r.auto||{})[pid]?'<div class="small muted">Lie for me · half points</div>':''}<div class="small muted">Waiting for everyone…</div></div>`
+          : `<div class="ptimer"></div><div class="pq">${showQ(r.q.t)}</div><input data-keep="lie${r.games}_${r.qi}" maxlength="40" placeholder="Your convincing lie" autocomplete="off" autocorrect="off">${err}
+             <button data-p="lie">Lock it in</button>${st.lieForMe!==false?'<button class="alt" data-p="lieforme">🎲 Lie for me <span class="small">(half points)</span></button>':''}`; break;
       case 'vote': { if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">😏</div>You know this one. Watch the TV!</div>`; break; }
         const my=(r.votes||{})[pid]; const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(pid));
         b=`<div class="ptimer"></div><div class="pq" style="font-size:16px">${showQ(r.q.t)}</div><b>Find the truth:</b>${opts.map(o=>`<button class="pchoice ${my===o.id?'sel':''}" data-p="vote" data-o="${esc(o.id)}" ${my?'disabled':''}>${esc(o.text)}</button>`).join('')}${my?'<div class="ok">Vote locked in ✓</div>':''}`; break; }
-      case 'reveal': case 'scores': { const d=(r.deltas||{})[pid]; b=`<div class="bigmsg"><div class="em">👀</div>Eyes on the TV!${r.phase==='scores'&&d?`<b style="color:var(--good)">+${d} points</b>`:''}</div>`; break; }
-      case 'final': { const rank=Object.values(r.players).sort((a,b)=>(b.score||0)-(a.score||0)).findIndex(p=>p===r.players[pid]||(p.name===me.name&&p.joined===me.joined))+1;
-        b=`<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b></div>`; break; }
+      case 'reveal': { const mineL=(r.likes||{})[pid]||{}, ls=st.likes!==false?(r.options||[]).filter(o=>!o.truth&&!o.house&&!(o.owners||[]).includes(pid)):[];
+        b=`<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">👀</div>Eyes on the TV!</div>
+          ${ls.length?`<b>👍 Like the funniest lies</b>${ls.map(o=>`<button class="pchoice like ${mineL[o.id]?'sel':''}" data-p="like" data-o="${esc(o.id)}">${mineL[o.id]?'👍 ':''}${esc(o.text)}</button>`).join('')}`:''}`; break; }
+      case 'scores': { const d=(r.deltas||{})[pid]; b=`<div class="bigmsg"><div class="em">📊</div>Scores are up!${d?`<b style="color:var(--good)">+${d} points</b>`:''}</div>`; break; }
+      case 'final': { const rank=players0(r).findIndex(([id])=>id===pid)+1, mineA=awards(r).filter(a=>a.ids.includes(pid));
+        b=`<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b>
+          ${mineA.length?`<div class="awlist">${mineA.map(a=>`<div>${a.icon} <b>${a.title}</b></div>`).join('')}</div>`:''}</div>`; break; }
     }
     const ctl = vip && !['lobby','final','loading'].includes(r.phase) ? `<div class="vip"><button class="alt" data-p="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-p="skip">Skip</button></div>`
       : vip && r.phase==='final' ? `<div class="vip"><button data-p="again">Play again</button></div>` : '';
-    patchHTML(root, head+`<div class="pbody">${b}${ctl}</div>`);
+    const reacts = st.reactions!==false && r.phase!=='lobby' ? `<div class="reacts">${REACTS.map(e=>`<button data-p="react" data-e="${e}">${e}</button>`).join('')}</div>` : '';
+    patchHTML(root, head+`<div class="pbody">${b}${ctl}${reacts}</div>`);
   }
 }
+function players0(r){ return Object.entries(r.players||{}).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); }
 
 /* ============ DEMO (preview with bots) ============ */
 async function Demo(){
@@ -708,9 +882,8 @@ async function Demo(){
   app.onclick=e=>{ const b=e.target.closest('[data-d]'); if(!b) return; if(b.dataset.d==='exit') nav({}); else { LS.set('hg_demo',{}); nav({demo:'1'},true); } };
   CLEAN.push(()=>app.onclick=null);
   S.store.data={}; S.store.commit();
-  const code=await createRoom(true), n=S.store.now();
-  await S.store.update(roomPath(code),{'players/you':{name:'You',color:0,score:0,joined:n-10,on:true},vip:'you'});
-  Host(code,$('#dtv'),{demo:true}); Player(code,$('#dph'),'you');
+  const code=await createRoom(true);
+  Host(code,$('#dtv'),{demo:true}); Player(code,$('#dph'),null);
 }
 
 /* ============ ADMIN ============ */
@@ -727,6 +900,7 @@ async function Admin(){
       ${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}
       ${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('playerQuestions','Players can add questions in the lobby')}</div>
     <div class="sec"><h3>Scoring</h3>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}</div>
+    <div class="sec"><h3>Fun extras</h3>${chk('likes','Players can 👍 the funniest lies')}${num('likePoints','Points per 👍',0,1000,25)}${chk('reactions','Emoji reactions on the TV')}${chk('lieForMe','"Lie for me" button (half points)')}${chk('photos','Players can use a photo')}</div>
     <div class="sec"><h3>Questions</h3>${Object.entries(PACKS).map(([k,p])=>`<div class="fld"><label>${p.name} <span class="muted small">(${p.q.length})</span></label><input type="checkbox" data-pack="${k}" ${st.packs[k]?'checked':''}></div>`).join('')}
       <div class="fld"><label>Family pack <span class="muted small">(${Object.keys(fam).length})</span></label><input type="checkbox" data-pack="family" ${st.packs.family?'checked':''}></div>
       ${sel('aiMix','AI questions',[['off','Off'],['one','One per round'],['half','About half'],['all','All of them']])}
