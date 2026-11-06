@@ -6,7 +6,7 @@
 // Secrets / vars (wrangler secret put ...):
 //   ELEVENLABS_API_KEY, ELEVEN_VOICE_ID, ANTHROPIC_API_KEY, ADMIN_PIN (4-digit admin code)
 //   ALLOWED_ORIGINS  e.g. "https://ech-technicalsolutions.com"
-//   ELEVEN_MODEL (optional, default eleven_multilingual_v2), CLAUDE_MODEL (optional)
+//   ELEVEN_MODEL (optional, default eleven_multilingual_v2), CLAUDE_MODEL (optional), FAKES_MODEL (optional)
 //
 // Test in Safari (no setup needed):
 //   GET /       -> {"ok":true,...} plus which secrets are set
@@ -35,6 +35,7 @@ export default {
       if (path === '/tts' && req.method === 'GET') return await tts('Testing, testing. This is Hardin Games!', env, ctx, cors);
       if (path === '/question' && req.method === 'POST') return await question(req, env, cors);
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
+      if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN }, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, cors, 500);
@@ -135,4 +136,37 @@ async function admin(req, env, cors) {
   }
   if (body.pin) await new Promise(r => setTimeout(r, 1000));   // slow down guessing
   return json({ ok: false, error: 'Wrong code' }, cors, 401);
+}
+
+// ---- "Lie for me": believable wrong answers for one question ----
+async function fakes(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { question = '', answer = '', count = 8, family = false } = await req.json();
+  if (!question || !answer || question.length > 300 || answer.length > 80) return json({ error: 'bad question' }, cors, 400);
+  const n = Math.min(Math.max(3, count | 0), 12);
+  const prompt = `In the party game "Fibs", players invent fake answers to a fill-in-the-blank fact, hoping others pick their lie instead of the truth.
+
+Fact: "${question}"
+Real answer: "${answer}"
+
+Write ${n} fake answers for the blank that could fool people:
+- Same kind of thing as the real answer (a number becomes other numbers in the same units, a name becomes similar names, an object becomes similar objects)
+- Similar length to the real answer (1-4 words), and each must fit the sentence
+- Definitely FALSE, all different from each other and from the real answer
+- Mostly believable; one or two can be a little playful
+- ${family ? 'Family friendly.' : 'Keep it PG-13.'}
+
+Respond with only JSON, no other text: {"fakes":["...","..."]}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json();
+  if (!r.ok) { console.error('Anthropic error (fakes)', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502); }
+  const text = (j.content || []).map(c => c.text || '').join('');
+  const m = text.match(/\{[\s\S]*\}/);
+  let list = [];
+  try { list = (JSON.parse(m ? m[0] : '{}').fakes || []).map(String).map(s => s.trim()).filter(Boolean).slice(0, 12); } catch (e) {}
+  return json({ fakes: list }, cors);
 }
