@@ -207,6 +207,49 @@ input:focus,select:focus{border-color:var(--teal)}
 .pinhome{color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;margin-top:4px}
 .shake{animation:shake .4s}
 @keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+
+/* home screen game cards */
+.g{gap:10px}
+.gtop{display:flex;align-items:center;gap:12px}
+.gi{font-size:34px;line-height:1}
+.g h2{font-size:30px}
+.gmeta{font-size:13px;color:var(--muted);opacity:.8}
+.gbtns{display:flex;gap:10px;margin-top:4px}.gbtns>*{flex:1;padding:12px 10px}
+.g-fibs{border-color:#ff4f8b88}.g-fibs h2{color:var(--pink)}
+.g-trivia{border-color:#2de2c888}.g-trivia h2{color:var(--teal)}
+.g-draw{border-color:#ffd23f88}.g-draw h2{color:var(--gold)}
+.gamecard.wip{opacity:.75}
+.badge{align-self:flex-start;background:#ffd23f22;color:var(--gold);border:1px solid #ffd23f66;border-radius:999px;padding:6px 14px;font-size:13px;margin-top:auto}
+@media (min-width:1100px){.landing{max-width:1100px}.games{grid-template-columns:repeat(4,1fr)}.gamecard.soon{min-height:auto}}
+/* Smarty Pants TV */
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:2cqw;width:100%;max-width:86cqw}
+.catc{background:var(--card2);border-radius:1.6cqw;padding:2.4cqw 1.6cqw;border:.35cqw solid var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqw;min-height:15cqw}
+.catc .cn{font-family:Bungee;font-size:2.5cqw;color:var(--c);text-align:center}
+.catc .av{width:3.4cqw;height:3.4cqw;font-size:1.6cqw}
+.topts{display:grid;grid-template-columns:1fr 1fr;gap:1.4cqw;width:100%;max-width:88cqw}
+.topt{background:var(--card2);border-radius:1.4cqw;padding:1.3cqw 1.6cqw;font-size:2.2cqw;font-weight:900;border-left:1.1cqw solid var(--c);display:flex;align-items:center;gap:1.4cqw;text-align:left;min-height:7cqw}
+.topt b{font-family:Bungee;color:var(--c);font-size:2.4cqw;font-weight:400}
+.topt .who{margin-left:auto;display:flex;gap:.4cqw;flex-wrap:wrap;justify-content:flex-end}
+.topt .who .av{width:3cqw;height:3cqw;font-size:1.4cqw}
+.topt.rv.wrong{animation:tdim .4s 1.6s both}
+@keyframes tdim{to{opacity:.28}}
+.topt.rv.right{animation:thl .4s 1.6s both}
+@keyframes thl{to{background:var(--good);color:#06301a;transform:scale(1.03)}}
+.numq{font-family:Bungee;font-size:2.4cqw;color:var(--gold)}
+.gains{display:flex;flex-wrap:wrap;gap:1cqw;justify-content:center}
+.gain{display:flex;align-items:center;gap:.6cqw;background:#ffffff14;border-radius:3cqw;padding:.4cqw 1.2cqw .4cqw .4cqw;font-family:Bungee;font-size:1.8cqw;color:var(--good)}
+.gain.neg{color:var(--bad)}
+.gain .av{width:3.2cqw;height:3.2cqw;font-size:1.5cqw}
+.late3{animation:pop .4s 4.5s both}
+.gboard{display:grid;gap:.8cqw;width:100%;max-width:56cqw}
+.gboard.two{grid-template-columns:1fr 1fr;max-width:86cqw}
+.gboard .brow{font-size:1.7cqw;padding:.6cqw 1.1cqw;gap:1cqw}
+.gboard .brow .av{width:3cqw;height:3cqw;font-size:1.4cqw}
+.gboard .brow .dl{min-width:0;font-size:1.3cqw}
+/* Smarty Pants phone */
+.tans{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card2);color:var(--text);box-shadow:0 4px 0 #1d0f3d;border-left:8px solid var(--c);font-size:17px;min-height:58px}
+.tans b{font-family:Bungee;color:var(--c);font-size:20px;font-weight:400}
+.pchoice.tcat{border-left:8px solid var(--c);text-transform:none}
 </style>
 </head>
 <body>
@@ -280,7 +323,8 @@ const PACKS = {
 const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
   music:true,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
-  likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true};
+  likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
+  tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:''};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
 const BOTS = ['Ava','Leo','Mia','Sam'];
@@ -515,7 +559,7 @@ async function route(){
   if(PARAMS.has('demo')){ await initStore(true,'hg_demo'); return Demo(); }
   if(!S.store || S.mode==='demo') await initStore(false);
   if(PARAMS.has('admin')) return Admin();
-  if(PARAMS.has('host')) return Host(PARAMS.get('host')||null, app, {});
+  if(PARAMS.has('host')) return HostAny(PARAMS.get('host')||null, app, {});
   const c=(PARAMS.get('play')||PARAMS.get('join')||'').toUpperCase();
   if(c) return Player(c, app, null);
   Landing();
@@ -528,8 +572,12 @@ function Landing(){
     <div class="logo" style="font-size:52px">HARDIN<span>GAMES</span></div>
     <div class="pick">PICK A GAME</div>
     <div class="games">
-      <div class="gamecard"><h2>Fibs</h2><div class="muted">Fake the facts. Find the truth.</div>
-        <button data-a="host">Host on this screen</button><button class="alt" data-a="demo">Try it with bots</button></div>
+      <div class="gamecard g g-fibs"><div class="gtop"><span class="gi">🤥</span><h2>Fibs</h2></div><div class="muted">Fake the facts. Find the truth.</div><div class="gmeta">3–8 players · about 15 min</div>
+        <div class="gbtns"><button data-a="host" data-g="fibs">Host</button><button class="alt" data-a="demo" data-g="fibs">Try with bots</button></div></div>
+      <div class="gamecard g g-trivia"><div class="gtop"><span class="gi">🧠</span><h2>Smarty Pants</h2></div><div class="muted">Race to the right answer.</div><div class="gmeta">2–8 players · about 15 min</div>
+        <div class="gbtns"><button data-a="host" data-g="trivia">Host</button><button class="alt" data-a="demo" data-g="trivia">Try with bots</button></div></div>
+      <div class="gamecard g g-draw wip"><div class="gtop"><span class="gi">🎨</span><h2>Doodle Duel</h2></div><div class="muted">Draw it. Fake it. Guess it.</div><div class="gmeta">3–8 players · about 15 min</div>
+        <div class="badge">In the works</div></div>
       <div class="gamecard soon"><div class="em">🎲</div><div class="muted">More games coming soon</div></div>
     </div>
     <div class="gamecard"><div class="muted">Joining a game?</div>
@@ -537,7 +585,7 @@ function Landing(){
     <div class="links"><a data-a="admin">Admin settings</a></div>
     <div class="modeline muted">${S.mode==='firebase'?'Online mode':'Local mode — add Firebase to play across devices'}</div></div>`;
   app.onclick=e=>{ const a=e.target.closest('[data-a]'); if(!a) return; const k=a.dataset.a;
-    if(k==='host') nav({host:''}); if(k==='demo') nav({demo:'1'}); if(k==='admin') nav({admin:'1'});
+    const g=a.dataset.g||'fibs'; if(k==='host') nav({host:'',game:g}); if(k==='demo') nav({demo:'1',game:g}); if(k==='admin') nav({admin:'1'});
     if(k==='join'){ const c=$('#jc').value.trim().toUpperCase(); if(c.length===4) nav({join:c}); else toast('Enter the 4-letter code'); } };
   CLEAN.push(()=>app.onclick=null);
 }
@@ -550,13 +598,13 @@ async function cleanupRooms(){
     if(Object.keys(p).length) await S.store.update(`${ROOT}/rooms`,p);
   }catch(e){ console.warn('room cleanup failed',e); }
 }
-async function createRoom(demo){
+async function createRoom(demo, game='fibs'){
   await cleanupRooms();
   const settings=await loadSettings();
   if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2; }
   let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
   const now=S.store.now();
-  const room={code,game:'fibs',created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
+  const room={code,game:GNAMES[game]?game:'fibs',created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
   if(demo) BOTS.forEach((n,i)=>room.players['bot'+i]={name:n,color:i+1,emoji:BOT_EMOJI[i],score:0,bot:true,joined:now+i,on:true,from:0});
   await S.store.set(roomPath(code),room);
   return code;
@@ -577,7 +625,7 @@ function awards(r){
 /* ============ HOST (the TV screen + game engine) ============ */
 function Host(code, mount, opts){
   if(!code){ mount.innerHTML='<div class="landing"><div class="logo" style="font-size:40px">HARDIN<span>GAMES</span></div><div class="muted" style="text-align:center">Setting up a room…</div></div>';
-    createRoom(false).then(c=>nav({host:c},true)); return; }
+    createRoom(false, PARAMS.get('game')||'fibs').then(c=>nav({host:c},true)); return; }
   const store=S.store, P=roomPath(code);
   mount.classList.add('tv'); if(mount===app){ mount.classList.add('full'); document.body.style.overflow='hidden'; }
   mount.innerHTML=`<div class="stage"></div><div class="fx"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
@@ -831,6 +879,7 @@ function Player(code, mount, fixedPid){
 
   mount.onclick=async e=>{ const b=e.target.closest('[data-p]'); if(!b) return; const k=b.dataset.p, r=R; msg=''; Awake.on();
     if(k==='join') return join($('[data-keep=name]',root).value);
+    if(r && r.game==='trivia' && TCLICK.has(k)) return triviaClick(k,b,r);
     if(k==='home') return nav({});
     if(k==='snd'){ psound=!psound; LS.set('hg_psound',psound); beep(); return render(); }
     if(k==='emo'){ selEmoji=selEmoji===b.dataset.e?null:b.dataset.e; selPhoto=null; return render(); }
@@ -898,6 +947,44 @@ function Player(code, mount, fixedPid){
     const order=pool.slice(lfm.cursor).concat(pool.slice(0,lfm.cursor));
     for(const x of order){ if(lfm.shown.length>=3) break; if(!lfm.shown.some(y=>norm(y)===norm(x))) lfm.shown.push(x); }
     return lfm.shown; }
+  /* ---- Smarty Pants phone screens ---- */
+  const TCLICK=new Set(['tvote','tans','tnum','tbet','tbetlock','tflag']);
+  async function triviaClick(k,b,r){
+    if(k==='tvote'){ beep(); return upd({[`tvotes/${pid}`]:Number(b.dataset.c)}); }
+    if(k==='tans'){ if((r.answers||{})[pid]) return; beep(660); return upd({[`answers/${pid}`]:{c:Number(b.dataset.c),t:store.now()}}); }
+    if(k==='tnum'){ if((r.answers||{})[pid]) return; const v=parseFloat(String(($('[data-keep^=num]',root)||{}).value||'').replace(/[, $]/g,''));
+      if(!isFinite(v)){ msg='Type a number'; return render(); } beep(660); return upd({[`answers/${pid}`]:{n:v,t:store.now()}}); }
+    if(k==='tbet'){ const i=$('[data-keep^=bet]',root); if(i) i.value=b.dataset.v; return; }
+    if(k==='tbetlock'){ const i=$('[data-keep^=bet]',root), mx=maxBet(r,pid), raw=String((i||{}).value||'').replace(/[, ]/g,''), v=Math.round(Number(raw));
+      if(raw===''||!isFinite(v)||v<0||v>mx){ msg=`Bet between 0 and ${mx}`; return render(); } beep(); return upd({[`wagers/${pid}`]:v}); }
+    if(k==='tflag') return flagQuestion(r.q);
+  }
+  function triviaPhone(r,me,st,err){ const q=r.q, A=(r.answers||{})[pid];
+    switch(r.phase){
+      case 'tvote': { const my=(r.tvotes||{})[pid];
+        return `<div class="ptimer"></div><h3>Pick a category</h3>${(r.cats||[]).map((c,i)=>`<button class="pchoice tcat ${my===i?'sel':''}" style="--c:${TCOL[i]}" data-p="tvote" data-c="${i}">${esc(c)}</button>`).join('')}${my!=null?'<div class="ok small">Vote is in ✓ You can still change it.</div>':''}`; }
+      case 'tcat': return `<div class="bigmsg"><div class="em">🧠</div>Round ${r.round}<b style="color:var(--teal);font-family:Bungee">${esc(r.cat)}</b>Get ready!</div>`;
+      case 'wcat': { const my=(r.wagers||{})[pid], mx=maxBet(r,pid);
+        if(my!=null) return `<div class="bigmsg"><div class="em">🎰</div>Bet locked in<b style="color:var(--gold);font-family:Bungee">${my}</b><div class="small muted">Category: ${esc(r.cat)}</div></div>`;
+        return `<div class="ptimer"></div><h3>Final question</h3><div class="pq">Category: <b style="color:var(--teal)">${esc(r.cat)}</b></div><div class="small muted">Bet up to ${mx}. Right, you win it. Wrong, you lose it.</div>
+          <div class="row">${[0,.25,.5,1].map(f=>`<button class="alt" data-p="tbet" data-v="${Math.round(mx*f)}" style="padding:10px 4px">${f===1?'All in':Math.round(mx*f)}</button>`).join('')}</div>
+          <input data-keep="bet${r.games}" type="text" inputmode="numeric" placeholder="Your bet (0–${mx})" autocomplete="off">${err}<button data-p="tbetlock">Lock in bet</button>`; }
+      case 'q': { if(!q) return '';
+        if(A) return `<div class="bigmsg"><div class="em">🔒</div>Locked in!${q.type==='mc'?`<b style="color:${TCOL[A.c]}">${TLET[A.c]} · ${esc(q.choices[A.c])}</b>`:`<b style="color:var(--gold)">${esc(fmtNum(A.n,q.unit))}${esc(unitTxt(q.unit))}</b>`}<div class="small muted">Waiting for everyone…</div></div>`;
+        const head=`<div class="ptimer"></div><div class="pq" style="font-size:17px">${esc(q.q)}</div>${r.wq?`<div class="small muted">Your bet: ${(r.wagers||{})[pid]||0}</div>`:''}`;
+        if(q.type==='mc') return head+q.choices.map((c,i)=>`<button class="tans" style="--c:${TCOL[i]}" data-p="tans" data-c="${i}"><b>${TLET[i]}</b><span>${esc(c)}</span></button>`).join('');
+        return head+`<div class="small muted">🎯 Closest guess wins${q.unit&&q.unit!=='year'?' · in '+esc(q.unit):''}</div><input data-keep="num${r.games}_${r.qi}" type="text" inputmode="decimal" placeholder="Your guess" autocomplete="off">${err}<button data-p="tnum">Lock it in</button>`; }
+      case 'reveal': { const x=(r.results||{})[pid], ans=esc(answerText(q)); let line;
+        if(!x) line=`<div class="em">⏰</div>No answer<div class="small muted">It was ${ans}</div>`;
+        else if(r.wq) line=x.ok?`<div class="em">🤑</div>Right!<b style="color:var(--good)">+${x.bet}</b>`:`<div class="em">💸</div>Not quite<div class="small muted">It was ${ans}</div>${x.bet?`<b style="color:var(--bad)">−${x.bet}</b>`:''}`;
+        else if(q.type==='num') line=x.rank===0?`<div class="em">🎯</div>${x.d===0?'Bullseye!':'Closest!'}<b style="color:var(--good)">+${x.pts}</b>`:x.pts?`<div class="em">👏</div>Second closest<b style="color:var(--good)">+${x.pts}</b>`:`<div class="em">📏</div>Off by ${esc(fmtNum(x.d,q.unit))}<div class="small muted">It was ${ans}</div>`;
+        else line=x.ok?`<div class="em">✅</div>Correct!<b style="color:var(--good)">+${x.pts}${x.bonus?' 🔥':''}</b>${x.bonus?`<div class="small muted">${x.streak} in a row!</div>`:''}`:`<div class="em">❌</div>Not quite<div class="small muted">It was ${ans}</div>`;
+        return `<div class="bigmsg">${line}</div>${r.vip===pid?'<button class="alt" data-p="tflag" style="padding:10px;font-size:14px">🚩 Flag a bad question</button>':''}`; }
+      case 'scores': { const rank=players0(r).findIndex(([id])=>id===pid)+1; return `<div class="bigmsg"><div class="em">📊</div>You're #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b></div>`; }
+      case 'final': { const rank=players0(r).findIndex(([id])=>id===pid)+1, mineA=tAwards(r).filter(a=>a.ids.includes(pid));
+        return `<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b>
+          ${mineA.length?`<div class="awlist">${mineA.map(a=>`<div>${a.icon} <b>${a.title}</b></div>`).join('')}</div>`:''}</div>`; }
+    } return `<div class="bigmsg"><div class="em">📺</div>Watch the TV!</div>`; }
   function bindFiles(){ root.querySelectorAll('input[type=file]').forEach(i=>{ i.onchange=async()=>{ const f=i.files&&i.files[0]; if(!f) return;
       try{ selPhoto=await toAvatar(f); selEmoji=null; msg=''; }catch(e){ msg="Couldn't use that photo"; } render(); }; }); }
 
@@ -907,19 +994,20 @@ function Player(code, mount, fixedPid){
     const err=msg?`<div class="err">${esc(msg)}</div>`:'';
     const me=pid && r.players && r.players[pid];
     if(!me){ patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
-      <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · Fibs</div>
+      <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · ${GNAMES[r.game]||'Fibs'}</div>
       <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
-    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
-    const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote'].includes(r.phase);
+    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote','q','tvote','wcat'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
+    const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote','q'].includes(r.phase);
     const head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
     if(editing){ patchHTML(root, head+`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
     let b='';
     if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
     else if(isLate) b=`<div class="bigmsg"><div class="em">🙌</div>You're in!<div class="small muted">You'll jump in on the next question.</div></div>`;
+    else if(r.game==='trivia' && r.phase!=='lobby') b=triviaPhone(r,me,st,err);
     else switch(r.phase){
       case 'lobby': { const mine=Object.values(r.submitted||{}).filter(q=>q.author===pid).length, n=Object.keys(r.players||{}).length;
         b=`<div class="bigmsg" style="flex:0;padding:8px 0"><div class="em">🎉</div>You're in! Watch the TV.<button class="alt small" data-p="edit" style="padding:8px 14px">Change look</button></div>
-          ${st.playerQuestions?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
+          ${st.playerQuestions&&r.game!=='trivia'?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
           <textarea data-keep="qt" rows="2" placeholder="My first car was a ___"></textarea><input data-keep="qa" placeholder="The real answer" autocomplete="off">${err}
           <button class="alt" data-p="addq">Add question${mine?` (${mine} added)`:''}</button></div>`:''}
           ${vip?`<div class="vip"><button data-p="start" ${n<st.minPlayers?'disabled':''}>Start game</button></div><div class="small muted">${n<st.minPlayers?`Need ${st.minPlayers} players to start`:'You have the ⭐ — start when everyone is in'}</div>`:''}`; break; }
@@ -952,15 +1040,343 @@ function Player(code, mount, fixedPid){
 }
 function players0(r){ return Object.entries(r.players||{}).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); }
 
+/* ============ SMARTY PANTS (trivia) ============ */
+const GNAMES = { fibs:'Fibs', trivia:'Smarty Pants' };
+const TCOL = ['#ff4f8b','#2de2c8','#ffd23f','#a58bff'];
+const TLET = ['A','B','C','D'];
+const TCATS = [
+  ['Space',1],['Animals',1],['Food & Drink',1],['90s Movies',0],['Video Games',1],['US Geography',1],['World Capitals',1],
+  ['Inventions',1],['Sports',1],['Music Through the Decades',1],['Disney & Pixar',1],['Human Body',1],['Ocean Life',1],
+  ['Dinosaurs',1],['US Presidents',1],['Famous Landmarks',1],['Weather & Nature',1],['Cartoons',1],['Board Games & Toys',1],
+  ['Science',1],['80s Pop Culture',0],['TV Sitcoms',0],['Brands & Logos',1],['Mythology',1],['Holidays',1],['Cars',1],
+  ['Superheroes',1],['Words & Language',1],['World History',1],['Olympics',1],['Famous Paintings',1],['Breakfast Foods',1],
+  ['Bugs & Creepy Crawlies',1],['National Parks',1],['Candy & Desserts',1],['Flags of the World',1],['Classic Rock',0],['Kitchen Science',1]
+];
+/* Backup questions for when the AI is slow or off. mc: a = right answer, w = wrong ones. num: n = answer, u = unit */
+const TBANK = [
+  {c:'Space',q:'Which planet is known as the Red Planet?',a:'Mars',w:['Venus','Jupiter','Mercury']},
+  {c:'Space',q:'What is the largest planet in our solar system?',a:'Jupiter',w:['Saturn','Neptune','Earth']},
+  {c:'Space',q:'Who was the first person to walk on the Moon?',a:'Neil Armstrong',w:['Buzz Aldrin','Yuri Gagarin','John Glenn']},
+  {c:'Animals',q:'What is the fastest land animal?',a:'Cheetah',w:['Lion','Pronghorn','Greyhound']},
+  {c:'Animals',q:'How many legs does a spider have?',a:'8',w:['6','10','12']},
+  {c:'Animals',q:'What is a group of crows called?',a:'A murder',w:['A flock','A parliament','A gaggle']},
+  {c:'World Capitals',q:'What is the capital of Australia?',a:'Canberra',w:['Sydney','Melbourne','Perth']},
+  {c:'World Capitals',q:'What is the capital of Canada?',a:'Ottawa',w:['Toronto','Vancouver','Montreal']},
+  {c:'US Geography',q:'Mount Rushmore is in which state?',a:'South Dakota',w:['North Dakota','Wyoming','Montana']},
+  {c:'US Geography',q:'Which state has the most people?',a:'California',w:['Texas','Florida','New York']},
+  {c:'US Geography',q:'Which is the largest US state by area?',a:'Alaska',w:['Texas','California','Montana']},
+  {c:'Food & Drink',q:'Which nut is used to make marzipan?',a:'Almond',w:['Cashew','Peanut','Pistachio']},
+  {c:'Food & Drink',q:'Guacamole is made mainly from which fruit?',a:'Avocado',w:['Tomatillo','Lime','Mango']},
+  {c:'Food & Drink',q:'What is the main ingredient in hummus?',a:'Chickpeas',w:['Lentils','Black beans','Peas']},
+  {c:'Science',q:'What gas do plants take in from the air?',a:'Carbon dioxide',w:['Oxygen','Nitrogen','Helium']},
+  {c:'Science',q:'What is the hardest natural substance?',a:'Diamond',w:['Quartz','Granite','Titanium']},
+  {c:'Science',q:'What do bees make from flower nectar?',a:'Honey',w:['Wax','Pollen','Royal jelly']},
+  {c:'Human Body',q:'How many bones are in the adult human body?',a:'206',w:['186','212','250']},
+  {c:'Human Body',q:'What is the largest organ of the human body?',a:'Skin',w:['Liver','Lungs','Brain']},
+  {c:'US Presidents',q:'Who was the first President of the United States?',a:'George Washington',w:['John Adams','Thomas Jefferson','Benjamin Franklin']},
+  {c:'US Presidents',q:'Which president is on the penny?',a:'Abraham Lincoln',w:['George Washington','Thomas Jefferson','Theodore Roosevelt']},
+  {c:'World History',q:'In which year did the Titanic sink?',a:'1912',w:['1905','1921','1898']},
+  {c:'Famous Landmarks',q:'Which ancient wonder is still standing today?',a:'Great Pyramid of Giza',w:['Hanging Gardens of Babylon','Colossus of Rhodes','Lighthouse of Alexandria']},
+  {c:'Famous Landmarks',q:'The Statue of Liberty was a gift from which country?',a:'France',w:['England','Spain','Italy']},
+  {c:'Sports',q:'How many players does a soccer team have on the field?',a:'11',w:['9','10','12']},
+  {c:'Sports',q:'In bowling, what are three strikes in a row called?',a:'A turkey',w:['A hat trick','A triple','A grand slam']},
+  {c:'Sports',q:'How many points is a touchdown worth before the extra point?',a:'6',w:['7','5','3']},
+  {c:'Music Through the Decades',q:'Which band recorded "Hey Jude"?',a:'The Beatles',w:['The Rolling Stones','The Beach Boys','Queen']},
+  {c:'Music Through the Decades',q:'How many keys are on a standard piano?',a:'88',w:['76','92','100']},
+  {c:'Board Games & Toys',q:'How many squares are on a chessboard?',a:'64',w:['81','49','100']},
+  {c:'Words & Language',q:'Which of these letters is NOT a Roman numeral?',a:'B',w:['C','D','M']},
+  {c:'Weather & Nature',q:'Which is the largest ocean on Earth?',a:'Pacific',w:['Atlantic','Indian','Arctic']},
+  {c:'Weather & Nature',q:'How many continents are there?',a:'7',w:['5','6','8']},
+  {c:'Dinosaurs',q:'What does the word "dinosaur" roughly mean?',a:'Terrible lizard',w:['Giant beast','Ancient bird','Thunder foot']},
+  {c:'Ocean Life',q:'What is the largest animal that has ever lived?',a:'Blue whale',w:['Megalodon','Whale shark','Brachiosaurus']},
+  {c:'Famous Landmarks',q:'How tall is the Statue of Liberty from the ground to the tip of the torch, in feet?',n:305,u:'feet'},
+  {c:'Inventions',q:'In what year did the first iPhone go on sale?',n:2007,u:'year'},
+  {c:'Sports',q:'How many miles long is a marathon?',n:26.2,u:'miles'},
+  {c:'Space',q:'In what year did people first land on the Moon?',n:1969,u:'year'},
+  {c:'US Geography',q:'How many stripes are on the US flag?',n:13,u:'stripes'},
+  {c:'Weather & Nature',q:'How tall is Mount Everest, in feet?',n:29032,u:'feet'},
+  {c:'World History',q:'In what year was the Declaration of Independence signed?',n:1776,u:'year'},
+  {c:'Space',q:'On average, how many miles away is the Moon?',n:238900,u:'miles'},
+  {c:'Human Body',q:'How many teeth does a full set of adult teeth have?',n:32,u:'teeth'}
+];
+const maxBet = (r,id) => Math.max(1000, (r.players&&r.players[id]&&r.players[id].score)||0);
+const fmtNum = (n,u) => u==='year' ? String(n) : Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+const unitTxt = u => u && u!=='year' ? ' '+u : '';
+const answerText = q => !q ? '' : q.type==='num' ? fmtNum(q.answer,q.unit)+unitTxt(q.unit) : (q.choices||[])[q.answer];
+async function flagQuestion(q){
+  if(!q) return;
+  try{ await S.store.set(`${ROOT}/trivia/flagged/${hash(q.q)}`,{q:q.q,a:answerText(q),cat:q.cat||'',at:S.store.now()}); toast("Flagged — it won't come back"); }
+  catch(e){ toast("Couldn't flag that one"); }
+}
+function bankQ(b){ if('n' in b) return {type:'num',q:b.q,answer:b.n,unit:b.u||'',cat:b.c,src:'bank'};
+  const ch=shuffle([b.a,...b.w]); return {type:'mc',q:b.q,choices:ch,answer:ch.indexOf(b.a),cat:b.c,src:'bank'}; }
+async function fetchTrivia(cat, n, numbers, st, hard, avoid){
+  const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),25000);
+  try{
+    const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/trivia',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({category:cat,count:n,numbers,family:st.audience==='family',hard:!!hard,avoid})});
+    const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+    const out=[];
+    for(const x of (j.questions||[])){
+      const q=String(x.q||'').trim(); if(!q||q.length>220) continue;
+      if(x.type==='num'){ const v=Number(String(x.answer).replace(/,/g,'')); if(!isFinite(v)) continue; out.push({type:'num',q,answer:v,unit:String(x.unit||'').slice(0,20),cat,src:'ai'}); }
+      else { const c=String(x.correct||'').trim(), all=[c,...(x.wrong||[]).map(s=>String(s).trim()).filter(Boolean).slice(0,3)];
+        if(!c||all.length<4||new Set(all.map(norm)).size<4||all.some(s=>s.length>60)) continue;
+        const ch=shuffle(all); out.push({type:'mc',q,choices:ch,answer:ch.indexOf(c),cat,src:'ai'}); }
+    }
+    return out;
+  } finally{ clearTimeout(to); }
+}
+/* A round's questions: AI first, topped up from the backup bank; the closest-number question lands somewhere after the first */
+async function loadTrivia(cat, n, numbers, st, o={}){
+  const flagged=o.flagged||new Set(), used=LS.get('hg_tused',[]), usedS=new Set(used);
+  let got=[];
+  if(CONFIG.WORKER_URL && st.tAI!==false){ try{ got=await fetchTrivia(cat,n,numbers,st,o.hard,used.slice(-40).concat(o.flaggedList||[]).slice(-60)); }catch(e){ console.warn('AI trivia failed',e); } }
+  got=got.filter(q=>!flagged.has(String(hash(q.q))));
+  let mc=got.filter(q=>q.type==='mc').slice(0,n-numbers), nm=got.filter(q=>q.type==='num').slice(0,numbers);
+  const have=new Set([...mc,...nm].map(q=>q.q));
+  const fill=(isNum,k)=>{ if(k<=0) return [];
+    const pool=shuffle(TBANK.filter(b=>('n' in b)===isNum && !flagged.has(String(hash(b.q))) && !have.has(b.q)));
+    pool.sort((a,b)=>((b.c===cat)-(a.c===cat)) || (usedS.has(a.q)-usedS.has(b.q)));
+    return pool.slice(0,k).map(b=>{ const q=bankQ(b); q.cat=cat; return q; }); };
+  mc=mc.concat(fill(false,n-numbers-mc.length)); nm=nm.concat(fill(true,numbers-nm.length));
+  const out=shuffle(mc); if(nm.length){ const pos=out.length?1+Math.floor(Math.random()*out.length):0; out.splice(pos,0,...nm); }
+  return out;
+}
+function pickCats(r, usedCats){
+  const st=r.settings, fam=st.audience==='family';
+  const custom=String(st.tCats||'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,20);
+  const base=TCATS.filter(([,k])=>!fam||k).map(([n])=>n);
+  const used=new Set(usedCats||[]);
+  let pool=shuffle([...new Set([...custom,...base])].filter(c=>!used.has(c)));
+  if(custom.length){ const c=shuffle(custom.filter(x=>!used.has(x))); if(c.length) pool=[c[0],...pool.filter(x=>x!==c[0])]; }
+  return shuffle(pool.slice(0,3));
+}
+function tAwards(r){
+  const ps=r.players||{}, St=r.tstats||{}, out=[], names=ids=>listNames(ids.map(i=>ps[i].name));
+  const best=(f,min,low)=>{ let m=null, ids=[]; for(const id in St){ if(!ps[id]) continue; const v=f(St[id]||{}); if(v==null||(!low&&v<min)) continue;
+      if(m==null||(low?v<m:v>m)){ m=v; ids=[id]; } else if(v===m) ids.push(id); } return {m,ids}; };
+  let b=best(s=>s.correct||0,1); if(b.m) out.push({icon:'🧠',title:'Brainiac',ids:b.ids,names:names(b.ids),detail:`${b.m} right`});
+  b=best(s=>(s.nmc||0)>=2?Math.round(s.time/s.nmc/100)/10:null,0,true); if(b.m!=null) out.push({icon:'⚡',title:'Speed Demon',ids:b.ids,names:names(b.ids),detail:`${b.m}s per right answer`});
+  b=best(s=>s.best||0,3); if(b.m) out.push({icon:'🔥',title:'Hot Streak',ids:b.ids,names:names(b.ids),detail:`${b.m} in a row`});
+  b=best(s=>s.bull||0,1); if(b.m) out.push({icon:'🎯',title:'Bullseye',ids:b.ids,names:names(b.ids),detail:`Closest guess ${b.m}×`});
+  return out;
+}
+
+function TriviaHost(code, mount, opts){
+  const store=S.store, P=roomPath(code);
+  mount.classList.add('tv'); if(mount===app){ mount.classList.add('full'); document.body.style.overflow='hidden'; }
+  mount.innerHTML=`<div class="stage"></div><div class="fx"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
+  const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
+  let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0, flagged=new Set(), flaggedList=[];
+  const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
+  const upd=patch=>store.update(P,clone(patch));
+  const now=()=>store.now();
+  const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
+  const late=(r,p)=>(p.from||0)>(r.qi??-1);
+  const activeIds=r=>players(r).filter(([,p])=>p.on!==false && !late(r,p)).map(([id])=>id);
+  const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
+  const loadFlags=async()=>{ try{ const f=(await store.get(`${ROOT}/trivia/flagged`))||{}; flagged=new Set(Object.keys(f)); flaggedList=Object.values(f).map(x=>x.q).slice(-20); }catch(e){} };
+
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  const unsub=store.on(P, r=>{
+    if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
+    const prev=R; R=r;
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); loadFlags(); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    effects(prev,r); reactions(r); render(r);
+  });
+  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
+  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
+  mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
+
+  function act(t){ const r=R; if(!r) return; const n=now();
+    if(t==='home') return nav({});
+    if(t==='start') return startGame();
+    if(t==='flag') return flagQuestion(r.q);
+    if(t==='pause' && !r.paused && !['lobby','final'].includes(r.phase)) return upd({paused:true,remaining:Math.max(0,(r.endsAt||n)-n)});
+    if(t==='resume' && r.paused) return upd({paused:false,endsAt:n+(r.remaining||0)});
+    if(t==='skip'){ if(r.paused) upd({paused:false});
+      if(r.phase==='tvote') return endVote();
+      if((r.phase==='tcat'||r.phase==='wcat') && r.rq) return beginQ(0);
+      if(r.phase==='q') return beginReveal();
+      if(r.phase==='reveal') return afterReveal();
+      if(r.phase==='scores') return afterScores(); }
+    if(t==='again'){ done=new Set(); const p={phase:'lobby',round:0,qi:-1,ri:-1,q:null,rq:null,answers:null,tvotes:null,wagers:null,deltas:null,results:null,scored:null,tstats:null,usedCats:null,cat:null,cats:null,wq:false,paused:false,endsAt:null};
+      for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; } return upd(p); }
+  }
+
+  /* ---- engine ---- */
+  async function startGame(){ const r=R; if(!r||r.phase!=='lobby') return;
+    const count=players(r).filter(([,p])=>p.on!==false).length;
+    if(count<r.settings.minPlayers){ toast(`Need at least ${r.settings.minPlayers} players`); return; }
+    if(!once('start'+(r.games||0))) return;
+    await loadFlags();
+    const st=r.settings, n=now(), p={phase:'tvote',round:1,qi:-1,ri:-1,q:null,rq:null,answers:null,tvotes:null,wagers:null,deltas:null,results:null,scored:null,tstats:null,usedCats:null,cat:null,wq:false,
+      cats:pickCats(r,[]),games:(r.games||0)+1,paused:false,phaseAt:n,endsAt:n+st.tVoteTime*1000};
+    for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; }
+    upd(p); }
+  function endVote(){ const r=R; if(!once('tv'+r.games+'_'+r.round)) return;
+    const tally=[0,0,0]; for(const v of Object.values(r.tvotes||{})) if(tally[v]!=null) tally[v]++;
+    const max=Math.max(...tally), top=tally.map((c,i)=>c===max?i:-1).filter(i=>i>=0), win=(r.cats||['Science'])[top[Math.floor(Math.random()*top.length)]]||'Science';
+    const st=r.settings, n=now(), g=r.games, round=r.round;
+    upd({phase:'tcat',cat:win,usedCats:[...(r.usedCats||[]),win],rq:null,phaseAt:n,endsAt:n+4000});
+    loadTrivia(win,st.tPerRound,st.tNumbers?1:0,st,{flagged,flaggedList}).then(list=>{ if(R&&R.games===g&&R.round===round&&R.phase==='tcat') upd({rq:list}); }); }
+  function beginQ(i){ const r=R; if(!r.rq||!r.rq[i]||!once('q'+r.games+'_'+r.round+'_'+i)) return;
+    const st=r.settings, n=now(), q=r.rq[i], f=st.audience==='family'?1.5:1, dur=Math.round((st.tTime+(q.type==='num'?5:0))*1000*f);
+    upd({phase:'q',qi:(r.qi??-1)+1,ri:i,q,answers:null,deltas:null,results:null,qAt:n,dur,phaseAt:n,endsAt:n+dur});
+    const u=LS.get('hg_tused',[]).filter(x=>x!==q.q); u.push(q.q); LS.set('hg_tused',u.slice(-150)); }
+  function beginReveal(){ const r=R; if(!once('rv'+r.games+'_'+r.qi)) return;
+    const st=r.settings, q=r.q, A=r.answers||{}, n=now(), deltas={}, results={}, stats=clone(r.tstats||{});
+    const S0=id=>(stats[id]=stats[id]||{correct:0,time:0,nmc:0,streak:0,best:0,bull:0});
+    const ids=players(r).filter(([,p])=>!late(r,p)).map(([id])=>id);
+    if(r.wq){ for(const id of ids){ const a=A[id], bet=Math.max(0,Math.min(Number((r.wagers||{})[id])||0,maxBet(r,id))), ok=!!a&&a.c===q.answer;
+        if(bet) deltas[id]=ok?bet:-bet; if(a||bet) results[id]={ok,pts:ok?bet:-bet,bet}; if(ok) S0(id).correct++; } }
+    else if(q.type==='mc'){ for(const id of ids){ const a=A[id], s=S0(id), ok=!!a&&a.c===q.answer;
+        if(ok){ const ms=Math.max(0,(a.t||n)-r.qAt), el=Math.min(1,ms/(r.dur||1)), pts=Math.round((1000-500*el)/10)*10;
+          s.correct++; s.nmc++; s.time+=ms; s.streak++; s.best=Math.max(s.best,s.streak);
+          const bonus=s.streak>=3?(st.tStreak||0):0; deltas[id]=pts+bonus; results[id]={ok:true,pts:pts+bonus,bonus,streak:s.streak}; }
+        else { s.streak=0; if(a) results[id]={ok:false,pts:0}; } } }
+    else { const gs=ids.filter(id=>A[id]&&isFinite(A[id].n)).map(id=>({id,d:Math.abs(A[id].n-q.answer)})).sort((a,b)=>a.d-b.d), ds=[...new Set(gs.map(g=>g.d))];
+      for(const g of gs){ const s=S0(g.id), rank=ds.indexOf(g.d); let pts=0;
+        if(rank===0){ pts=1000+(g.d===0?500:0); s.bull++; s.correct++; } else if(rank===1) pts=500;
+        if(pts) deltas[g.id]=pts; results[g.id]={ok:rank===0,pts,rank,d:Math.round(g.d*100)/100}; } }
+    const p={phase:'reveal',deltas,results,tstats:stats,phaseAt:n,endsAt:n+(q.type==='num'?8500:7000)};
+    if(r.scored!==r.qi){ for(const [id,d] of Object.entries(deltas)) if(r.players[id]) p[`players/${id}/score`]=Math.max(0,(r.players[id].score||0)+d); p.scored=r.qi; }
+    upd(p); }
+  function afterReveal(){ const r=R; if(!once('ar'+r.games+'_'+r.qi)) return; const n=now();
+    if(r.wq) return upd({phase:'final',phaseAt:n,endsAt:null});
+    if(r.ri+1<(r.rq||[]).length) return beginQ(r.ri+1);
+    upd({phase:'scores',phaseAt:n,endsAt:n+7000}); }
+  function afterScores(){ const r=R; if(!once('as'+r.games+'_'+r.round)) return; const st=r.settings, n=now(), g=r.games;
+    if(r.round<st.tRounds) return upd({phase:'tvote',round:r.round+1,cats:pickCats(r,r.usedCats||[]),tvotes:null,rq:null,phaseAt:n,endsAt:n+st.tVoteTime*1000});
+    if(st.tWager){ const cat=pickCats(r,r.usedCats||[])[0]||'Science';
+      upd({phase:'wcat',round:st.tRounds+1,cat,wagers:null,rq:null,wq:true,phaseAt:n,endsAt:n+20000});
+      loadTrivia(cat,1,0,st,{flagged,flaggedList,hard:true}).then(list=>{ if(R&&R.games===g&&R.phase==='wcat') upd({rq:list}); });
+      return; }
+    upd({phase:'final',phaseAt:n,endsAt:null}); }
+  function tick(){ const r=R; if(!r||r.paused||['lobby','final','loading'].includes(r.phase)) return; const n=now(), ids=activeIds(r);
+    if(r.demo) botTick(r,n);
+    if(r.phase==='tvote'){ const V=r.tvotes||{}; if((ids.length&&ids.every(id=>V[id]!=null))||n>=r.endsAt) endVote(); }
+    else if(r.phase==='tcat'){ if(n>=r.endsAt && r.rq) beginQ(0); }
+    else if(r.phase==='q'){ const A=r.answers||{}; if((ids.length&&ids.every(id=>A[id]))||n>=r.endsAt) beginReveal(); }
+    else if(r.phase==='reveal'){ if(n>=r.endsAt) afterReveal(); }
+    else if(r.phase==='scores'){ if(n>=r.endsAt) afterScores(); }
+    else if(r.phase==='wcat'){ const W=r.wagers||{}; if(r.rq && ((ids.length&&ids.every(id=>W[id]!=null))||n>=r.endsAt)) beginQ(0); } }
+  function botTick(r,n){ for(const [id,p] of Object.entries(r.players||{})){ if(!p.bot) continue; const k=r.games+'_'+r.round+'_'+r.qi+id, d=1500+hash(k)%6000;
+      if(r.phase==='tvote' && (r.tvotes||{})[id]==null && n-r.phaseAt>d*0.5 && !botMark.has('v'+k)){ botMark.add('v'+k); upd({[`tvotes/${id}`]:Math.floor(Math.random()*3)}); }
+      if(r.phase==='q' && !(r.answers||{})[id] && n-r.phaseAt>d && !botMark.has('a'+k)){ botMark.add('a'+k); const q=r.q;
+        const spread=q.unit==='year'?40:Math.max(3,Math.abs(q.answer)*0.4);
+        upd({[`answers/${id}`]:q.type==='num'?{n:Math.round((q.answer+(Math.random()-0.5)*2*spread)*10)/10,t:n}:{c:Math.random()<0.6?q.answer:Math.floor(Math.random()*4),t:n}}); }
+      if(r.phase==='wcat' && (r.wagers||{})[id]==null && n-r.phaseAt>d && !botMark.has('w'+k)){ botMark.add('w'+k); upd({[`wagers/${id}`]:Math.round(maxBet(r,id)*Math.random()/50)*50}); }
+      if(['reveal','scores'].includes(r.phase) && r.settings.reactions!==false && Math.random()<0.004) upd({[`reactions/${uid()}`]:{e:REACTS[Math.floor(Math.random()*REACTS.length)],t:n,p:id}}); } }
+
+  /* ---- reactions + confetti (same as Fibs) ---- */
+  function reactions(r){ const rs=r.reactions||{}, n=now();
+    for(const [id,x] of Object.entries(rs)){ if(seenR.has(id)) continue; seenR.add(id); if(!x||!REACTS.includes(x.e)||n-(x.t||0)>5000||fx.childElementCount>60) continue; floatEmoji(x.e); } }
+  function cleanReacts(){ const r=R, n=now(); if(!r||!r.reactions||n-lastClean<3000) return; lastClean=n;
+    const p={}; for(const [id,x] of Object.entries(r.reactions)) if(!x||n-(x.t||0)>6000) p[`reactions/${id}`]=null; if(Object.keys(p).length) upd(p); }
+  function floatEmoji(e){ const d=document.createElement('div'); d.className='floater'; d.textContent=e; d.style.left=(6+Math.random()*86)+'%'; d.style.setProperty('--dx',(Math.random()*16-8)+'cqw'); fx.appendChild(d); setTimeout(()=>d.remove(),3200); Sound.sfx('pop'); }
+  function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8]; c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg'); fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
+
+  /* ---- sound + voice ---- */
+  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['q','tvote','wcat'].includes(r.phase)?0.55:1); }
+  function effects(prev,r){
+    const c={p:Object.keys(r.players||{}).length,a:Object.keys(r.answers||{}).length+Object.keys(r.tvotes||{}).length+Object.keys(r.wagers||{}).length};
+    if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.a>lastCounts.a) Sound.sfx('lock'); } lastCounts=c;
+    if(prev && (prev.phase!==r.phase || prev.ri!==r.ri)){ setMusicFor(r);
+      if(r.phase==='tcat'||r.phase==='wcat') Sound.sfx('start');
+      if(r.phase==='reveal'){ Sound.sfx('drumroll'); const any=Object.values(r.results||{}).some(x=>x.ok); setTimeout(()=>{ Sound.sfx(any?'ding':'buzz'); if(any) confetti(); },DRUM_MS); }
+      if(r.phase==='scores') Sound.sfx('points');
+      if(r.phase==='final'){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); } }
+    if(r.phase==='q' && r.q) Voice.prefetch(`The answer is… ${answerText(r.q)}!`, r.settings);
+    if((r.phase==='reveal'||r.phase==='tcat') && r.rq){ const nx=r.rq[r.phase==='tcat'?0:r.ri+1]; if(nx) Voice.prefetch(nx.q, r.settings); }
+    if(unlocked) maybeSpeak(r); }
+  function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
+  function speechFor(r){ switch(r.phase){
+      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'tvote': return ['tv'+r.games+'_'+r.round, r.round===1?"Let's play Smarty Pants! Pick a category!":'Pick a category!'];
+      case 'tcat': return ['tc'+r.games+'_'+r.round, `Round ${WORDS[r.round]||r.round}: ${r.cat}!`];
+      case 'wcat': return ['wc'+r.games, `Final question! The category is ${r.cat}. Place your bets!`];
+      case 'q': return ['q'+r.games+'_'+r.qi, r.q.q];
+      case 'reveal': return ['rv'+r.games+'_'+r.qi, `The answer is… ${answerText(r.q)}!`];
+      case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
+    } return null; }
+
+  /* ---- rendering ---- */
+  function timerUI(){ const r=R, el=$('.timer',stage); if(!r||!el) return; const left=r.paused?(r.remaining||0):Math.max(0,(r.endsAt||0)-now()), s=Math.ceil(left/1000);
+    if(el.textContent!==String(s)) el.textContent=s; el.classList.toggle('low',s<=5&&!r.paused);
+    if(s<=5 && s>0 && s!==lastTick && !r.paused && unlocked) Sound.sfx('tick'); lastTick=s; }
+  function top(r){ const st=r.settings, lbl=['lobby','final'].includes(r.phase)?'':r.wq?'FINAL QUESTION':(r.round?`ROUND ${r.round}${r.cat&&r.phase!=='tvote'?' · '+esc(r.cat).toUpperCase():''}`:'');
+    return `<div class="tvtop"><span><b>HARDIN GAMES</b> · SMARTY PANTS</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
+  function tiles(r, mark){ return `<div class="strip">${players(r).map(([id,p])=>`<div class="tile ${p.on===false||late(r,p)?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
+  function ctl(r){ if(['lobby','final'].includes(r.phase)) return '';
+    return `<div class="hostctl"><button class="alt" data-act="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-act="skip">Skip</button>${r.phase==='reveal'?'<button class="alt" data-act="flag">🚩 Bad question</button>':''}</div>`; }
+  function render(r){ const st=r.settings, q=r.q; let body='';
+    switch(r.phase){
+      case 'lobby': { const url=joinUrl(r.code), ps=players(r), max=st.maxPlayers;
+        const tl=ps.map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${avatar(p)}<span class="nm">${esc(p.name)}${p.bot?' 🤖':''}${r.vip===id?' ⭐':''}</span></div>`).join('')+
+          Array.from({length:Math.max(0,Math.min(8,max)-ps.length)},()=>'<div class="tile empty">open</div>').join('');
+        body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--teal)">SMARTY PANTS</div>
+          <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
+          <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
+      case 'tvote': body=`<div class="center"><div class="bigintro" style="font-size:4.2cqw">PICK A CATEGORY</div>
+          <div class="cats">${(r.cats||[]).map((c,i)=>{ const vs=Object.entries(r.tvotes||{}).filter(([,v])=>v===i).map(([id])=>id);
+            return `<div class="catc" style="--c:${TCOL[i]}"><div class="cn">${esc(c)}</div><div class="strip">${vs.map(id=>avatar(r.players[id])).join('')}</div></div>`; }).join('')}</div>
+          <div class="note">Vote on your phone</div></div><div class="timer"></div>`; break;
+      case 'tcat': body=`<div class="center"><div class="subintro">ROUND ${r.round}</div><div class="bigintro" style="font-size:${r.cat&&r.cat.length>14?5:7}cqw">${esc(r.cat)}</div>${r.rq?'':'<div class="note late3">Writing questions…</div>'}</div>`; break;
+      case 'wcat': body=`<div class="center"><div class="subintro">FINAL QUESTION</div><div class="bigintro" style="font-size:${r.cat&&r.cat.length>14?5:6.5}cqw">${esc(r.cat)}</div>
+          <div class="note">Bet some or all of your points on your phone</div>${tiles(r,id=>(r.wagers||{})[id]!=null)}</div><div class="timer"></div>`; break;
+      case 'q': body=`<div class="center"><div class="qsrc">${r.wq?'FINAL QUESTION':`Question ${r.ri+1} of ${(r.rq||[]).length}`} · ${esc(r.cat||'')}</div>
+          <div class="question" style="font-size:3.2cqw">${esc(q.q)}</div>
+          ${q.type==='mc'?`<div class="topts">${q.choices.map((c,i)=>`<div class="topt" style="--c:${TCOL[i]}"><b>${TLET[i]}</b><span>${esc(c)}</span></div>`).join('')}</div>`
+            :`<div class="numq">🎯 CLOSEST GUESS WINS${q.unit&&q.unit!=='year'?' · IN '+esc(q.unit).toUpperCase():''}</div>`}
+          ${tiles(r,id=>(r.answers||{})[id])}</div><div class="timer"></div>`; break;
+      case 'reveal': { const A=r.answers||{}, res=r.results||{};
+        const gains=Object.entries(res).filter(([,x])=>x.pts).sort((a,b)=>b[1].pts-a[1].pts).map(([id,x])=>`<span class="gain ${x.pts<0?'neg':''}">${avatar(r.players[id])}${x.pts>0?'+':'−'}${Math.abs(x.pts)}${x.bonus?' 🔥':''}</span>`).join('');
+        const anyOk=Object.values(res).some(x=>x.ok);
+        if(q.type==='mc') body=`<div class="center" data-k="rv${r.qi}"><div class="question" style="font-size:2.3cqw;opacity:.85">${esc(q.q)}</div><div class="drum">The answer is…</div>
+          <div class="topts">${q.choices.map((c,i)=>{ const who=Object.entries(A).filter(([,a])=>a.c===i).map(([id])=>id);
+            return `<div class="topt rv ${i===q.answer?'right':'wrong'}" style="--c:${TCOL[i]}"><b>${TLET[i]}</b><span>${esc(c)}</span><span class="who">${who.map(id=>avatar(r.players[id])).join('')}</span></div>`; }).join('')}</div>
+          <div class="late2">${gains?`<div class="gains">${gains}</div>`:''}${anyOk?'':'<div class="quip">Nobody got it!</div>'}</div></div>`;
+        else { const rows=Object.entries(res).sort((a,b)=>a[1].d-b[1].d);
+          body=`<div class="center" data-k="rv${r.qi}"><div class="question" style="font-size:2.3cqw;opacity:.85">${esc(q.q)}</div><div class="drum">The answer is…</div>
+          <div class="revcard truth late1" style="font-size:3.6cqw;padding:1.6cqw 3.6cqw">${esc(answerText(q))}</div>
+          <div class="late2"><div class="gboard ${rows.length>4?'two':''}">${rows.map(([id,x])=>`<div class="brow">${avatar(r.players[id])}<span class="nm">${esc(nm(r,id))} · ${esc(fmtNum(A[id].n,q.unit))}</span><span class="dl" style="color:var(--muted)">${x.d===0?'exact!':'off by '+esc(fmtNum(x.d,q.unit))}</span><span class="sc">${x.pts?'+'+x.pts:''}</span></div>`).join('')||'<div class="note">Nobody guessed!</div>'}</div></div></div>`; }
+        break; }
+      case 'scores': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+        body=`<div class="center"><div class="subintro">AFTER ROUND ${r.round}</div><div class="bigintro" style="font-size:4.5cqw">SCORES</div>
+          <div class="board">${rows.map(([id,p])=>`<div class="brow">${avatar(p)}<span class="nm">${esc(p.name)}</span><span class="dl">${((r.tstats||{})[id]||{}).streak>=3?'🔥 '+r.tstats[id].streak:''}</span><span class="sc">${p.score||0}</span></div>`).join('')}</div></div>`; break; }
+      case 'final': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)), pod=[rows[1],rows[0],rows[2]], aw=tAwards(r);
+        body=`<div class="center final"><div class="bigintro" style="font-size:4.2cqw">${rows[0]?esc(rows[0][1].name)+' WINS!':'GAME OVER'}</div>
+          <div class="podium">${pod.map((x,i)=>x?`<div class="pod">${avatar(x[1])}<div>${esc(x[1].name)}</div><div class="blk" style="height:${[6,9,4][i]}cqw">${x[1].score||0}</div></div>`:'').join('')}</div>
+          ${aw.length?`<div class="awards">${aw.map(a=>`<div class="award"><div class="ai">${a.icon}</div><div class="at">${a.title}</div><div class="an">${esc(a.names)}</div><div class="ad">${esc(a.detail)}</div></div>`).join('')}</div>`:''}
+          <div class="tvbtns"><button data-act="again">Play again</button><button class="alt" data-act="home">Exit</button></div></div>`; break; }
+    }
+    patchHTML(stage, top(r)+body+ctl(r)+(r.paused?'<div class="paused">PAUSED</div>':''));
+    const qr=$('#qr',stage); if(qr && !qr.firstChild && window.QRCode){ try{ new QRCode(qr,{text:joinUrl(r.code),width:256,height:256,colorDark:'#170c2e',colorLight:'#ffffff'}); }catch(e){} }
+    timerUI();
+  }
+}
+/* Opens the right TV screen for whatever game the room is */
+async function HostAny(code, mount, opts){
+  if(!code) return Host(null, mount, opts);
+  const r=await S.store.get(roomPath(code));
+  return (r && r.game==='trivia' ? TriviaHost : Host)(code, mount, opts);
+}
+
 /* ============ DEMO (preview with bots) ============ */
 async function Demo(){
   app.innerHTML=`<div class="demo"><div class="demobar"><div class="logo">HARDIN<span>GAMES</span></div><div class="sp"></div><button class="alt" data-d="reset">New demo</button><button class="alt" data-d="exit">Exit</button></div>
     <div><div class="plabel">TV SCREEN</div><div id="dtv" class="framed"></div></div><div><div class="plabel">YOUR PHONE</div><div id="dph"></div></div></div>`;
-  app.onclick=e=>{ const b=e.target.closest('[data-d]'); if(!b) return; if(b.dataset.d==='exit') nav({}); else { LS.set('hg_demo',{}); nav({demo:'1'},true); } };
+  const game=PARAMS.get('game')||'fibs';
+  app.onclick=e=>{ const b=e.target.closest('[data-d]'); if(!b) return; if(b.dataset.d==='exit') nav({}); else { LS.set('hg_demo',{}); nav({demo:'1',game},true); } };
   CLEAN.push(()=>app.onclick=null);
   S.store.data={}; S.store.commit();
-  const code=await createRoom(true);
-  Host(code,$('#dtv'),{demo:true}); Player(code,$('#dph'),null);
+  const code=await createRoom(true, game);
+  await HostAny(code,$('#dtv'),{demo:true}); Player(code,$('#dph'),null);
 }
 
 /* ============ ADMIN ============ */
@@ -1004,7 +1420,7 @@ function PinPad(){
   document.addEventListener('keydown',kb); CLEAN.push(()=>{ app.onclick=null; document.removeEventListener('keydown',kb); });
 }
 async function AdminPanel(locked){
-  const st=await loadSettings(); let fam=(await S.store.get(`${ROOT}/packs/family`))||{};
+  const st=await loadSettings(); let fam=(await S.store.get(`${ROOT}/packs/family`))||{}, flags=(await S.store.get(`${ROOT}/trivia/flagged`))||{};
   const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
   const chk=(k,l)=>`<div class="fld"><label>${l}</label><input type="checkbox" data-k="${k}" ${st[k]?'checked':''}></div>`;
   const sel=(k,l,opts)=>`<div class="fld"><label>${l}</label><select data-k="${k}">${opts.map(([v,t])=>`<option value="${v}" ${String(st[k])===v?'selected':''}>${t}</option>`).join('')}</select></div>`;
@@ -1013,6 +1429,11 @@ async function AdminPanel(locked){
       ${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}
       ${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('playerQuestions','Players can add questions in the lobby')}</div>
     <div class="sec"><h3>Scoring</h3>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}</div>
+    <div class="sec"><h3>Smarty Pants</h3>${num('tRounds','Rounds',1,6)}${num('tPerRound','Questions per round',2,10)}${num('tTime','Seconds to answer',8,60)}${num('tVoteTime','Seconds to vote on a category',5,40)}
+      ${chk('tNumbers','One "closest number" question per round')}${chk('tWager','Final wager question')}${num('tStreak','Streak bonus (3+ right in a row)',0,1000,50)}${chk('tAI','AI writes the questions')}
+      <div class="fld"><label>Your own categories</label><input data-k="tCats" placeholder="e.g. Our Family, 2000s Music" value="${esc(st.tCats)}" style="width:55%"></div>
+      <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
+      <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div></div>
     <div class="sec"><h3>Fun extras</h3>${chk('likes','Players can 👍 the funniest lies')}${num('likePoints','Points per 👍',0,1000,25)}${chk('reactions','Emoji reactions on the TV')}${chk('lieForMe','"Lie for me" button (half points)')}${chk('aiFakes','AI writes the "Lie for me" choices')}${chk('photos','Players can use a photo')}</div>
     <div class="sec"><h3>Questions</h3>${Object.entries(PACKS).map(([k,p])=>`<div class="fld"><label>${p.name} <span class="muted small">(${p.q.length})</span></label><input type="checkbox" data-pack="${k}" ${st.packs[k]?'checked':''}></div>`).join('')}
       <div class="fld"><label>Family pack <span class="muted small">(${Object.keys(fam).length})</span></label><input type="checkbox" data-pack="family" ${st.packs.family?'checked':''}></div>
@@ -1041,6 +1462,7 @@ async function AdminPanel(locked){
     $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
     $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
       const id=uid(); fam[id]={t,a,d:[$('#fd1').value.trim(),$('#fd2').value.trim()].filter(Boolean),safe:$('#fsafe').checked}; await S.store.set(`${ROOT}/packs/family/${id}`,fam[id]); collect(); draw(); toast('Added'); };
+    app.querySelectorAll('[data-unflag]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.unflag; delete flags[id]; await S.store.remove(`${ROOT}/trivia/flagged/${id}`); collect(); draw(); });
     app.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.del; delete fam[id]; await S.store.remove(`${ROOT}/packs/family/${id}`); collect(); draw(); });
   };
   function collect(){ app.querySelectorAll('[data-k]').forEach(i=>{ const k=i.dataset.k; st[k]= i.type==='checkbox'?i.checked : (i.type==='number'||i.type==='range')?Number(i.value) : i.value; });

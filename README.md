@@ -8,7 +8,9 @@ One file (`index.html`) runs everything:
 | `?host` | TV screen (creates a room) |
 | `?join=CODE` | Player phone (the QR code on the TV goes here) |
 | `?admin` | Settings, family question pack, voice and AI tests |
-| `?demo=1` | Preview with 4 bot players, TV and your phone side by side |
+| `?demo=1&game=fibs` or `&game=trivia` | Preview with 4 bot players, TV and your phone side by side |
+
+Games: **Fibs** (lie-guessing) and **Smarty Pants** (trivia: category vote, AI questions with a built-in backup bank, closest-number questions, final wager). **Doodle Duel** (drawing) is next.
 
 With no config it runs in **local mode**. That works for the demo, or for tabs on one device. Add Firebase to play across phones.
 

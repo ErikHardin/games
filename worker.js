@@ -36,6 +36,7 @@ export default {
       if (path === '/question' && req.method === 'POST') return await question(req, env, cors);
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
+      if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN }, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, cors, 500);
@@ -169,4 +170,35 @@ Respond with only JSON, no other text: {"fakes":["...","..."]}`;
   let list = [];
   try { list = (JSON.parse(m ? m[0] : '{}').fakes || []).map(String).map(s => s.trim()).filter(Boolean).slice(0, 12); } catch (e) {}
   return json({ fakes: list }, cors);
+}
+
+// ---- Smarty Pants: trivia questions for one category ----
+async function trivia(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { category = '', count = 5, numbers = 1, family = false, hard = false, avoid = [] } = await req.json();
+  if (!category || category.length > 60) return json({ error: 'bad category' }, cors, 400);
+  const n = Math.min(Math.max(1, count | 0), 10), nn = Math.min(Math.max(0, numbers | 0), n), mc = n - nn;
+  const prompt = `Write trivia questions about "${category}" for a family party game played on phones.
+
+Write ${mc} multiple-choice question(s)${nn ? ` and ${nn} "closest number" question(s)` : ''}.
+- Multiple choice: one correct answer and 3 wrong answers that sound believable. Choices under 40 characters.
+${nn ? '- Closest number: the answer is a single, widely cited number, such as a year, a count, or a measurement in US units (feet, miles, pounds, degrees Fahrenheit). Never metric. Never something that changes over time.\n' : ''}- Only use facts you are certain are true and well documented. No trick questions, no "as of" facts, no records that keep changing, nothing disputed.
+- ${hard ? 'This is the final question: make it medium-hard.' : 'Mix easy and medium.'} Questions under 120 characters.
+- ${family ? 'Family friendly, fine for kids 8 and up.' : 'Keep it PG-13.'}
+${avoid.length ? `- Don't repeat any of these:\n${avoid.slice(0, 60).map(t => '  * ' + String(t).slice(0, 140)).join('\n')}` : ''}
+
+Respond with only JSON, no other text:
+{"questions":[{"type":"mc","q":"...","correct":"...","wrong":["...","...","..."]}${nn ? ',{"type":"num","q":"...","answer":1969,"unit":"year"}' : ''}]}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.CLAUDE_MODEL || 'claude-sonnet-5-5', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json();
+  if (!r.ok) { console.error('Anthropic error (trivia)', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502); }
+  const text = (j.content || []).map(c => c.text || '').join('');
+  const m = text.match(/\{[\s\S]*\}/);
+  let qs = [];
+  try { qs = (JSON.parse(m ? m[0] : '{}').questions || []).slice(0, 12); } catch (e) { return json({ error: 'AI reply was not valid JSON' }, cors, 502); }
+  return json({ questions: qs }, cors);
 }
