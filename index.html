@@ -642,7 +642,8 @@ const Voice = {
   play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
       a.onended=a.onerror=()=>res(); a.play().catch(()=>res()); setTimeout(res,20000); }); },
   async builtin(text, st, tok){ if(!window.speechSynthesis) return;
-    if(this.cancelled){ this.cancelled=false; await sleep(150); }   /* iOS drops speech that starts right after a cancel */
+    /* Reset before every line: stop any clip still playing and clear stuck speech (iOS can jam), then wait, since iOS drops speech that starts right after a cancel */
+    try{ this.el && this.el.pause(); speechSynthesis.cancel(); speechSynthesis.resume(); }catch(e){} this.cancelled=false; await sleep(150);
     if(tok!==this.tok) return;
     await new Promise(res=>{ const u=new SpeechSynthesisUtterance(text); u.rate=st.voiceRate||1; u.volume=Math.min(1,(st.volume??0.7)+0.3);
       const v=this.loadVoices().find(v=>v.name===st.voiceName); if(v) u.voice=v;
@@ -694,7 +695,9 @@ window.addEventListener('popstate',()=>{ CLEAN.forEach(f=>{try{f();}catch(e){}})
 const app = $('#app');
 async function route(){
   app.className=''; app.innerHTML=''; app._html=null; document.body.style.overflow='';
-  if(PARAMS.has('demo')){ await initStore(true,'hg_demo'); return Demo(); }
+  if(PARAMS.has('demo')){ /* bot games use your saved Admin settings (voice, volume, colors, timings) */
+    let real=null; try{ if(!S.store||S.mode==='demo') await initStore(false); if(S.mode==='firebase') real=await Promise.race([loadSettings(),sleep(4000).then(()=>null)]); }catch(e){}
+    await initStore(true,'hg_demo'); S.real=real; return Demo(); }
   if(!S.store || S.mode==='demo') await initStore(false);
   if(PARAMS.has('admin')) return Admin();
   if(PARAMS.has('host')) return HostAny(PARAMS.get('host')||null, app, {});
@@ -746,8 +749,8 @@ async function cleanupRooms(){
 }
 async function createRoom(demo, game='fibs'){
   await cleanupRooms();
-  const settings=await loadSettings();
-  if(demo) settings.theme=LS.get('hg_theme','sunset');
+  const settings=(demo&&S.real)?clone(S.real):await loadSettings();
+  if(demo&&!S.real) settings.theme=LS.get('hg_theme','sunset');
   if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2;
     settings.dDrawTime=Math.min(settings.dDrawTime,45); settings.dFakeTime=Math.min(settings.dFakeTime,30); settings.dVoteTime=Math.min(settings.dVoteTime,20); settings.minPlayers=2; }
   let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
