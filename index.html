@@ -149,7 +149,15 @@ input:focus,select:focus{border-color:var(--teal)}
 <script>
 /* ============ CONFIG: fill these in when you host it ============ */
 const CONFIG = {
-  FIREBASE: null,      // paste your Firebase web config object here, e.g. {apiKey:'...', authDomain:'...', databaseURL:'...', projectId:'...'}
+  FIREBASE: {
+    apiKey: "AIzaSyDKvOFokf1pXbjc1aceQpdg3XL3GA0HwtA",
+    authDomain: "games-cdb2c.firebaseapp.com",
+    databaseURL: "https://games-cdb2c-default-rtdb.firebaseio.com",
+    projectId: "games-cdb2c",
+    storageBucket: "games-cdb2c.firebasestorage.app",
+    messagingSenderId: "664212547524",
+    appId: "1:664212547524:web:42156378f30691b9256691"
+  },
   DB_ROOT: 'hardinGames',
   WORKER_URL: '',      // your Cloudflare Worker URL, e.g. 'https://hardin-games.yourname.workers.dev'
   ADMIN_PIN: ''        // optional PIN for the admin page
