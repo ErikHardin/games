@@ -37,6 +37,7 @@ export default {
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
+      if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN }, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, cors, 500);
@@ -201,4 +202,32 @@ Respond with only JSON, no other text:
   let qs = [];
   try { qs = (JSON.parse(m ? m[0] : '{}').questions || []).slice(0, 12); } catch (e) { return json({ error: 'AI reply was not valid JSON' }, cors, 502); }
   return json({ questions: qs }, cors);
+}
+
+// ---- Doodle Duel: silly drawing prompts ----
+async function prompts(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { count = 20, family = false, avoid = [] } = await req.json();
+  const n = Math.min(Math.max(5, count | 0), 40);
+  const prompt = `Write ${n} funny drawing prompts for a party game. Players draw the prompt with a finger on a phone in 60 seconds, then everyone else tries to guess the real title.
+
+- 2 to 6 words each, like "a nervous hot dog", "grandma riding a shark", "a cactus at the beach"
+- Easy to sketch, with a silly twist: mix animals, food, everyday objects, jobs, places, and feelings
+- No real people, no brands, no characters from movies, TV, books, or games
+- ${family ? 'Family friendly, fine for kids 8 and up.' : 'Keep it PG-13.'}
+${avoid.length ? `- Don't reuse any of these:\n${avoid.slice(0, 40).map(t => '  * ' + String(t).slice(0, 60)).join('\n')}` : ''}
+
+Respond with only JSON, no other text: {"prompts":["...","..."]}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 900, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json();
+  if (!r.ok) { console.error('Anthropic error (prompts)', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502); }
+  const text = (j.content || []).map(c => c.text || '').join('');
+  const m = text.match(/\{[\s\S]*\}/);
+  let list = [];
+  try { list = (JSON.parse(m ? m[0] : '{}').prompts || []).map(String).map(s => s.trim()).filter(Boolean).slice(0, 40); } catch (e) {}
+  return json({ prompts: list }, cors);
 }

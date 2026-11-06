@@ -10,7 +10,7 @@ One file (`index.html`) runs everything:
 | `?admin` | Settings, family question pack, voice and AI tests |
 | `?demo=1&game=fibs` or `&game=trivia` | Preview with 4 bot players, TV and your phone side by side |
 
-Games: **Fibs** (lie-guessing) and **Smarty Pants** (trivia: category vote, AI questions with a built-in backup bank, closest-number questions, final wager). **Doodle Duel** (drawing) is next.
+Games: **Fibs** (lie-guessing) and **Smarty Pants** (trivia: category vote, AI questions with a built-in backup bank, closest-number questions, final wager). **Doodle Duel** (draw a secret prompt, everyone writes fake titles, find the real one; gallery at the end).
 
 With no config it runs in **local mode**. That works for the demo, or for tabs on one device. Add Firebase to play across phones.
 

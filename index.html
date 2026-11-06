@@ -250,6 +250,53 @@ input:focus,select:focus{border-color:var(--teal)}
 .tans{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card2);color:var(--text);box-shadow:0 4px 0 #1d0f3d;border-left:8px solid var(--c);font-size:17px;min-height:58px}
 .tans b{font-family:Bungee;color:var(--c);font-size:20px;font-weight:400}
 .pchoice.tcat{border-left:8px solid var(--c);text-transform:none}
+
+/* Doodle Duel TV */
+.dvote{flex:1;display:grid;grid-template-columns:1fr 1.15fr;gap:4cqw;align-items:center;padding:0 2cqw;min-height:0}
+.dframe{aspect-ratio:1;max-height:40cqw;margin:0 auto;border-radius:2cqw;overflow:hidden;background:#fff;box-shadow:0 0 0 .5cqw #ffffff22,0 2cqw 4cqw #0008;transform:rotate(-1.5deg)}
+.dframe img,.dthumb img,.gi2 .pic img,.dmini img,.mg img{width:100%;height:100%;object-fit:cover;display:block}
+.dby{display:flex;align-items:center;gap:1cqw;font-size:1.7cqw;color:var(--muted);margin-top:1.4cqw;justify-content:center}
+.dby .av{width:3cqw;height:3cqw;font-size:1.4cqw}
+.dside{display:flex;flex-direction:column;gap:1.6cqw}
+.dside .strip .tile{width:8cqw}
+.dopts{display:flex;flex-direction:column;gap:1cqw}
+.dopts .opt{font-size:2.1cqw;text-transform:none;display:flex;align-items:center;gap:1.4cqw;padding:1.1cqw 1.6cqw}
+.dopts .opt b{font-family:Bungee;font-weight:400;color:var(--gold);font-size:2cqw}
+.dthumb{width:11cqw;flex:none;aspect-ratio:1;border-radius:1.2cqw;overflow:hidden;background:#fff;transform:rotate(-2deg);box-shadow:0 1cqw 2cqw #0008}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4cqw 2cqw;width:100%;max-width:58cqw}
+.gi2{background:#ffffff10;border-radius:1.6cqw;padding:1cqw;display:flex;flex-direction:column;gap:.6cqw;transform:rotate(var(--r));animation:pop .5s both}
+.gi2 .pic{aspect-ratio:1;border-radius:1cqw;overflow:hidden;background:#fff}
+.gi2 .t{font-size:1.4cqw;font-weight:900;text-align:center}
+.gi2 .by{font-size:1.1cqw;color:var(--muted);text-align:center}
+.gi2.best{box-shadow:0 0 0 .4cqw var(--gold)}
+.ribbon{font-family:Bungee;font-size:1.1cqw;color:#2a1700;background:var(--gold);border-radius:1cqw;padding:.2cqw .8cqw;align-self:center;text-align:center}
+/* Doodle Duel phone */
+.drawtop{display:flex;align-items:center;gap:12px}
+.prompt{flex:1;background:#ffffff10;border-radius:14px;padding:10px 14px;font-size:14px}
+.prompt b{font-family:Bungee;color:var(--gold);font-size:19px;font-weight:400;display:block;line-height:1.15}
+.drawtop .ptimer{font-size:24px}
+canvas.dpad{width:100%;aspect-ratio:1;border-radius:18px;background:#fff;box-shadow:0 0 0 3px #4b3290;touch-action:none;display:block}
+.pal{display:flex;justify-content:space-between;gap:4px}
+.sw{width:36px;height:36px;padding:0;border-radius:50%;border:3px solid #ffffff33;box-shadow:none}
+.sw.on{border-color:#fff;transform:scale(1.15)}
+.tools{display:flex;gap:8px}
+.tools .t{flex:1;background:var(--card2);color:#fff;box-shadow:none;border-radius:14px;height:46px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+.tools .t.on{background:var(--teal);color:#032}
+.dot{border-radius:50%;background:currentColor;display:inline-block}
+.dmini{width:72%;align-self:center;aspect-ratio:1;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 0 0 3px #4b3290}
+.mygal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mg{background:#ffffff0c;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;text-align:center}
+.mg img{aspect-ratio:1;border-radius:10px;background:#fff}
+.mg button{padding:8px;font-size:14px}
+/* admin sections */
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:'▾';color:var(--muted);font-size:20px;transition:transform .2s}
+details.sec[open]>summary::after{transform:rotate(180deg)}
+details.sec{gap:0}
+details.sec:not([open])>.secb{display:none}
+.secb{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.secb h4{font-family:Bungee;font-weight:400;color:var(--teal);font-size:14px;letter-spacing:.06em;margin-top:6px}
 </style>
 </head>
 <body>
@@ -324,7 +371,8 @@ const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
   music:true,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
-  tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:''};
+  tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
+  dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:''};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
 const BOTS = ['Ava','Leo','Mia','Sam'];
@@ -576,8 +624,8 @@ function Landing(){
         <div class="gbtns"><button data-a="host" data-g="fibs">Host</button><button class="alt" data-a="demo" data-g="fibs">Try with bots</button></div></div>
       <div class="gamecard g g-trivia"><div class="gtop"><span class="gi">🧠</span><h2>Smarty Pants</h2></div><div class="muted">Race to the right answer.</div><div class="gmeta">2–8 players · about 15 min</div>
         <div class="gbtns"><button data-a="host" data-g="trivia">Host</button><button class="alt" data-a="demo" data-g="trivia">Try with bots</button></div></div>
-      <div class="gamecard g g-draw wip"><div class="gtop"><span class="gi">🎨</span><h2>Doodle Duel</h2></div><div class="muted">Draw it. Fake it. Guess it.</div><div class="gmeta">3–8 players · about 15 min</div>
-        <div class="badge">In the works</div></div>
+      <div class="gamecard g g-draw"><div class="gtop"><span class="gi">🎨</span><h2>Doodle Duel</h2></div><div class="muted">Draw it. Fake it. Guess it.</div><div class="gmeta">3–8 players · about 20 min</div>
+        <div class="gbtns"><button data-a="host" data-g="doodle">Host</button><button class="alt" data-a="demo" data-g="doodle">Try with bots</button></div></div>
       <div class="gamecard soon"><div class="em">🎲</div><div class="muted">More games coming soon</div></div>
     </div>
     <div class="gamecard"><div class="muted">Joining a game?</div>
@@ -601,7 +649,8 @@ async function cleanupRooms(){
 async function createRoom(demo, game='fibs'){
   await cleanupRooms();
   const settings=await loadSettings();
-  if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2; }
+  if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2;
+    settings.dDrawTime=Math.min(settings.dDrawTime,45); settings.dFakeTime=Math.min(settings.dFakeTime,30); settings.dVoteTime=Math.min(settings.dVoteTime,20); }
   let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
   const now=S.store.now();
   const room={code,game:GNAMES[game]?game:'fibs',created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
@@ -872,7 +921,8 @@ function Player(code, mount, fixedPid){
   const root=$('.pwrap',mount);
   if(pid && !fixedPid) store.presence(`${P}/players/${pid}/on`);
   const unsub=store.on(P, r=>{ R=r; loaded=true; render(); });
-  const iv=setInterval(()=>{ const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; } },250);
+  const iv=setInterval(()=>{ const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; }
+    if(R&&R.game==='doodle'&&R.phase==='draw'&&!R.paused&&pid&&(R.dprompts||{})[pid]&&!(R.draws||{})[pid]){ padFor(R); if(!pad.sent && store.now()>=R.endsAt-800) submitDrawing(R); } },250);
   CLEAN.push(unsub,()=>clearInterval(iv));
   const upd=patch=>store.update(P,clone(patch));
   const beep=(f=880)=>{ if(!psound) return; try{ pctx=pctx||new (window.AudioContext||window.webkitAudioContext)(); const o=pctx.createOscillator(),g=pctx.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0.15,pctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,pctx.currentTime+0.15); o.connect(g); g.connect(pctx.destination); o.start(); o.stop(pctx.currentTime+0.2); }catch(e){} try{ navigator.vibrate&&navigator.vibrate(40); }catch(e){} };
@@ -880,6 +930,7 @@ function Player(code, mount, fixedPid){
   mount.onclick=async e=>{ const b=e.target.closest('[data-p]'); if(!b) return; const k=b.dataset.p, r=R; msg=''; Awake.on();
     if(k==='join') return join($('[data-keep=name]',root).value);
     if(r && r.game==='trivia' && TCLICK.has(k)) return triviaClick(k,b,r);
+    if(r && r.game==='doodle' && DCLICK.has(k)) return doodleClick(k,b,r);
     if(k==='home') return nav({});
     if(k==='snd'){ psound=!psound; LS.set('hg_psound',psound); beep(); return render(); }
     if(k==='emo'){ selEmoji=selEmoji===b.dataset.e?null:b.dataset.e; selPhoto=null; return render(); }
@@ -947,6 +998,57 @@ function Player(code, mount, fixedPid){
     const order=pool.slice(lfm.cursor).concat(pool.slice(0,lfm.cursor));
     for(const x of order){ if(lfm.shown.length>=3) break; if(!lfm.shown.some(y=>norm(y)===norm(x))) lfm.shown.push(x); }
     return lfm.shown; }
+  /* question header: text for Fibs, the drawing for Doodle Duel */
+  function qv(r,sz){ if(r.game==='doodle') return `<div class="dmini">${okDrawing(r.q.img)?`<img src="${r.q.img}" alt="">`:''}</div><div class="pq" style="font-size:16px">What did <b>${esc(r.q.by)}</b> draw?</div>`;
+    return `<div class="pq"${sz?` style="font-size:${sz}px"`:''}>${showQ(r.q.t)}</div>`; }
+  /* ---- Doodle Duel phone: drawing pad + screens ---- */
+  let pad={key:'',strokes:[],color:DCOL[0],size:DSIZES[1],eraser:false,sent:false,cur:null};
+  function padFor(r){ const k=r.games+'_'+r.round; if(pad.key!==k) pad={key:k,strokes:[],color:DCOL[0],size:DSIZES[1],eraser:false,sent:false,cur:null}; return pad; }
+  function seg(g,k,s,a,b){ g.strokeStyle=s.c; g.lineWidth=s.s*k; g.lineCap=g.lineJoin='round'; g.beginPath(); g.moveTo(a[0]*k,a[1]*k); g.lineTo(b[0]*k+(a===b?0.1:0),b[1]*k); g.stroke(); }
+  function paint(g,W,strokes){ const k=W/720; g.fillStyle='#fff'; g.fillRect(0,0,W,W); g.lineCap=g.lineJoin='round';
+    for(const s of strokes){ const p=s.p; if(!p.length) continue; g.strokeStyle=s.c; g.lineWidth=s.s*k; g.beginPath(); g.moveTo(p[0][0]*k,p[0][1]*k);
+      if(p.length===1) g.lineTo(p[0][0]*k+0.1,p[0][1]*k); for(let i=1;i<p.length;i++) g.lineTo(p[i][0]*k,p[i][1]*k); g.stroke(); } }
+  function bindPad(){ const cv=$('canvas.dpad',root); if(!cv) return; const g=cv.getContext('2d');
+    if(!cv._bound){ cv._bound=true;
+      const pos=e=>{ const b=cv.getBoundingClientRect(); return [Math.max(0,Math.min(720,Math.round((e.clientX-b.left)/b.width*720))),Math.max(0,Math.min(720,Math.round((e.clientY-b.top)/b.height*720)))]; };
+      cv.addEventListener('pointerdown',e=>{ e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(x){}
+        const pt=pos(e); pad.cur={c:pad.eraser?'#ffffff':pad.color,s:pad.eraser?42:pad.size,p:[pt]}; pad.strokes.push(pad.cur); seg(g,1,pad.cur,pt,pt); });
+      cv.addEventListener('pointermove',e=>{ if(!pad.cur) return; e.preventDefault(); const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+        for(const ev of evs){ const pt=pos(ev), last=pad.cur.p[pad.cur.p.length-1]; if(Math.abs(pt[0]-last[0])+Math.abs(pt[1]-last[1])<2) continue; pad.cur.p.push(pt); seg(g,1,pad.cur,last,pt); } });
+      const end=()=>{ pad.cur=null; }; cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end); cv.addEventListener('pointerleave',end); }
+    paint(g,720,pad.strokes); }
+  async function submitDrawing(r){ if(pad.sent) return; pad.sent=true; const c=document.createElement('canvas'); c.width=c.height=400; paint(c.getContext('2d'),400,pad.strokes);
+    await upd({[`draws/${pid}`]:{img:c.toDataURL('image/jpeg',0.75),empty:pad.strokes.length?null:true,t:store.now()}}); }
+  const DCLICK=new Set(['dcol','dsize','dera','dundo','ddone','dlike','dsave']);
+  async function doodleClick(k,b,r){
+    if(k==='dcol'){ pad.color=b.dataset.c; pad.eraser=false; return render(); }
+    if(k==='dsize'){ pad.size=Number(b.dataset.s); pad.eraser=false; return render(); }
+    if(k==='dera'){ pad.eraser=!pad.eraser; return render(); }
+    if(k==='dundo'){ pad.strokes.pop(); const cv=$('canvas.dpad',root); if(cv) paint(cv.getContext('2d'),720,pad.strokes); return; }
+    if(k==='ddone'){ if(!pad.strokes.length){ msg='Draw something first!'; return render(); } beep(); return submitDrawing(r); }
+    if(k==='dlike'){ beep(1200); return upd({[`dlikes/${pid}`]:(r.dlikes||{})[pid]?null:true}); }
+    if(k==='dsave'){ const g=(r.gallery||{})[b.dataset.g]; if(g&&okDrawing(g.img)) saveImage(g.img,'Doodle Duel - '+g.title); }
+  }
+  function doodlePhone(r,me,st,err){ const q=r.q;
+    switch(r.phase){
+      case 'intro': return `<div class="bigmsg"><div class="em">🎨</div>${st.dRounds>1&&r.round===st.dRounds?'Final round — double points!':'Round '+r.round}<div class="small muted">Get ready to draw!</div></div>`;
+      case 'draw': { const pr=(r.dprompts||{})[pid]; padFor(r);
+        if(!pr) return `<div class="bigmsg"><div class="em">🖍️</div>You'll draw next round!<div class="small muted">Watch the TV.</div></div>`;
+        if((r.draws||{})[pid]) return `<div class="bigmsg"><div class="em">🖼️</div>Masterpiece saved!<div class="small muted">Waiting for the other artists…</div></div>`;
+        return `<div class="drawtop"><div class="prompt">Draw this<b>${esc(pr)}</b></div><div class="ptimer"></div></div><canvas class="dpad" width="720" height="720"></canvas>
+          <div class="pal">${DCOL.map(c=>`<button class="sw ${!pad.eraser&&pad.color===c?'on':''}" style="background:${c}" data-p="dcol" data-c="${c}" aria-label="color"></button>`).join('')}</div>
+          <div class="tools">${DSIZES.map(z=>`<button class="t ${!pad.eraser&&pad.size===z?'on':''}" data-p="dsize" data-s="${z}" aria-label="brush"><span class="dot" style="width:${Math.round(z*0.7)+4}px;height:${Math.round(z*0.7)+4}px"></span></button>`).join('')}<button class="t ${pad.eraser?'on':''}" data-p="dera" aria-label="eraser">🧽</button><button class="t" data-p="dundo" aria-label="undo">↩️</button></div>
+          ${err}<button data-p="ddone">Done drawing</button>`; }
+      case 'reveal': case 'between': { if(!q) return ''; const mine=q.author===pid, liked=!!(r.dlikes||{})[pid];
+        return `<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">👀</div>${mine?'Your drawing is on the TV!':'Eyes on the TV!'}</div><div class="dmini" style="width:60%">${okDrawing(q.img)?`<img src="${q.img}" alt="">`:''}</div>
+          ${!mine&&st.dLikes!==false?`<button class="pchoice like ${liked?'sel':''}" data-p="dlike" style="text-align:center">${liked?'👍 Liked!':'👍 Like this drawing'}</button>`:''}`; }
+      case 'scores': { const rank=players0(r).findIndex(([id])=>id===pid)+1; return `<div class="bigmsg"><div class="em">📊</div>You're #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b></div>`; }
+      case 'dgallery': case 'final': { const rank=players0(r).findIndex(([id])=>id===pid)+1, mineA=r.phase==='final'?dAwards(r).filter(a=>a.ids.includes(pid)):[];
+        const mineG=Object.entries(r.gallery||{}).filter(([,g])=>g&&g.author===pid&&okDrawing(g.img));
+        const gal=mineG.length?`<b>Your drawings</b><div class="mygal">${mineG.map(([k,g])=>`<div class="mg"><img src="${g.img}" alt=""><div class="small">${esc(g.title)}</div><button class="alt" data-p="dsave" data-g="${esc(k)}">Save</button></div>`).join('')}</div><div class="small muted">Or press and hold a picture to save it</div>`:'';
+        return (r.phase==='final'?`<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b>${mineA.length?`<div class="awlist">${mineA.map(a=>`<div>${a.icon} <b>${a.title}</b></div>`).join('')}</div>`:''}</div>`
+          :`<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">🖼️</div>Gallery time!</div>`)+gal; }
+    } return `<div class="bigmsg"><div class="em">📺</div>Watch the TV!</div>`; }
   /* ---- Smarty Pants phone screens ---- */
   const TCLICK=new Set(['tvote','tans','tnum','tbet','tbetlock','tflag']);
   async function triviaClick(k,b,r){
@@ -996,7 +1098,8 @@ function Player(code, mount, fixedPid){
     if(!me){ patchHTML(root,`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
       <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · ${GNAMES[r.game]||'Fibs'}</div>
       <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
-    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote','q','tvote','wcat'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
+    if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote','q','tvote','wcat','draw'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
+    const lfmOn=r.game==='doodle'?r.settings.dLieForMe!==false:r.settings.lieForMe!==false;
     const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote','q'].includes(r.phase);
     const head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
     if(editing){ patchHTML(root, head+`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
@@ -1004,26 +1107,27 @@ function Player(code, mount, fixedPid){
     if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
     else if(isLate) b=`<div class="bigmsg"><div class="em">🙌</div>You're in!<div class="small muted">You'll jump in on the next question.</div></div>`;
     else if(r.game==='trivia' && r.phase!=='lobby') b=triviaPhone(r,me,st,err);
+    else if(r.game==='doodle' && !['lobby','lie','vote'].includes(r.phase)) b=doodlePhone(r,me,st,err);
     else switch(r.phase){
       case 'lobby': { const mine=Object.values(r.submitted||{}).filter(q=>q.author===pid).length, n=Object.keys(r.players||{}).length;
         b=`<div class="bigmsg" style="flex:0;padding:8px 0"><div class="em">🎉</div>You're in! Watch the TV.<button class="alt small" data-p="edit" style="padding:8px 14px">Change look</button></div>
-          ${st.playerQuestions&&r.game!=='trivia'?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
+          ${st.playerQuestions&&(!r.game||r.game==='fibs')?`<div class="addq"><b>Stump everyone (optional)</b><div class="small muted">Write a true fact. Put ___ where the answer goes. You'll sit out that question and earn bonus points for everyone fooled.</div>
           <textarea data-keep="qt" rows="2" placeholder="My first car was a ___"></textarea><input data-keep="qa" placeholder="The real answer" autocomplete="off">${err}
           <button class="alt" data-p="addq">Add question${mine?` (${mine} added)`:''}</button></div>`:''}
           ${vip?`<div class="vip"><button data-p="start" ${n<st.minPlayers?'disabled':''}>Start game</button></div><div class="small muted">${n<st.minPlayers?`Need ${st.minPlayers} players to start`:'You have the ⭐ — start when everyone is in'}</div>`:''}`; break; }
       case 'loading': b=`<div class="bigmsg"><div class="em">⏳</div>Getting questions ready…</div>`; break;
       case 'intro': b=`<div class="bigmsg"><div class="em">📺</div>${st.rounds>1&&r.round===st.rounds?'Final round — double points!':'Round '+r.round}</div>`; break;
-      case 'lie': if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">✍️</div>This is your question!<div class="small muted">Sit back and watch them squirm.</div></div>`; break; }
+      case 'lie': if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">✍️</div>${r.game==='doodle'?'This is your drawing!':'This is your question!'}<div class="small muted">Sit back and watch them squirm.</div></div>`; break; }
         b=(r.lies||{})[pid] ? `<div class="bigmsg"><div class="em">🤥</div>Lie locked in:<b style="color:var(--gold)">${esc(r.lies[pid])}</b>${(r.auto||{})[pid]?'<div class="small muted">Lie for me · half points</div>':''}<div class="small muted">Waiting for everyone…</div></div>`
-          : (()=>{ const ch=st.lieForMe!==false?lieChoices(r):[];
-              if(lfm.open && st.lieForMe!==false) return `<div class="ptimer"></div><div class="pq">${showQ(r.q.t)}</div><b>🎲 Pick a lie <span class="small muted">(half points)</span></b>
+          : (()=>{ const ch=lfmOn?lieChoices(r):[];
+              if(lfm.open && lfmOn) return `<div class="ptimer"></div>${qv(r)}<b>🎲 Pick a lie <span class="small muted">(half points)</span></b>
                 ${r.fk==='loading'?'<div class="muted small">Thinking up more lies…</div>':''}${ch.map(t=>`<button class="pchoice" data-p="pickfib" data-t="${esc(t)}">${esc(t)}</button>`).join('')}${err}
                 <div class="row"><button class="alt" data-p="morefibs">🔄 Others</button><button class="alt" data-p="closefibs">✏️ Write my own</button></div>`;
-              return `<div class="ptimer"></div><div class="pq">${showQ(r.q.t)}</div><input data-keep="lie${r.games}_${r.qi}" maxlength="40" placeholder="Your convincing lie" autocomplete="off" autocorrect="off">${err}
-                <button data-p="lie">Lock it in</button>${st.lieForMe!==false?'<button class="alt" data-p="lieforme">🎲 Lie for me <span class="small">(half points)</span></button>':''}`; })(); break;
+              return `<div class="ptimer"></div>${qv(r)}<input data-keep="lie${r.games}_${r.qi}" maxlength="40" placeholder="Your convincing lie" autocomplete="off" autocorrect="off">${err}
+                <button data-p="lie">Lock it in</button>${lfmOn?'<button class="alt" data-p="lieforme">🎲 Lie for me <span class="small">(half points)</span></button>':''}`; })(); break;
       case 'vote': { if(r.q.author===pid){ b=`<div class="bigmsg"><div class="em">😏</div>You know this one. Watch the TV!</div>`; break; }
         const my=(r.votes||{})[pid]; const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(pid));
-        b=`<div class="ptimer"></div><div class="pq" style="font-size:16px">${showQ(r.q.t)}</div><b>Find the truth:</b>${opts.map(o=>`<button class="pchoice ${my===o.id?'sel':''}" data-p="vote" data-o="${esc(o.id)}" ${my?'disabled':''}>${esc(o.text)}</button>`).join('')}${my?'<div class="ok">Vote locked in ✓</div>':''}`; break; }
+        b=`<div class="ptimer"></div>${qv(r,16)}<b>${r.game==='doodle'?'Which is the real title?':'Find the truth:'}</b>${opts.map(o=>`<button class="pchoice ${my===o.id?'sel':''}" data-p="vote" data-o="${esc(o.id)}" ${my?'disabled':''}>${esc(o.text)}</button>`).join('')}${my?'<div class="ok">Vote locked in ✓</div>':''}`; break; }
       case 'reveal': { const mineL=(r.likes||{})[pid]||{}, ls=st.likes!==false?(r.options||[]).filter(o=>!o.truth&&!o.house&&!(o.owners||[]).includes(pid)):[];
         b=`<div class="bigmsg" style="flex:0;padding:6px 0"><div class="em">👀</div>Eyes on the TV!</div>
           ${ls.length?`<b>👍 Like the funniest lies</b>${ls.map(o=>`<button class="pchoice like ${mineL[o.id]?'sel':''}" data-p="like" data-o="${esc(o.id)}">${mineL[o.id]?'👍 ':''}${esc(o.text)}</button>`).join('')}`:''}`; break; }
@@ -1032,10 +1136,11 @@ function Player(code, mount, fixedPid){
         b=`<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b>
           ${mineA.length?`<div class="awlist">${mineA.map(a=>`<div>${a.icon} <b>${a.title}</b></div>`).join('')}</div>`:''}</div>`; break; }
     }
-    const ctl = vip && !['lobby','final','loading'].includes(r.phase) ? `<div class="vip"><button class="alt" data-p="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-p="skip">Skip</button></div>`
+    const ctl = vip && !['lobby','final','loading','dgallery'].includes(r.phase) ? `<div class="vip"><button class="alt" data-p="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-p="skip">Skip</button></div>`
       : vip && r.phase==='final' ? `<div class="vip"><button data-p="again">Play again</button></div>` : '';
     const reacts = st.reactions!==false && r.phase!=='lobby' ? `<div class="reacts">${REACTS.map(e=>`<button data-p="react" data-e="${e}">${e}</button>`).join('')}</div>` : '';
     patchHTML(root, head+`<div class="pbody">${b}${ctl}${reacts}</div>`);
+    if(r.game==='doodle' && r.phase==='draw') bindPad();
   }
 }
 function players0(r){ return Object.entries(r.players||{}).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); }
@@ -1360,11 +1465,296 @@ function TriviaHost(code, mount, opts){
     timerUI();
   }
 }
+/* ============ DOODLE DUEL (drawing) ============ */
+const DCOL = ['#222222','#ff4f4f','#ff9a3d','#ffd23f','#3ccf6e','#3d9bff','#a265ff','#8a5a2b'];
+const DSIZES = [6,14,30];
+const DPROMPTS = ['a nervous hot dog','grandma riding a shark','a cactus at the beach','a cat wearing a crown','a dancing taco','a snowman on vacation','a robot walking a dog','a pizza with legs','a giraffe in a tiny car','a very tired sun','a penguin at the gym',
+  'a fish riding a bike','a haunted toaster','a dinosaur birthday party','an angry cloud','a spider knitting a sweater','a banana in a hammock','a superhero hamster','a sad ice cream cone','a cow on the moon','a dragon brushing its teeth',
+  'a monster under the bed','an octopus doing the dishes','a turtle racing a rocket','a pig in a tuxedo','a worried egg','a volcano sneezing','a squirrel stealing a pie','a ghost at the dentist','a cupcake in jail','a pirate chicken',
+  'a lighthouse with sunglasses','a cat driving a bus','a duck in a rain jacket','a muffin lifting weights','a bear selling lemonade','a frog on a skateboard','an alien grocery shopping','a tree wearing headphones','a shy volcano','a camping trip gone wrong',
+  'a dog delivering mail','a broccoli rock band','a snail with a jetpack','a wizard who lost his hat','a pancake stack falling over','a happy toilet','a bee in a cowboy hat','a llama at a wedding','a sleepy owl at work','a goldfish escaping its bowl',
+  'a mermaid at a bus stop','a confused compass','a sandwich on a first date','a kangaroo with a backpack','a car wash for elephants','a cranky alarm clock','a hippo ballerina','a carrot in a spaceship','a slice of cake at the beach','a lobster telling a joke',
+  'a polar bear in the desert','a nervous tightrope walker','a unicorn stuck in traffic','a sock that lost its partner','a giant donut attacking a city','a sheep counting people','a raccoon chef','a bored statue','a moose in a bathtub','a vampire at the beach',
+  'a fridge with a secret','a koala on a rollercoaster','a melting snowman','a chicken crossing the road','a hamburger with a mustache','a rocket made of cheese','a mouse lifting an elephant','a backwards umbrella','a dog at a job interview','a pineapple in a hot tub'];
+const okDrawing = s => typeof s==='string' && s.length<260000 && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(s);
+GNAMES.doodle = 'Doodle Duel';
+function dAwards(r){
+  const ps=r.players||{}, St=r.stats||{}, out=[], names=ids=>listNames(ids.map(i=>ps[i].name));
+  const best=k=>{ let m=0, ids=[]; for(const id in St){ if(!ps[id]) continue; const v=(St[id]||{})[k]||0; if(v>m){ m=v; ids=[id]; } else if(v===m&&v>0) ids.push(id); } return {m,ids}; };
+  let b=best('fooled'); if(b.m) out.push({icon:'🤥',title:'Best Liar',ids:b.ids,names:names(b.ids),detail:`Fooled ${b.m} ${b.m===1?'time':'times'}`});
+  b=best('truth'); if(b.m) out.push({icon:'🕵️',title:'Sharpest Eye',ids:b.ids,names:names(b.ids),detail:`Spotted ${b.m} real ${b.m===1?'title':'titles'}`});
+  b=best('artist'); if(b.m) out.push({icon:'🖌️',title:'Picasso',ids:b.ids,names:names(b.ids),detail:`${b.m} ${b.m===1?'person':'people'} got their drawings`});
+  const fav=dFav(r); if(fav) out.push({icon:'⭐',title:'Fan Favorite',ids:[fav.author],names:fav.by,detail:`“${fav.title}” · ${fav.likes} 👍`});
+  return out;
+}
+function dFav(r){ let f=null; for(const g of Object.values(r.gallery||{})) if(g && (g.likes||0)>0 && (!f||g.likes>f.likes)) f=g; return f; }
+async function getPrompts(st, count){
+  const seen=new Set(), out=[], used=new Set(LS.get('hg_dused',[]));
+  const add=x=>{ x=String(x||'').trim().replace(/^["']|["']$/g,''); const k=norm(x); if(!x||x.length>40||!k||seen.has(k)||(st.audience==='family'&&isNaughty(x))) return; seen.add(k); out.push(x); };
+  const custom=String(st.dPrompts||'').split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
+  shuffle(custom).slice(0,Math.ceil(count/3)).forEach(add);
+  if(st.dAI!==false && CONFIG.WORKER_URL){
+    const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),15000);
+    try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/prompts',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({count:Math.min(40,count),family:st.audience==='family',avoid:[...used].slice(-40)})});
+      const j=await r.json().catch(()=>({})); if(r.ok) (j.prompts||[]).forEach(add); else console.warn('AI prompts failed',j.error);
+    }catch(e){ console.warn('AI prompts failed',e); } finally{ clearTimeout(to); }
+  }
+  shuffle(DPROMPTS).sort((a,b)=>used.has(a)-used.has(b)).forEach(x=>{ if(out.length<count) add(x); });
+  return out.slice(0,count);
+}
+async function saveImage(src, name){
+  try{ const blob=await (await fetch(src)).blob(), f=new File([blob],name+'.jpg',{type:'image/jpeg'});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:name}); return; } }
+  catch(e){ if(e && e.name==='AbortError') return; }
+  const a=document.createElement('a'); a.href=src; a.download=name+'.jpg'; document.body.appendChild(a); a.click(); a.remove();
+}
+function botDoodle(){ const c=document.createElement('canvas'); c.width=c.height=400; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,400,400);
+  g.lineCap=g.lineJoin='round'; for(let i=0;i<5;i++){ g.strokeStyle=DCOL[Math.floor(Math.random()*DCOL.length)]; g.lineWidth=DSIZES[Math.floor(Math.random()*3)]; g.beginPath();
+    let x=60+Math.random()*280, y=60+Math.random()*280; g.moveTo(x,y); for(let k=0;k<14;k++){ x+=Math.random()*60-30; y+=Math.random()*60-30; g.lineTo(Math.max(10,Math.min(390,x)),Math.max(10,Math.min(390,y))); } g.stroke(); }
+  if(Math.random()<0.7){ g.strokeStyle='#222'; g.lineWidth=8; g.beginPath(); g.arc(200,200,90+Math.random()*40,0,Math.PI*2); g.stroke(); }
+  return c.toDataURL('image/jpeg',0.75); }
+
+function DoodleHost(code, mount, opts){
+  const store=S.store, P=roomPath(code);
+  mount.classList.add('tv'); if(mount===app){ mount.classList.add('full'); document.body.style.overflow='hidden'; }
+  mount.innerHTML=`<div class="stage"></div><div class="fx"></div><div class="tap"><div class="logo">HARDIN<span>GAMES</span></div><button>Tap to start</button><div class="note">Turns on sound and voice</div></div>`;
+  const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
+  let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0, galPage=-1;
+  const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
+  const upd=patch=>store.update(P,clone(patch));
+  const now=()=>store.now();
+  const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
+  const late=(r,p)=>(p.from||0)>(r.qi??-1);
+  const eligible=r=>players(r).filter(([id,p])=>p.on!==false && !late(r,p) && !(r.q && r.q.author===id)).map(([id])=>id);
+  const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
+  const voters=(r,oid)=>Object.keys(r.votes||{}).filter(p=>r.votes[p]===oid);
+  const multFor=r=>(r.settings.dRounds>1 && r.round===r.settings.dRounds)?(r.settings.dMult||1):1;
+  const fam=r=>r.settings.audience==='family'?1.5:1;
+
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  const unsub=store.on(P, r=>{
+    if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
+    const prev=R; R=r;
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id));
+      if(r.phase==='intro' && !r.plist) loadPrompts(r); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    effects(prev,r); reactions(r); render(r);
+  });
+  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
+  CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
+  mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
+
+  function act(t){ const r=R; if(!r) return; const n=now();
+    if(t==='home') return nav({});
+    if(t==='start') return startGame();
+    if(t==='gallery') return upd({phase:'dgallery',revisit:true,phaseAt:n,endsAt:null});
+    if(t==='results') return upd({phase:'final',revisit:null,phaseAt:n,endsAt:null});
+    if(t==='pause' && !r.paused && !['lobby','final','dgallery'].includes(r.phase)) return upd({paused:true,remaining:Math.max(0,(r.endsAt||n)-n)});
+    if(t==='resume' && r.paused) return upd({paused:false,endsAt:n+(r.remaining||0)});
+    if(t==='skip'){ if(r.paused) upd({paused:false});
+      if(r.phase==='intro' && r.plist) return beginDraw();
+      if(r.phase==='draw') return beginRound();
+      if(r.phase==='lie') return beginVote();
+      if(r.phase==='vote') return beginReveal();
+      if(r.phase==='reveal'||r.phase==='between') return finishDrawing(true);
+      if(r.phase==='scores') return afterScores(); }
+    if(t==='again'){ done=new Set(); const p={phase:'lobby',round:0,qi:-1,ri:-1,queue:null,q:null,lies:null,auto:null,votes:null,options:null,items:null,deltas:null,scored:null,stats:null,
+        gallery:null,plist:null,dprompts:null,dpool:null,draws:null,dlikes:null,revisit:null,paused:false,endsAt:null};
+      for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; } return upd(p); }
+  }
+
+  /* ---- engine ---- */
+  async function startGame(){ const r=R; if(!r||r.phase!=='lobby') return;
+    const count=players(r).filter(([,p])=>p.on!==false).length;
+    if(count<r.settings.minPlayers){ toast(`Need at least ${r.settings.minPlayers} players`); return; }
+    if(!once('start'+(r.games||0))) return;
+    const n=now(), g=(r.games||0)+1, p={phase:'intro',round:1,qi:-1,ri:-1,queue:null,q:null,lies:null,auto:null,votes:null,options:null,items:null,deltas:null,scored:null,stats:null,
+      gallery:null,plist:null,dprompts:null,dpool:null,draws:null,dlikes:null,revisit:null,games:g,paused:false,phaseAt:n,endsAt:n+4500};
+    for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; }
+    await upd(p); loadPrompts({...r,...p});
+  }
+  function loadPrompts(r){ const g=r.games, round=r.round, k=Object.values(r.players||{}).filter(p=>p.on!==false).length;
+    if(!once('lp'+g+'_'+round)) return;
+    getPrompts(r.settings, k*2+12).then(list=>{ if(R&&R.games===g&&R.round===round&&R.phase==='intro') upd({plist:list}); }); }
+  function beginDraw(){ const r=R; if(!r.plist||!once('d'+r.games+'_'+r.round)) return;
+    const ids=shuffle(players(r).filter(([,p])=>p.on!==false).map(([id])=>id)), list=[...r.plist], prompts={};
+    ids.forEach(id=>{ prompts[id]=list.shift()||shuffle(DPROMPTS)[0]; });
+    const n=now(), u=LS.get('hg_dused',[]); u.push(...Object.values(prompts)); LS.set('hg_dused',u.slice(-200));
+    upd({phase:'draw',dprompts:prompts,dpool:list,draws:null,phaseAt:n,endsAt:n+r.settings.dDrawTime*1000}); }
+  function beginRound(){ const r=R; if(!once('br'+r.games+'_'+r.round)) return;
+    const D=r.draws||{}, P0=r.dprompts||{};
+    const queue=shuffle(Object.entries(D).filter(([id,d])=>d&&!d.empty&&okDrawing(d.img)&&P0[id]&&r.players[id]))
+      .map(([id,d])=>({t:'What is this drawing?',a:P0[id],d:shuffle(r.dpool||[]).slice(0,8),author:id,by:nm(r,id),img:d.img,src:'draw'}));
+    const n=now();
+    if(!queue.length){ toast('Nobody finished a drawing'); return upd({phase:'scores',queue:null,draws:null,phaseAt:n,endsAt:n+5000}); }
+    upd({queue,draws:null,ri:-1}).then(()=>beginQuestion(0)); }
+  function beginQuestion(i){ const r=R; if(!r.queue||!r.queue[i]||!once('q'+r.games+'_'+r.round+'_'+i)) return;
+    const n=now(), q=r.queue[i];
+    upd({phase:'lie',qi:(r.qi??-1)+1,ri:i,q,lies:null,auto:null,votes:null,dlikes:null,options:null,items:null,step:0,deltas:null,fakes:null,fk:'none',phaseAt:n,endsAt:n+r.settings.dFakeTime*1000*fam(r)}); }
+  function beginVote(){ const r=R; if(!once('v'+r.games+'_'+r.qi)) return;
+    const q=r.q, groups=new Map();
+    for(const [pid,txt] of Object.entries(r.lies||{})){ const k=norm(txt); if(!k) continue; if(!groups.has(k)) groups.set(k,{text:String(txt).trim(),owners:[]}); groups.get(k).owners.push(pid); }
+    const opts=[{id:'truth',text:q.a,truth:true}]; let i=0; for(const g of groups.values()) opts.push({id:'l'+(i++),text:g.text,owners:g.owners});
+    const usedN=new Set([norm(q.a),...groups.keys()]); let j=0;
+    for(const d of shuffle(q.d||[])){ if(opts.length>=4) break; const k=norm(d); if(usedN.has(k)) continue; usedN.add(k); opts.push({id:'h'+(j++),text:d,house:true}); }
+    const n=now(); upd({phase:'vote',options:shuffle(opts),votes:null,phaseAt:n,endsAt:n+r.settings.dVoteTime*1000*fam(r)}); }
+  const lieShare=(r,ow,n)=>Math.round(r.settings.dFool*multFor(r)*n*((r.auto||{})[ow]?0.5:1));
+  function beginReveal(){ const r=R; if(!once('r'+r.games+'_'+r.qi)) return;
+    const st=r.settings, mult=multFor(r), opts=r.options||[], deltas={}, stats=clone(r.stats||{});
+    const add=(p,v)=>{ if(r.players[p]&&v) deltas[p]=(deltas[p]||0)+v; };
+    const bump=(p,k,v=1)=>{ if(!r.players[p]||!v) return; stats[p]=stats[p]||{}; stats[p][k]=(stats[p][k]||0)+v; };
+    for(const o of opts){ const vs=voters(r,o.id);
+      if(o.truth){ vs.forEach(p=>{ add(p,st.dTruth*mult); bump(p,'truth'); }); add(r.q.author,st.dArtist*mult*vs.length); bump(r.q.author,'artist',vs.length); continue; }
+      vs.forEach(p=>bump(p,'gullible'));
+      if(!o.house) (o.owners||[]).forEach(ow=>{ const n=vs.filter(v=>v!==ow).length; add(ow,lieShare(r,ow,n)); bump(ow,'fooled',n); }); }
+    const items=opts.filter(o=>!o.truth && voters(r,o.id).length).sort((a,b)=>voters(r,a.id).length-voters(r,b.id).length).map(o=>o.id);
+    items.push('truth'); const n=now();
+    upd({phase:'reveal',items,step:0,deltas,stats,phaseAt:n,endsAt:n+(items[0]==='truth'?TRUTH_MS:LIE_MS)}); }
+  function nextReveal(){ const r=R; if(!once('s'+r.games+'_'+r.qi+'_'+r.step)) return; const n=now();
+    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?TRUTH_MS:LIE_MS)});
+    finishDrawing(false); }
+  function finishDrawing(skipped){ const r=R; if(!once('fd'+r.games+'_'+r.qi)) return; const st=r.settings, n=now(), q=r.q;
+    const p={phase:'between',phaseAt:n,endsAt:n+400};
+    if(r.scored!==r.qi && q){ const deltas=skipped?{}:Object.assign({},r.deltas||{}), stats=clone(r.stats||{});
+      const likes=st.dLikes!==false?Object.entries(r.dlikes||{}).filter(([id,v])=>v&&id!==q.author&&r.players[id]).length:0;
+      if(likes && st.dLikePoints) deltas[q.author]=(deltas[q.author]||0)+likes*st.dLikePoints;
+      if(likes){ stats[q.author]=stats[q.author]||{}; stats[q.author].likes=(stats[q.author].likes||0)+likes; p.stats=stats; }
+      for(const [id,d] of Object.entries(deltas)) if(r.players[id]) p[`players/${id}/score`]=(r.players[id].score||0)+d;
+      p.scored=r.qi; p[`gallery/g${r.qi}`]={img:q.img,title:q.a,by:q.by,author:q.author,likes,round:r.round}; }
+    upd(p); }
+  function afterBetween(){ const r=R; if(!once('ab'+r.games+'_'+r.qi)) return; const n=now();
+    if(r.queue && r.ri+1<r.queue.length) return beginQuestion(r.ri+1);
+    upd({phase:'scores',phaseAt:n,endsAt:n+7000}); }
+  function afterScores(){ const r=R; if(!once('as'+r.games+'_'+r.round)) return; const st=r.settings, n=now();
+    if(r.round<st.dRounds){ const p={phase:'intro',round:r.round+1,plist:null,dprompts:null,dpool:null,queue:null,draws:null,phaseAt:n,endsAt:n+4500}; upd(p).then(()=>loadPrompts({...r,...p})); return; }
+    const pics=Object.keys(r.gallery||{}).length;
+    if(st.dGallery!==false && pics) return upd({phase:'dgallery',revisit:null,phaseAt:n,endsAt:n+Math.max(12000,Math.ceil(pics/8)*8000)});
+    upd({phase:'final',phaseAt:n,endsAt:null}); }
+  function tick(){ const r=R; if(!r||r.paused||['lobby','final'].includes(r.phase)) return; const n=now();
+    if(r.demo) botTick(r,n);
+    if(r.phase==='intro'){ if(n>=r.endsAt && r.plist) beginDraw(); }
+    else if(r.phase==='draw'){ const ids=Object.keys(r.dprompts||{}).filter(id=>r.players[id]&&r.players[id].on!==false), D=r.draws||{};
+      if((ids.length&&ids.every(id=>D[id])) || n>=r.endsAt+2500) beginRound(); }
+    else if(r.phase==='lie'){ const el=eligible(r), L=r.lies||{}; if((el.length&&el.every(id=>L[id])) || n>=r.endsAt) beginVote(); }
+    else if(r.phase==='vote'){ const el=eligible(r), V=r.votes||{}; if((el.length&&el.every(id=>V[id])) || n>=r.endsAt) beginReveal(); }
+    else if(r.phase==='reveal'){ if(n>=r.endsAt) nextReveal(); }
+    else if(r.phase==='between'){ if(n>=r.endsAt) afterBetween(); }
+    else if(r.phase==='scores'){ if(n>=r.endsAt) afterScores(); }
+    else if(r.phase==='dgallery'){ if(r.endsAt && n>=r.endsAt) upd({phase:'final',phaseAt:n,endsAt:null}); } }
+  function botTick(r,n){ const st=r.settings;
+    for(const [id,p] of Object.entries(r.players||{})){ if(!p.bot) continue; const k=r.games+'_'+r.round+'_'+r.qi+id, delay=1800+hash(k)%7000;
+      if(r.phase==='draw' && (r.dprompts||{})[id] && !(r.draws||{})[id] && n-r.phaseAt>delay && !botMark.has('d'+k)){ botMark.add('d'+k); upd({[`draws/${id}`]:{img:botDoodle(),t:n}}); }
+      if(r.phase==='lie' && r.q && r.q.author!==id && !(r.lies||{})[id] && n-r.phaseAt>delay && !botMark.has('l'+k)){ botMark.add('l'+k);
+        const taken=new Set(Object.values(r.lies||{}).map(norm)); const pick=shuffle([...(r.q.d||[])]).concat(shuffle(BOT_LIES)).find(c=>!isTruth(c,r.q)&&!taken.has(norm(c)))||'a llama';
+        upd({[`lies/${id}`]:pick}); }
+      if(r.phase==='vote' && r.q && r.q.author!==id && !(r.votes||{})[id] && n-r.phaseAt>delay*0.6 && !botMark.has('v'+k)){ botMark.add('v'+k);
+        const opts=(r.options||[]).filter(o=>!(o.owners||[]).includes(id)), lies=opts.filter(o=>!o.truth);
+        upd({[`votes/${id}`]:(Math.random()<0.45||!lies.length)?'truth':lies[Math.floor(Math.random()*lies.length)].id}); }
+      if(r.phase==='reveal' && st.dLikes!==false && r.q && r.q.author!==id && n-r.phaseAt>2000 && !botMark.has('k'+k)){ botMark.add('k'+k); if(Math.random()<0.4) upd({[`dlikes/${id}`]:true}); }
+      if(['reveal','scores'].includes(r.phase) && st.reactions!==false && Math.random()<0.004) upd({[`reactions/${uid()}`]:{e:REACTS[Math.floor(Math.random()*REACTS.length)],t:n,p:id}}); } }
+
+  /* ---- reactions + confetti ---- */
+  function reactions(r){ const rs=r.reactions||{}, n=now();
+    for(const [id,x] of Object.entries(rs)){ if(seenR.has(id)) continue; seenR.add(id); if(!x||!REACTS.includes(x.e)||n-(x.t||0)>5000||fx.childElementCount>60) continue; floatEmoji(x.e); } }
+  function cleanReacts(){ const r=R, n=now(); if(!r||!r.reactions||n-lastClean<3000) return; lastClean=n;
+    const p={}; for(const [id,x] of Object.entries(r.reactions)) if(!x||n-(x.t||0)>6000) p[`reactions/${id}`]=null; if(Object.keys(p).length) upd(p); }
+  function floatEmoji(e){ const d=document.createElement('div'); d.className='floater'; d.textContent=e; d.style.left=(6+Math.random()*86)+'%'; d.style.setProperty('--dx',(Math.random()*16-8)+'cqw'); fx.appendChild(d); setTimeout(()=>d.remove(),3200); Sound.sfx('pop'); }
+  function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8]; c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg'); fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
+
+  /* ---- sound + voice ---- */
+  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['draw','lie','vote'].includes(r.phase)?0.5:1); }
+  function effects(prev,r){
+    const c={p:Object.keys(r.players||{}).length,a:Object.keys(r.draws||{}).length+Object.keys(r.lies||{}).length+Object.keys(r.votes||{}).length};
+    if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.a>lastCounts.a) Sound.sfx('lock'); } lastCounts=c;
+    if(prev && (prev.phase!==r.phase || prev.step!==r.step)){ setMusicFor(r);
+      if(r.phase==='intro'||r.phase==='draw') Sound.sfx('start');
+      if(r.phase==='reveal'){ const o=(r.options||[]).find(o=>o.id===r.items[r.step]);
+        if(o && o.truth){ const found=voters(r,o.id).length; Sound.sfx('drumroll'); setTimeout(()=>{ Sound.sfx('ding'); if(found) confetti(); },DRUM_MS); }
+        else { Sound.sfx('whoosh'); setTimeout(()=>Sound.sfx(o&&o.house?'buzz':'stamp'),1200); } }
+      if(r.phase==='scores') Sound.sfx('points');
+      if(r.phase==='dgallery'&&!r.revisit) Sound.sfx('fanfare');
+      if(r.phase==='final'&&!prev.revisit){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); } }
+    if(r.phase==='vote' && r.q) Voice.prefetch(`It's… ${r.q.a}!`, r.settings);
+    if(r.phase==='reveal' && r.queue && r.queue[r.ri+1]) Voice.prefetch(`What did ${r.queue[r.ri+1].by} draw?`, r.settings);
+    if(unlocked) maybeSpeak(r); }
+  function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
+  function speechFor(r){ switch(r.phase){
+      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Doodle Duel! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
+      case 'draw': return ['d'+r.games+'_'+r.round, 'Time to draw! Check your phone for your secret prompt.'];
+      case 'lie': return ['l'+r.games+'_'+r.qi, `What did ${r.q.by} draw?`];
+      case 'reveal': { const o=(r.options||[]).find(x=>x.id===r.items[r.step]); return ['r'+r.games+'_'+r.qi+'_'+r.step, o&&o.truth?`It's… ${o.text}!`:'']; }
+      case 'dgallery': return ['g'+r.games+(r.revisit?'b':''), r.revisit?'':"Here are tonight's masterpieces!"];
+      case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
+    } return null; }
+
+  /* ---- rendering ---- */
+  function galleryPage(r){ const pics=Object.keys(r.gallery||{}).length, pages=Math.max(1,Math.ceil(pics/8)); return Math.floor(Math.max(0,now()-(r.phaseAt||0))/8000)%pages; }
+  function timerUI(){ const r=R, el=$('.timer',stage); if(!r||!el) return; const left=r.paused?(r.remaining||0):Math.max(0,(r.endsAt||0)-now()), s=Math.ceil(left/1000);
+    if(el.textContent!==String(s)) el.textContent=s; el.classList.toggle('low',s<=5&&!r.paused);
+    if(s<=5 && s>0 && s!==lastTick && !r.paused && unlocked) Sound.sfx('tick'); lastTick=s; }
+  function top(r){ const n=(r.queue||[]).length, lbl=['lobby','final'].includes(r.phase)?'':r.phase==='dgallery'?'GALLERY':
+      `ROUND ${r.round}${multFor(r)>1?' · DOUBLE POINTS':''}${['lie','vote','reveal','between'].includes(r.phase)&&n?` · DRAWING ${r.ri+1} OF ${n}`:''}`;
+    return `<div class="tvtop"><span><b>HARDIN GAMES</b> · DOODLE DUEL</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
+  function tiles(r, mark, ids){ return `<div class="strip">${players(r).filter(([id])=>!ids||ids.includes(id)).map(([id,p])=>`<div class="tile ${p.on===false||(['lie','vote'].includes(r.phase)&&late(r,p))?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
+  function ctl(r){ if(['lobby','final','dgallery'].includes(r.phase)) return ''; return `<div class="hostctl"><button class="alt" data-act="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-act="skip">Skip</button></div>`; }
+  const pic=(src,cls='')=>okDrawing(src)?`<img class="${cls}" src="${src}" alt="">`:'';
+  function render(r){ const st=r.settings, q=r.q; let body='';
+    switch(r.phase){
+      case 'lobby': { const url=joinUrl(r.code), ps=players(r), max=st.maxPlayers;
+        const tl=ps.map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${avatar(p)}<span class="nm">${esc(p.name)}${p.bot?' 🤖':''}${r.vip===id?' ⭐':''}</span></div>`).join('')+
+          Array.from({length:Math.max(0,Math.min(8,max)-ps.length)},()=>'<div class="tile empty">open</div>').join('');
+        body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gold)">DOODLE DUEL</div>
+          <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
+          <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
+      case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your drawing fingers ready'}</div>${r.plist?'':'<div class="note late3">Thinking up prompts…</div>'}</div>`; break;
+      case 'draw': { const ids=Object.keys(r.dprompts||{}); body=`<div class="center"><div class="bigintro">DRAW!</div><div class="subintro">Check your phone for your secret prompt</div>${tiles(r,id=>(r.draws||{})[id],ids)}</div><div class="timer"></div>`; break; }
+      case 'lie': body=`<div class="dvote"><div><div class="dframe">${pic(q.img)}</div><div class="dby">${avatar(r.players[q.author])} drawn by ${esc(q.by)}</div></div>
+          <div class="dside"><div class="question" style="font-size:3.4cqw;text-align:left">What did ${esc(q.by)} draw?</div><div class="note" style="text-align:left">Write a fake title on your phone that could fool everyone</div>
+          ${tiles(r,id=>(r.lies||{})[id]||q.author===id,eligible(r).concat([q.author]))}</div></div><div class="timer"></div>`; break;
+      case 'vote': body=`<div class="dvote"><div><div class="dframe">${pic(q.img)}</div><div class="dby">${avatar(r.players[q.author])} drawn by ${esc(q.by)}</div></div>
+          <div class="dside"><div class="question" style="font-size:2.8cqw;text-align:left">Which one is the real title?</div>
+          <div class="dopts">${(r.options||[]).map((o,i)=>`<div class="opt"><b>${'ABCDEFGHIJ'[i]||''}</b>${esc(o.text)}</div>`).join('')}</div>
+          ${tiles(r,id=>(r.votes||{})[id]||q.author===id,eligible(r).concat([q.author]))}</div></div><div class="timer"></div>`; break;
+      case 'reveal': case 'between': { const id=(r.items||[])[r.step], o=(r.options||[]).find(x=>x.id===id)||{text:''}, vs=voters(r,id), mult=multFor(r);
+        const strip=vs.length?`<div class="strip">${vs.map(p=>`<div class="tile">${avatar(r.players[p])}<span class="nm">${esc(nm(r,p))}</span></div>`).join('')}</div>`:'';
+        const thumb=`<div class="dthumb">${pic(q.img)}</div>`;
+        if(o.truth){ const likes=Object.entries(r.dlikes||{}).filter(([k,v])=>v&&k!==q.author).length;
+          body=`<div class="center" data-k="truth${r.qi}">${thumb}<div class="drum">The real title is…</div><div class="revcard truth late1">${esc(o.text)}</div>
+            <div class="late2">${vs.length?strip+`<div class="revlbl tr">SPOTTED IT! +${st.dTruth*mult} each</div><div class="pts" style="animation:none">${esc(q.by)} +${st.dArtist*mult*vs.length} for the drawing</div>`:'<div class="revlbl lie">NOBODY GOT IT!</div>'}
+            ${likes?`<div class="note">👍 ${likes} ${likes===1?'like':'likes'}</div>`:''}</div></div>`; }
+        else { const owners=o.owners||[], who=o.house?'A HARDIN HOUSE LIE!':`${listNames(owners.map(p=>nm(r,p))).toUpperCase()}'S LIE!`, amt=!o.house&&vs.length&&owners[0]?lieShare(r,owners[0],vs.length):0;
+          body=`<div class="center" data-k="${esc(id)}${r.qi}">${thumb}<div class="cardwrap"><div class="revcard">${esc(o.text)}</div><div class="stamp ${o.house?'house':''}">${o.house?'HOUSE LIE':'BUSTED!'}</div></div>
+            ${strip}<div class="revlbl ${o.house?'house':'lie'}">${esc(who)}</div>${amt?`<div class="pts">+${amt}${owners.length>1?' each':''}</div>`:''}</div>`; }
+        break; }
+      case 'scores': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+        body=`<div class="center"><div class="subintro">AFTER ROUND ${r.round}</div><div class="bigintro" style="font-size:4.5cqw">SCORES</div>
+          <div class="board">${rows.map(([id,p])=>`<div class="brow">${avatar(p)}<span class="nm">${esc(p.name)}</span><span class="sc">${p.score||0}</span></div>`).join('')}</div></div>`; break; }
+      case 'dgallery': { const all=Object.entries(r.gallery||{}).sort((a,b)=>(a[1].round-b[1].round)||(a[0]>b[0]?1:-1)).map(([,g])=>g), fav=dFav(r), pg=galleryPage(r), pages=Math.max(1,Math.ceil(all.length/8));
+        galPage=pg; const items=all.slice(pg*8,pg*8+8);
+        body=`<div class="center" style="justify-content:flex-start;padding-top:1.5cqw;gap:1.6cqw"><div class="bigintro" style="font-size:3cqw">TONIGHT'S MASTERPIECES</div>
+          <div class="gal">${items.map((g,i)=>`<div class="gi2 ${fav&&g===fav?'best':''}" style="--r:${[-2,1.5,-1,2,-2.5,1,-1,2][i]}deg">${fav&&g===fav?'<span class="ribbon">⭐ FAN FAVORITE</span>':''}<div class="pic">${pic(g.img)}</div><div class="t">${esc(g.title)}</div><div class="by">by ${esc(g.by)}${g.likes?` · 👍 ${g.likes}`:''}</div></div>`).join('')}</div>
+          <div class="note">${pages>1?`Page ${pg+1} of ${pages} · `:''}Save your drawings from your phone</div>${r.revisit?'<div class="tvbtns"><button class="alt" data-act="results">Back to results</button></div>':''}</div>`; break; }
+      case 'final': { const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)), pod=[rows[1],rows[0],rows[2]], aw=dAwards(r);
+        body=`<div class="center final"><div class="bigintro" style="font-size:4.2cqw">${rows[0]?esc(rows[0][1].name)+' WINS!':'GAME OVER'}</div>
+          <div class="podium">${pod.map((x,i)=>x?`<div class="pod">${avatar(x[1])}<div>${esc(x[1].name)}</div><div class="blk" style="height:${[6,9,4][i]}cqw">${x[1].score||0}</div></div>`:'').join('')}</div>
+          ${aw.length?`<div class="awards">${aw.map(a=>`<div class="award"><div class="ai">${a.icon}</div><div class="at">${a.title}</div><div class="an">${esc(a.names)}</div><div class="ad">${esc(a.detail)}</div></div>`).join('')}</div>`:''}
+          <div class="tvbtns"><button data-act="again">Play again</button>${Object.keys(r.gallery||{}).length?'<button class="alt" data-act="gallery">🖼️ Gallery</button>':''}<button class="alt" data-act="home">Exit</button></div></div>`; break; }
+    }
+    patchHTML(stage, top(r)+body+ctl(r)+(r.paused?'<div class="paused">PAUSED</div>':''));
+    const qr=$('#qr',stage); if(qr && !qr.firstChild && window.QRCode){ try{ new QRCode(qr,{text:joinUrl(r.code),width:256,height:256,colorDark:'#170c2e',colorLight:'#ffffff'}); }catch(e){} }
+    timerUI();
+  }
+}
+
 /* Opens the right TV screen for whatever game the room is */
 async function HostAny(code, mount, opts){
   if(!code) return Host(null, mount, opts);
   const r=await S.store.get(roomPath(code));
-  return (r && r.game==='trivia' ? TriviaHost : Host)(code, mount, opts);
+  return (r && r.game==='trivia' ? TriviaHost : r && r.game==='doodle' ? DoodleHost : Host)(code, mount, opts);
 }
 
 /* ============ DEMO (preview with bots) ============ */
@@ -1424,35 +1814,41 @@ async function AdminPanel(locked){
   const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
   const chk=(k,l)=>`<div class="fld"><label>${l}</label><input type="checkbox" data-k="${k}" ${st[k]?'checked':''}></div>`;
   const sel=(k,l,opts)=>`<div class="fld"><label>${l}</label><select data-k="${k}">${opts.map(([v,t])=>`<option value="${v}" ${String(st[k])===v?'selected':''}>${t}</option>`).join('')}</select></div>`;
+  const openS=new Set(LS.get('hg_admin_open',['general']));
+  const sec=(id,title,inner)=>`<details class="sec" data-sec="${id}" ${openS.has(id)?'open':''}><summary><h3>${title}</h3></summary><div class="secb">${inner}</div></details>`;
   const draw=()=>{ app.innerHTML=`<div class="admin"><div class="row" style="align-items:center"><div class="logo" style="text-align:left">HARDIN<span>GAMES</span></div>${locked?'<button class="alt" id="lockb" style="flex:0 0 auto">🔒 Lock</button>':''}<button class="alt" id="back" style="flex:0 0 auto">Done</button></div>
-    <div class="sec"><h3>Fibs · Game</h3>${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}
-      ${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}
-      ${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('playerQuestions','Players can add questions in the lobby')}</div>
-    <div class="sec"><h3>Scoring</h3>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}</div>
-    <div class="sec"><h3>Smarty Pants</h3>${num('tRounds','Rounds',1,6)}${num('tPerRound','Questions per round',2,10)}${num('tTime','Seconds to answer',8,60)}${num('tVoteTime','Seconds to vote on a category',5,40)}
-      ${chk('tNumbers','One "closest number" question per round')}${chk('tWager','Final wager question')}${num('tStreak','Streak bonus (3+ right in a row)',0,1000,50)}${chk('tAI','AI writes the questions')}
-      <div class="fld"><label>Your own categories</label><input data-k="tCats" placeholder="e.g. Our Family, 2000s Music" value="${esc(st.tCats)}" style="width:55%"></div>
-      <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
-      <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div></div>
-    <div class="sec"><h3>Fun extras</h3>${chk('likes','Players can 👍 the funniest lies')}${num('likePoints','Points per 👍',0,1000,25)}${chk('reactions','Emoji reactions on the TV')}${chk('lieForMe','"Lie for me" button (half points)')}${chk('aiFakes','AI writes the "Lie for me" choices')}${chk('photos','Players can use a photo')}</div>
-    <div class="sec"><h3>Questions</h3>${Object.entries(PACKS).map(([k,p])=>`<div class="fld"><label>${p.name} <span class="muted small">(${p.q.length})</span></label><input type="checkbox" data-pack="${k}" ${st.packs[k]?'checked':''}></div>`).join('')}
-      <div class="fld"><label>Family pack <span class="muted small">(${Object.keys(fam).length})</span></label><input type="checkbox" data-pack="family" ${st.packs.family?'checked':''}></div>
-      ${sel('aiMix','AI questions',[['off','Off'],['one','One per round'],['half','About half'],['all','All of them']])}
-      <div class="fld"><label>AI topic</label><input data-k="aiTopic" placeholder="Random" value="${esc(st.aiTopic)}" style="width:55%"></div>
-      <button class="alt" id="testai">Test an AI question</button><div id="aiout" class="small muted"></div></div>
-    <div class="sec"><h3>Sound & Voice</h3>${chk('music','Music')}${chk('sfx','Sound effects')}
+    ${sec('general','General · all games',`${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('photos','Players can use a photo')}${chk('reactions','Emoji reactions on the TV')}`)}
+    ${sec('sound','Sound & Voice',`${chk('music','Music')}${chk('sfx','Sound effects')}
       <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
       ${chk('readAloud','Read questions and answers aloud')}
       ${sel('voice','Voice',[['builtin','Built-in voice'],['clone','My cloned voice (AI)']])}
       <div class="fld"><label>Built-in voice</label><select data-k="voiceName"><option value="">Default</option>${Voice.loadVoices().map(v=>`<option ${v.name===st.voiceName?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div>
       <div class="fld"><label>Speed</label><input type="range" data-k="voiceRate" min="0.7" max="1.3" step="0.05" value="${st.voiceRate}"></div>
       ${!CONFIG.WORKER_URL?'<div class="small muted">Cloned voice and AI questions turn on once WORKER_URL is set.</div>':''}
-      <button class="alt" id="testv">Test voice</button><div id="vout" class="small muted"></div></div>
-    <div class="sec"><h3>Family pack</h3><div class="qlist">${Object.entries(fam).map(([id,q])=>`<div class="qitem"><div>${showQ(q.t)}<br><span class="ok small">${esc(q.a)}</span>${q.safe===false?' <span class="small muted">· adults only</span>':''}</div><button class="alt" data-del="${id}">Delete</button></div>`).join('')||'<div class="muted small">No family questions yet.</div>'}</div>
+      <button class="alt" id="testv">Test voice</button><div id="vout" class="small muted"></div>`)}
+    ${sec('fibs','🤥 Fibs',`${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}${chk('playerQuestions','Players can add questions in the lobby')}
+      <h4>Scoring</h4>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}
+      <h4>Extras</h4>${chk('likes','Players can 👍 the funniest lies')}${num('likePoints','Points per 👍',0,1000,25)}${chk('lieForMe','"Lie for me" button (half points)')}${chk('aiFakes','AI writes the "Lie for me" choices')}
+      <h4>Questions</h4>${Object.entries(PACKS).map(([k,p])=>`<div class="fld"><label>${p.name} <span class="muted small">(${p.q.length})</span></label><input type="checkbox" data-pack="${k}" ${st.packs[k]?'checked':''}></div>`).join('')}
+      <div class="fld"><label>Family pack <span class="muted small">(${Object.keys(fam).length})</span></label><input type="checkbox" data-pack="family" ${st.packs.family?'checked':''}></div>
+      ${sel('aiMix','AI questions',[['off','Off'],['one','One per round'],['half','About half'],['all','All of them']])}
+      <div class="fld"><label>AI topic</label><input data-k="aiTopic" placeholder="Random" value="${esc(st.aiTopic)}" style="width:55%"></div>
+      <button class="alt" id="testai">Test an AI question</button><div id="aiout" class="small muted"></div>
+      <h4>Family pack</h4><div class="qlist">${Object.entries(fam).map(([id,q])=>`<div class="qitem"><div>${showQ(q.t)}<br><span class="ok small">${esc(q.a)}</span>${q.safe===false?' <span class="small muted">· adults only</span>':''}</div><button class="alt" data-del="${id}">Delete</button></div>`).join('')||'<div class="muted small">No family questions yet.</div>'}</div>
       <textarea id="ft" rows="2" placeholder="Grandpa's first car was a ___"></textarea><input id="fa" placeholder="Real answer"><div class="row"><input id="fd1" placeholder="Fake answer (optional)"><input id="fd2" placeholder="Fake answer (optional)"></div>
-      <div class="fld"><label>OK for kids</label><input type="checkbox" id="fsafe" checked></div><button id="fadd">Add to family pack</button></div>
+      <div class="fld"><label>OK for kids</label><input type="checkbox" id="fsafe" checked></div><button id="fadd">Add to family pack</button>`)}
+    ${sec('trivia','🧠 Smarty Pants',`${num('tRounds','Rounds',1,6)}${num('tPerRound','Questions per round',2,10)}${num('tTime','Seconds to answer',8,60)}${num('tVoteTime','Seconds to vote on a category',5,40)}
+      ${chk('tNumbers','One "closest number" question per round')}${chk('tWager','Final wager question')}${num('tStreak','Streak bonus (3+ right in a row)',0,1000,50)}${chk('tAI','AI writes the questions')}
+      <div class="fld"><label>Your own categories</label><input data-k="tCats" placeholder="e.g. Our Family, 2000s Music" value="${esc(st.tCats)}" style="width:55%"></div>
+      <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
+      <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div>`)}
+    ${sec('doodle','🎨 Doodle Duel',`${num('dRounds','Rounds',1,4)}${num('dDrawTime','Seconds to draw',20,180,5)}${num('dFakeTime','Seconds to write a fake title',15,120,5)}${num('dVoteTime','Seconds to vote',10,90,5)}
+      <h4>Scoring</h4>${num('dTruth','Points for spotting the real title',0,5000,50)}${num('dFool','Points per player fooled',0,5000,50)}${num('dArtist','Artist bonus per player who gets it',0,5000,50)}${num('dMult','Last round multiplier',1,5)}
+      <h4>Extras</h4>${chk('dLieForMe','"Lie for me" button (half points)')}${chk('dLikes','Players can 👍 drawings')}${num('dLikePoints','Points per 👍',0,1000,25)}${chk('dGallery','Show the gallery at the end')}
+      <h4>Prompts</h4>${chk('dAI','AI writes drawing prompts')}<label class="small muted">Your own prompts (one per line)</label><textarea data-k="dPrompts" rows="4" placeholder="Dad's famous chili&#10;Grandma's dance moves">${esc(st.dPrompts)}</textarea>`)}
     <button id="save">Save settings</button></div>`;
     $('#back').onclick=()=>nav({});
+    app.querySelectorAll('details.sec').forEach(d=>d.addEventListener('toggle',()=>{ d.open?openS.add(d.dataset.sec):openS.delete(d.dataset.sec); LS.set('hg_admin_open',[...openS]); }));
     if($('#lockb')) $('#lockb').onclick=()=>{ LS.set('hg_admin_token',''); toast('Admin locked'); nav({}); };
     $('#save').onclick=save;
     $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); const o=$('#vout');
