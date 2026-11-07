@@ -444,7 +444,7 @@ const PACKS = {
 
 const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
-  theme:'sunset',music:true,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
+  theme:'sunset',music:true,musicVol:0.7,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
@@ -491,6 +491,10 @@ async function toAvatar(file){ const url=URL.createObjectURL(file);
     const w=img.naturalWidth, h=img.naturalHeight, sz=Math.min(w,h), c=document.createElement('canvas'); c.width=c.height=160;
     c.getContext('2d').drawImage(img,(w-sz)/2,(h-sz)/2,sz,sz,0,0,160,160); return c.toDataURL('image/jpeg',0.72); }
   finally{ URL.revokeObjectURL(url); } }
+function musicFor(r,map){ if(!Sound.ctx) return; Sound.apply(r.settings); const tr=map[r.phase]||(['lobby','loading'].includes(r.phase)?'lobby':'scores');
+  if(tr==='off') return Sound.setMusicLevel(0);
+  Sound.setMusicLevel(tr==='reveal'?0.85:(r.game==='mic'&&r.phase==='pick'?0.6:1)); Sound.setTrack(tr);
+  Sound.deadline=(tr==='think'&&r.endsAt&&!r.paused)?Date.now()+(r.endsAt-S.store.now()):null; }
 const voiceTag=st=>!st.readAloud?' · 🔇 Voice off':st.voice==='clone'?' · 🎙️ Your voice':' · 🤖 Built-in voice';
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
 function patchHTML(el, html){
@@ -561,7 +565,7 @@ const Sound = {
     const b=c.createBuffer(1,c.sampleRate*0.5,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; this.noise=b;
     this.apply(st); c.resume && c.resume(); },
   apply(st){ this.st=st; if(!this.ctx) return; this.master.gain.value=st.volume??0.7; this.sfxGain.gain.value=st.sfx?0.9:0; this.setMusicLevel(this.level); if(st.music) this.startMusic(); else this.stopMusic(); },
-  setMusicLevel(l){ this.level=l; if(!this.ctx) return; const v=(this.st&&this.st.music?0.32:0)*l*(this.ducked?0.3:1); this.musicGain.gain.setTargetAtTime(v,this.ctx.currentTime,0.25); },
+  setMusicLevel(l){ this.level=l; if(!this.ctx) return; const v=(this.st&&this.st.music?(this.st.musicVol??0.7)*0.62:0)*l*(this.ducked?0.4:1); this.musicGain.gain.setTargetAtTime(v,this.ctx.currentTime,0.25); },
   duck(on){ this.ducked=on; this.setMusicLevel(this.level); },
   mtof:m=>440*Math.pow(2,(m-69)/12),
   tone(f,t,dur,type='sine',g=0.2,dest){ const c=this.ctx,o=c.createOscillator(),a=c.createGain(); o.type=type; o.frequency.setValueAtTime(f,t);
@@ -569,17 +573,46 @@ const Sound = {
     o.connect(a); a.connect(dest||this.sfxGain); o.start(t); o.stop(t+dur+0.05); return o; },
   noiseHit(t,dur,g,freq,dest,type='highpass'){ const c=this.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),a=c.createGain(); s.buffer=this.noise; f.type=type; f.frequency.value=freq;
     a.gain.setValueAtTime(g,t); a.gain.exponentialRampToValueAtTime(0.0001,t+dur); s.connect(f); f.connect(a); a.connect(dest||this.sfxGain); s.start(t); s.stop(t+dur+0.05); return f; },
-  startMusic(){ if(this.playing||!this.ctx) return; this.playing=true; this.step=0; this.nextT=this.ctx.currentTime+0.1; this.timer=setInterval(()=>this.sched(),60); },
+  /* Music: four synth tracks. "think" speeds up and builds over the last 10 seconds of the timer. */
+  track:'lobby', deadline:null,
+  setTrack(n){ if(n!==this.track){ this.track=n; this.step=0; if(this.ctx) this.nextT=Math.max(this.nextT||0,this.ctx.currentTime+0.05); } },
+  startMusic(){ if(this.playing||!this.ctx) return; this.playing=true; this.step=0; this.nextT=this.ctx.currentTime+0.1; this.timer=setInterval(()=>this.sched(),50); },
   stopMusic(){ this.playing=false; clearInterval(this.timer); },
-  sched(){ const c=this.ctx, spb=60/104/4; const chords=[[60,64,67,71],[57,60,64,67],[53,57,60,64],[55,59,62,65]], bass=[36,33,29,31];
-    const mel=[72,null,74,76,null,79,76,null,74,null,72,null,71,null,67,null];
-    while(this.nextT<c.currentTime+0.25){ const t=this.nextT, s=this.step%16, bar=Math.floor(this.step/16)%4, M=this.musicGain;
-      if(s===0||s===8) { const o=this.tone(120,t,0.25,'sine',0.5,M); o.frequency.exponentialRampToValueAtTime(45,t+0.2); }
-      if(s===4||s===12) this.noiseHit(t,0.12,0.25,1500,M,'bandpass');
-      if(s%2===0) this.noiseHit(t,0.04,0.08,7000,M);
-      if([0,3,6,8,11,14].includes(s)) this.tone(this.mtof(bass[bar]+(s===6||s===14?12:0)),t,0.22,'triangle',0.35,M);
-      if(s===2||s===10) chords[bar].forEach(n=>this.tone(this.mtof(n),t,0.35,'square',0.025,M));
-      if(bar%2===1 && mel[s]) this.tone(this.mtof(mel[s]-(bar===3?2:0)),t,0.2,'triangle',0.06,M);
+  TRACKS:{ lobby:{bpm:112,ch:[[60,64,67,71],[57,60,64,67],[62,65,69,72],[55,59,62,65]],bass:[36,33,38,31]},
+    think:{bpm:116,ch:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],bass:[33,29,31,28]},
+    reveal:{bpm:84,ch:[[57,64,69],[53,60,65],[55,62,67],[52,59,64]],bass:[33,29,31,28]},
+    scores:{bpm:128,ch:[[60,64,67],[55,59,62],[57,60,64],[53,57,60]],bass:[36,31,33,29]} },
+  kick(t,M,g=0.6){ const o=this.tone(150,t,0.3,'sine',g,M); o.frequency.exponentialRampToValueAtTime(42,t+0.25); },
+  snare(t,M,g=0.3){ this.noiseHit(t,0.16,g,1800,M,'bandpass'); this.tone(190,t,0.08,'triangle',g*0.5,M); },
+  hat(t,M,g=0.07,d=0.04){ this.noiseHit(t,d,g,8000,M); },
+  sched(){ const c=this.ctx;
+    while(this.nextT<c.currentTime+0.25){ const tr=this.TRACKS[this.track]?this.track:'lobby', T=this.TRACKS[tr];
+      let I=0; if(tr==='think'&&this.deadline){ const left=(this.deadline-Date.now())/1000; I=left<10?Math.min(1,Math.max(0,(10-left)/10)):0; }
+      const spb=60/(T.bpm+I*30)/4, t=this.nextT, s=this.step%16, bar=Math.floor(this.step/16)%4, M=this.musicGain, m=n=>this.mtof(n), ch=T.ch[bar], b=T.bass[bar];
+      if(tr==='lobby'){ /* funky groove */
+        if([0,7,10].includes(s)) this.kick(t,M); if(s===4||s===12) this.snare(t,M,0.28);
+        if(s%2===0) this.hat(t,M,0.07,[2,6,10,14].includes(s)?0.14:0.04);
+        if([0,3,6,8,10,13,14].includes(s)) this.tone(m(b+(s===6||s===14?12:s===10?7:0)),t,0.2,'triangle',0.4,M);
+        if([2,7,10].includes(s)) ch.forEach(n=>this.tone(m(n),t,0.14,'square',0.028,M));
+        const hook=[72,null,74,76,null,79,null,76,74,null,72,null,null,67,69,null]; if(bar%2===1&&hook[s]) this.tone(m(hook[s]-(bar===3?2:0)),t,0.18,'triangle',0.09,M); }
+      else if(tr==='think'){ /* ticking, tense, builds near the end */
+        if(s===0||s===8||(I>0.4&&(s===4||s===12))) this.kick(t,M,0.5); if(s===4||s===12) this.snare(t,M,0.14+I*0.14);
+        if(s%(I>0.3?1:2)===0) this.hat(t,M,0.035+I*0.05);
+        if(s%2===0) this.tone(m(b+(s%4===2?12:0)),t,0.12,'triangle',0.38,M);
+        if(s%(I>0.6?1:2)===0){ const arp=[...ch,...ch.map(n=>n+12)]; this.tone(m(arp[(s>>(I>0.6?0:1))%arp.length]+12+(I>0.8?12:0)),t,0.1,'square',0.03+I*0.02,M); }
+        if(s===0&&bar===0) this.tone(m(ch[0]+24),t,0.5,'sine',0.05,M); }
+      else if(tr==='reveal'){ /* heartbeat suspense, leaves room for the reveal sounds */
+        if(s===0||s===3) this.kick(t,M,s===0?0.55:0.35);
+        if(s===0){ ch.forEach(n=>this.tone(m(n-12),t,spb*15,'sawtooth',0.018,M)); this.tone(m(b),t,spb*14,'sine',0.3,M); }
+        if(s===10||(bar%2===1&&s===14)) this.tone(m(ch[(this.step>>4)%ch.length]+12),t,0.3,'triangle',0.06,M);
+        if(s%4===2) this.hat(t,M,0.025); }
+      else { /* scores: bright party bounce */
+        if(s%4===0) this.kick(t,M,0.6); if(s===4||s===12){ this.snare(t,M,0.3); this.noiseHit(t+0.01,0.1,0.15,1200,M,'bandpass'); }
+        if(s%4===2) this.hat(t,M,0.09,0.12); else if(s%2===0) this.hat(t,M,0.04);
+        if(s%2===0) this.tone(m(b+(s%4===2?12:0)),t,0.16,'triangle',0.4,M);
+        if(s%4===2) ch.forEach(n=>this.tone(m(n+12),t,0.12,'square',0.025,M));
+        const lead=[[76,null,79,null,84,null,79,null,76,null,74,76,null,null,null,null],[74,null,77,null,79,null,77,74,null,null,71,null,74,null,null,null]][bar%2];
+        if(lead[s]) this.tone(m(lead[s]),t,0.16,'triangle',0.08,M); }
       this.nextT+=spb; this.step++; } },
   sfx(name){ if(!this.ctx||!this.st||!this.st.sfx) return; const t=this.ctx.currentTime, m=f=>this.mtof(f);
     switch(name){
@@ -623,24 +656,28 @@ const Voice = {
     try{ if(window.speechSynthesis && (speechSynthesis.speaking||speechSynthesis.pending)){ speechSynthesis.cancel(); this.cancelled=true; } }catch(e){}
     try{ this.el && this.el.pause(); }catch(e){} },
   async say(text, st, opt={}){ if(!st||!st.readAloud||!text) return this.last; this.stop(); this.keep=!!opt.keep; const tok=this.tok; Sound.duck(true);
-    try{ if(st.voice==='clone' && CONFIG.WORKER_URL){ const url=await this.tts(text); if(tok!==this.tok) return this.last; this.last={mode:'clone',error:''}; await this.play(url, st); }
+    try{ if(st.voice==='clone' && CONFIG.WORKER_URL){ const url=await this.tts(text,true); if(tok!==this.tok) return this.last; this.last={mode:'clone',error:''};
+           let ok=await this.play(url, st); if(!ok && tok===this.tok){ await sleep(300); if(tok===this.tok) ok=await this.play(url, st); }   /* retry once, then the built-in voice */
+           if(!ok && tok===this.tok){ this.last={mode:'builtin',error:'playback failed'}; await this.builtin(text, st, tok); } }
          else { this.last={mode:'builtin',error:''}; await this.builtin(text, st, tok); } }
     catch(e){ console.warn('voice fallback',e); const m=e.message||String(e); this.last={mode:'builtin',error:m};
       if(!opt.quiet && this.warned!==m){ this.warned=m; toast(`Your voice failed: ${m.slice(0,90)} · using the built-in voice`); }
       if(tok===this.tok) await this.builtin(text, st, tok); }
     finally{ if(tok===this.tok){ Sound.duck(false); this.keep=false; } }
     return this.last; },
-  tts(text){ if(this.cache.has(text)) return Promise.resolve(this.cache.get(text)); if(this.pending.has(text)) return this.pending.get(text);
-    const pr=(async()=>{ await this.slot();
+  tts(text,hi){ if(this.cache.has(text)) return Promise.resolve(this.cache.get(text)); if(this.pending.has(text)){ if(hi) this.bump(text); return this.pending.get(text); }
+    const pr=(async()=>{ await this.slot(text,hi);
       try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
         if(!r.ok){ let m=''; try{ m=(await r.json()).error; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
         const url=URL.createObjectURL(await r.blob()); this.cache.set(text,url); return url; }
-      finally{ this.active--; const nx=this.queue.shift(); nx&&nx(); } })();
+      finally{ this.active--; const nx=this.queue.shift(); nx&&nx.go(); } })();
     this.pending.set(text,pr); pr.finally(()=>this.pending.delete(text)).catch(()=>{}); return pr; },
-  slot(){ if(this.active<2){ this.active++; return Promise.resolve(); } return new Promise(res=>this.queue.push(()=>{ this.active++; res(); })); },  /* at most 2 voice requests at a time */
-  prefetch(text, st){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text).catch(()=>{}); },
+  slot(text,hi){ if(this.active<2){ this.active++; return Promise.resolve(); }
+    return new Promise(res=>{ const j={text,go:()=>{ this.active++; res(); }}; hi?this.queue.unshift(j):this.queue.push(j); }); },
+  bump(text){ const i=this.queue.findIndex(j=>j.text===text); if(i>0) this.queue.unshift(...this.queue.splice(i,1)); },   /* a line that's needed now jumps the line */  /* at most 2 voice requests at a time */
+  prefetch(text, st, hi){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text,hi).catch(()=>{}); },
   play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
-      a.onended=a.onerror=()=>res(); a.play().catch(()=>res()); setTimeout(res,20000); }); },
+      a.onended=()=>res(true); a.onerror=()=>res(false); a.play().catch(()=>res(false)); setTimeout(()=>res(true),20000); }); },
   async builtin(text, st, tok){ if(!window.speechSynthesis) return;
     /* Reset before every line: stop any clip still playing and clear stuck speech (iOS can jam), then wait, since iOS drops speech that starts right after a cancel */
     try{ this.el && this.el.pause(); speechSynthesis.cancel(); speechSynthesis.resume(); }catch(e){} this.cancelled=false; await sleep(150);
@@ -799,7 +836,7 @@ function Host(code, mount, opts){
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
-    effects(prev,r); reactions(r); render(r);
+    effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
   const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
@@ -925,7 +962,7 @@ function Host(code, mount, opts){
       fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
 
   /* ---- effects: sound + voice ---- */
-  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['lie','vote'].includes(r.phase)?0.55:1); }
+  function setMusicFor(r){ musicFor(r,{lie:'think',vote:'think',reveal:'reveal'}); }
   function effects(prev,r){
     const c={p:Object.keys(r.players||{}).length,l:Object.keys(r.lies||{}).length,v:Object.keys(r.votes||{}).length};
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.l>lastCounts.l||c.v>lastCounts.v) Sound.sfx('lock'); }
@@ -939,8 +976,8 @@ function Host(code, mount, opts){
       if(r.phase==='scores') Sound.sfx('points');
       if(r.phase==='final'){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); }
     }
-    if(r.phase==='intro' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings);
-    if(r.phase==='scores' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings);
+    if((r.phase==='intro'||r.phase==='loading') && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings, true);
+    if(r.phase==='scores' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings, true);
     if((r.phase==='scores'||r.phase==='intro') && r.queue && r.queue[r.qi+1] && r.settings.lieForMe!==false) Fakes.get(r.queue[r.qi+1], r.settings);
     if((r.phase==='lie'||r.phase==='vote') && r.q) Voice.prefetch(`The truth is… ${r.q.a}!`, r.settings);
     if(r.phase==='loading'||(r.phase==='lobby'&&!prev)){ ["Let's play Fibs! Round one!",'Final round! Everything is worth double!',...[2,3,4,5].map(n=>`Round ${WORDS[n]}!`).slice(0,Math.max(0,r.settings.rounds-2))].forEach(t=>Voice.prefetch(t,r.settings)); }
@@ -1504,7 +1541,7 @@ function TriviaHost(code, mount, opts){
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); loadFlags(); }
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
-    effects(prev,r); reactions(r); render(r);
+    effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
   const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
@@ -1600,7 +1637,7 @@ function TriviaHost(code, mount, opts){
   function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8]; c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg'); fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
 
   /* ---- sound + voice ---- */
-  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['q','tvote','wcat'].includes(r.phase)?0.55:1); }
+  function setMusicFor(r){ musicFor(r,{q:'think',tvote:'think',wcat:'think',tcat:'think',reveal:'reveal'}); }
   function effects(prev,r){
     const c={p:Object.keys(r.players||{}).length,a:Object.keys(r.answers||{}).length+Object.keys(r.tvotes||{}).length+Object.keys(r.wagers||{}).length};
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.a>lastCounts.a) Sound.sfx('lock'); } lastCounts=c;
@@ -1610,7 +1647,7 @@ function TriviaHost(code, mount, opts){
       if(r.phase==='scores') Sound.sfx('points');
       if(r.phase==='final'){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); } }
     if(r.phase==='q' && r.q) Voice.prefetch(`The answer is… ${answerText(r.q)}!`, r.settings);
-    if((r.phase==='reveal'||r.phase==='tcat') && r.rq){ const nx=r.rq[r.phase==='tcat'?0:r.ri+1]; if(nx) Voice.prefetch(nx.q, r.settings); }
+    if((r.phase==='reveal'||r.phase==='tcat') && r.rq){ const nx=r.rq[r.phase==='tcat'?0:r.ri+1]; if(nx) Voice.prefetch(nx.q, r.settings, true); }
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ switch(r.phase){
@@ -1754,7 +1791,7 @@ function DoodleHost(code, mount, opts){
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id));
       if(r.phase==='intro' && !r.plist) loadPrompts(r); }
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
-    effects(prev,r); reactions(r); render(r);
+    effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
   const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
@@ -1878,7 +1915,7 @@ function DoodleHost(code, mount, opts){
   function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8]; c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg'); fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
 
   /* ---- sound + voice ---- */
-  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['draw','lie','vote'].includes(r.phase)?0.5:1); }
+  function setMusicFor(r){ musicFor(r,{draw:'think',lie:'think',vote:'think',pick:'think',reveal:'reveal'}); }
   function effects(prev,r){
     const c={p:Object.keys(r.players||{}).length,a:Object.keys(r.draws||{}).length+Object.keys(r.lies||{}).length+Object.keys(r.votes||{}).length};
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.a>lastCounts.a) Sound.sfx('lock'); } lastCounts=c;
@@ -2085,7 +2122,7 @@ function MicHost(code, mount, opts){
     const tk=r.games+'_'+r.round+'_'+r.mi; if(tk!==turnKey){ turnKey=tk; applause=0; needPlay=false; replayEnd=0; dark=false; forceCover=false; }
     if(r.phase!=='sing'){ dark=false; forceCover=false; }
     if(hr.k && hr.k!==turnKey) hrClose();
-    effects(prev,r); reactions(r); syncVideo(r); rtcSync(r); render(r);
+    effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); syncVideo(r); rtcSync(r); render(r);
   });
   const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); videoTick(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; hrClose(); try{ yt&&yt.destroy(); }catch(e){} });
@@ -2170,7 +2207,7 @@ function MicHost(code, mount, opts){
   function confetti(){ for(let i=0;i<70;i++){ const c=document.createElement('i'); c.className='conf'; c.style.left=(Math.random()*100)+'%'; c.style.background=COLORS[i%8]; c.style.animationDelay=(Math.random()*0.6)+'s'; c.style.setProperty('--dx',(Math.random()*20-10)+'cqw'); c.style.setProperty('--r',(Math.random()*720-360)+'deg'); fx.appendChild(c); setTimeout(()=>c.remove(),3600); } }
 
   /* ---- sound + voice (game music stays off while a song plays) ---- */
-  function setMusicFor(r){ if(!Sound.ctx) return; Sound.apply(r.settings); Sound.setMusicLevel(['sing','stop','judge'].includes(r.phase)?0:(r.phase==='pick'?0.6:1)); }
+  function setMusicFor(r){ musicFor(r,{sing:'off',stop:'off',judge:'off',pick:'lobby'}); }
   function effects(prev,r){
     const c={p:Object.keys(r.players||{}).length,v:Object.keys(r.mvotes||{}).length};
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.v>lastCounts.v) Sound.sfx('lock'); } lastCounts=c;
@@ -2313,6 +2350,7 @@ async function AdminPanel(locked){
     ${sec('general','General · all games',`${sel('theme','Color scheme',Object.entries(THEMES))}${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('photos','Players can use a photo')}${chk('reactions','Emoji reactions on the TV')}`)}
     ${sec('sound','Sound & Voice',`${chk('music','Music')}${chk('sfx','Sound effects')}
       <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
+      <div class="fld"><label>Music volume</label><input type="range" data-k="musicVol" min="0" max="1" step="0.05" value="${st.musicVol??0.7}"></div>
       ${chk('readAloud','Read questions and answers aloud')}
       ${sel('voice','Voice',[['builtin','Built-in voice'],['clone','My cloned voice (AI)']])}
       <div class="fld"><label>Built-in voice</label><select data-k="voiceName"><option value="">Default</option>${Voice.loadVoices().map(v=>`<option ${v.name===st.voiceName?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div>
