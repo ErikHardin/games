@@ -209,9 +209,18 @@ Respond with only JSON, no other text:
 // ---- Doodle Duel: silly drawing prompts ----
 async function prompts(req, env, cors) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
-  const { count = 20, family = false, avoid = [] } = await req.json();
+  const { count = 20, family = false, avoid = [], kind = 'draw' } = await req.json();
   const n = Math.min(Math.max(5, count | 0), 40);
-  const prompt = `Write ${n} funny drawing prompts for a party game. Players draw the prompt with a finger on a phone in 60 seconds, then everyone else tries to guess the real title.
+  const prompt = kind === 'who' ? `Write ${n} questions for a family party game called "Who Said It?". Everyone answers the same question about themselves on their phone, then the group guesses who wrote each answer.
+
+- Questions about the player's own life, habits, tastes, memories, and opinions, like "What's the worst job you've ever had?", "What's your most useless talent?", "What would your last meal be?"
+- Fun to answer in a few words, and the answers should be revealing or funny
+- Works for adults and teens; nothing too personal, sad, romantic, or about money, health, politics, or religion
+- ${family ? 'Family friendly, fine for kids 10 and up.' : 'Keep it PG-13.'}
+- Each one ends with a question mark and is under 80 characters
+${avoid.length ? `- Don't reuse any of these:\n${avoid.slice(0, 40).map(t => '  * ' + String(t).slice(0, 90)).join('\n')}` : ''}
+
+Respond with only JSON, no other text: {"prompts":["...","..."]}` : `Write ${n} funny drawing prompts for a party game. Players draw the prompt with a finger on a phone in 60 seconds, then everyone else tries to guess the real title.
 
 - 2 to 6 words each, like "a nervous hot dog", "grandma riding a shark", "a cactus at the beach"
 - Easy to sketch, with a silly twist: mix animals, food, everyday objects, jobs, places, and feelings
