@@ -569,7 +569,8 @@ const Sound = {
   ctx:null, master:null, musicGain:null, sfxGain:null, noise:null, st:null, playing:false, step:0, nextT:0, timer:null, level:1, ducked:false,
   init(st){ playbackMode(); if(this.ctx){ this.apply(st); try{ this.ctx.state!=='running' && this.ctx.resume(); }catch(e){} return; }
     try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
-    const c=this.ctx; this.master=c.createGain(); this.master.connect(c.destination);
+    const c=this.ctx; c.onstatechange=()=>{ if(c.state!=='running' && document.visibilityState==='visible') setTimeout(()=>this.ensure(true),300); };
+    this.master=c.createGain(); this.master.connect(c.destination);
     this.musicGain=c.createGain(); this.musicGain.connect(this.master); this.sfxGain=c.createGain(); this.sfxGain.connect(this.master);
     const b=c.createBuffer(1,c.sampleRate*0.5,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; this.noise=b;
     this.apply(st); c.resume && c.resume(); },
@@ -594,7 +595,7 @@ const Sound = {
   kick(t,M,g=0.6){ const o=this.tone(150,t,0.3,'sine',g,M); o.frequency.exponentialRampToValueAtTime(42,t+0.25); },
   snare(t,M,g=0.3){ this.noiseHit(t,0.16,g,1800,M,'bandpass'); this.tone(190,t,0.08,'triangle',g*0.5,M); },
   hat(t,M,g=0.07,d=0.04){ this.noiseHit(t,d,g,8000,M); },
-  sched(){ const c=this.ctx;
+  sched(){ const c=this.ctx; this.ensure(); if(c.state!=='running') return; if(this.nextT<c.currentTime-0.5) this.nextT=c.currentTime+0.05;   /* after a pause, pick up cleanly instead of a burst */
     while(this.nextT<c.currentTime+0.25){ const tr=this.TRACKS[this.track]?this.track:'lobby', T=this.TRACKS[tr];
       let I=0; if(tr==='think'&&this.deadline){ const left=(this.deadline-Date.now())/1000; I=left<10?Math.min(1,Math.max(0,(10-left)/10)):0; }
       const spb=60/(T.bpm+I*30)/4, t=this.nextT, s=this.step%16, bar=Math.floor(this.step/16)%4, M=this.musicGain, m=n=>this.mtof(n), ch=T.ch[bar], b=T.bass[bar];
@@ -623,7 +624,11 @@ const Sound = {
         const lead=[[76,null,79,null,84,null,79,null,76,null,74,76,null,null,null,null],[74,null,77,null,79,null,77,74,null,null,71,null,74,null,null,null]][bar%2];
         if(lead[s]) this.tone(m(lead[s]),t,0.16,'triangle',0.08,M); }
       this.nextT+=spb; this.step++; } },
-  sfx(name){ if(!this.ctx||!this.st||!this.st.sfx) return; const t=this.ctx.currentTime, m=f=>this.mtof(f);
+  /* iPhones can pause the sound engine (other audio starting, a call, a notification). Turn it back on. */
+  lastEnsure:0,
+  ensure(force){ const c=this.ctx; if(!c) return; const n=Date.now(); if(!force && n-this.lastEnsure<1000) return; this.lastEnsure=n;
+    if(c.state!=='running'){ try{ c.resume().catch(()=>{}); }catch(e){} } },
+  sfx(name){ this.ensure(); if(!this.ctx||!this.st||!this.st.sfx) return; const t=this.ctx.currentTime, m=f=>this.mtof(f);
     switch(name){
       case 'join': this.tone(m(76),t,0.12,'square',0.08); this.tone(m(83),t+0.08,0.18,'square',0.08); break;
       case 'lock': this.tone(m(72),t,0.08,'triangle',0.2); this.tone(m(79),t+0.06,0.14,'triangle',0.2); break;
@@ -650,7 +655,8 @@ const Awake = { want:false, lock:null,
   off(){ this.want=false; try{ this.lock && this.lock.release(); }catch(e){} this.lock=null; },
   get(){ if(!this.want||this.lock||!('wakeLock' in navigator)||document.visibilityState!=='visible') return;
     navigator.wakeLock.request('screen').then(l=>{ this.lock=l; l.addEventListener('release',()=>{ this.lock=null; }); }).catch(()=>{}); } };
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ Awake.get(); try{ Sound.ctx && Sound.ctx.state!=='running' && Sound.ctx.resume(); }catch(e){} } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ Awake.get(); Sound.ensure(true); } });
+document.addEventListener('pointerdown',()=>Sound.ensure(true),{capture:true,passive:true});
 
 /* ============ Voice (built-in or your cloned voice via the Worker) ============ */
 const Voice = {
@@ -841,7 +847,7 @@ function Host(code, mount, opts){
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
   const voters=(r,oid)=>Object.keys(r.votes||{}).filter(p=>r.votes[p]===oid);
 
-  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R) { Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); if(R) { Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
 
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
@@ -1590,7 +1596,7 @@ function TriviaHost(code, mount, opts){
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
   const loadFlags=async()=>{ try{ const f=(await store.get(`${ROOT}/trivia/flagged`))||{}; flagged=new Set(Object.keys(f)); flaggedList=Object.values(f).map(x=>x.q).slice(-20); }catch(e){} };
 
-  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
@@ -1839,7 +1845,7 @@ function DoodleHost(code, mount, opts){
   const multFor=r=>(r.settings.dRounds>1 && r.round===r.settings.dRounds)?(r.settings.dMult||1):1;
   const fam=r=>r.settings.audience==='family'?1.5:1;
 
-  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
@@ -2168,7 +2174,7 @@ function MicHost(code, mount, opts){
     }catch(e){} }
 
   function goDark(r){ if(dark) return; dark=true; Sound.sfx('whoosh'); render(r); if(!r.mdark) upd({mdark:true}); }
-  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); ytInit(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); ytInit(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
@@ -2397,7 +2403,7 @@ function WhoHost(code, mount, opts){
   const rightOf=r=>{ const a=cur(r), G=r.guesses||{}; return Object.keys(G).filter(p=>G[p]===a&&p!==a&&r.players[p]); };
   const wrongOf=r=>{ const a=cur(r), G=r.guesses||{}; return Object.keys(G).filter(p=>G[p]!==a&&p!==a&&r.players[p]); };
 
-  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
