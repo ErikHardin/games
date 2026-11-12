@@ -272,7 +272,8 @@ async function ytRaw(q, family, env, max, channelId) {
   const items = (j.items || []).filter(x => x.id && x.id.videoId);
   const sk = items.find(x => TRUSTED.test(x.snippet.channelTitle || ''));
   if (sk && !SK_ID) { SK_ID = sk.snippet.channelId; await saveSkId(SK_ID); }
-  return items.map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }));
+  return items.map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }))
+    .filter(x => !/#shorts?\b|\bshorts\b/i.test(x.title));   /* Shorts are vertical teasers, not the full karaoke video */
 }
 const SK_KEY = 'https://hardin-games.cache/sing-king-channel-id';
 async function saveSkId(id) { try { await caches.default.put(SK_KEY, new Response(id, { headers: { 'Cache-Control': 'max-age=2592000' } })); } catch (e) {} }
@@ -304,7 +305,7 @@ async function ytSearch(q, family, env, channels) {
     }
     const mark = x => ({ id: x.id, title: x.title, channel: x.channel, ok: true });
     const skOut = sk.map(x => ({ ...x, s: karaokeScore(x) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 4).map(mark);
-    if (mode === 'only') return skOut;
+    if (mode === 'only' || skOut.length) return skOut;   /* if Sing King has it, show only Sing King */
     const seen = new Set(skOut.map(x => x.id));
     const rest = list.filter(x => !seen.has(x.id) && !TRUSTED.test(x.channel)).map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
       .sort((a, b) => (b.s - a.s) || (a.i - b.i)).map(({ id, title, channel }) => ({ id, title, channel }));
@@ -313,6 +314,14 @@ async function ytSearch(q, family, env, channels) {
   return list.map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
     .sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 9).map(({ id, title, channel }) => ({ id, title, channel }));
 }
+const POP_SONGS = [['Shallow','Lady Gaga & Bradley Cooper'],['Someone Like You','Adele'],['Rolling in the Deep','Adele'],['Shake It Off','Taylor Swift'],['Love Story','Taylor Swift'],['Uptown Funk','Mark Ronson ft. Bruno Mars'],
+  ['Just the Way You Are','Bruno Mars'],['Perfect','Ed Sheeran'],['Shape of You','Ed Sheeran'],['Let It Go','Idina Menzel'],['Bohemian Rhapsody','Queen'],['Livin\' on a Prayer','Bon Jovi'],['Don\'t Stop Believin\'','Journey'],
+  ['Sweet Caroline','Neil Diamond'],['I Want It That Way','Backstreet Boys'],['Wannabe','Spice Girls'],['Halo','Beyonce'],['Firework','Katy Perry'],['Roar','Katy Perry'],['Happy','Pharrell Williams'],
+  ['Can\'t Stop the Feeling','Justin Timberlake'],['Count on Me','Bruno Mars'],['Riptide','Vance Joy'],['Someone You Loved','Lewis Capaldi'],['Hallelujah','Leonard Cohen'],['Jolene','Dolly Parton'],
+  ['I Will Survive','Gloria Gaynor'],['Girls Just Want to Have Fun','Cyndi Lauper'],['Total Eclipse of the Heart','Bonnie Tyler'],['Mr. Brightside','The Killers'],['Wonderwall','Oasis'],['Hey Jude','The Beatles'],
+  ['Valerie','Amy Winehouse'],['Flowers','Miley Cyrus'],['Party in the U.S.A.','Miley Cyrus'],['Drivers License','Olivia Rodrigo'],['A Thousand Years','Christina Perri'],['Viva la Vida','Coldplay'],['Shut Up and Dance','Walk the Moon'],['Dynamite','BTS']];
+function backupSongs(avoid) { const a = new Set((avoid || []).map(s => String(s).toLowerCase()));
+  return POP_SONGS.filter(([t]) => ![...a].some(x => x.includes(t.toLowerCase()))).sort(() => Math.random() - 0.5).slice(0, 3).map(([title, artist]) => ({ title, artist })); }
 async function surprise(req, env, cors) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
   const { family = false, avoid = [], trusted = false, channels } = await req.json();
@@ -327,12 +336,19 @@ Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]
     headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
   });
-  const j = await r.json();
-  if (!r.ok) return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502);
-  const m = ((j.content || []).map(c => c.text || '').join('')).match(/\{[\s\S]*\}/);
-  let songs = []; try { const o = JSON.parse(m ? m[0] : '{}'); songs = o.songs || (o.title ? [o] : []); } catch (e) {}
-  songs = songs.filter(s => s && s.title).slice(0, 3).map(s => ({ title: String(s.title).slice(0, 80), artist: String(s.artist || '').slice(0, 60) }));
-  if (!songs.length) return json({ error: 'No song suggestion' }, cors, 502);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) console.warn('surprise AI failed', r.status, JSON.stringify(j).slice(0, 200));
+  const txt = (j.content || []).map(c => c.text || '').join('').replace(/```(json)?/g, '').trim();
+  let songs = [];
+  for (const cand of [txt, (txt.match(/\{[\s\S]*\}/) || [])[0], (txt.match(/\[[\s\S]*\]/) || [])[0]]) {
+    if (!cand) continue;
+    try { const o = JSON.parse(cand); songs = Array.isArray(o) ? o : (o.songs || (o.title ? [o] : [])); if (songs.length) break; } catch (e) {}
+  }
+  if (!songs.length) songs = backupSongs(avoid);   /* AI hiccup: fall back to a built-in list */
+  songs = songs.map(s => typeof s === 'string' ? { title: s } : s).map(s => s && ({ title: s.title || s.song || s.name, artist: s.artist || s.by || '' }))
+    .filter(s => s && s.title).slice(0, 3).map(s => ({ title: String(s.title).slice(0, 80), artist: String(s.artist || '').slice(0, 60) }));
+  if (!songs.length) songs = backupSongs(avoid);
+  if (!songs.length) songs = backupSongs([]);
   try {
     let fallback = null;
     for (const song of songs) {   /* first song with a Sing King version wins */
