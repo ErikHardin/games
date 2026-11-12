@@ -258,8 +258,8 @@ function karaokeScore(x) {
   if (/\b(cover|live|reaction|tutorial|lesson|how to|official (music )?video|remix|piano|guitar|8d|slowed|sped up)\b/.test(t)) s -= 5;
   return s;
 }
-/* Sing King has a consistent lyrics layout, so the blur timing works the same every song */
-const TRUSTED = /^sing king$/i;
+/* Zoom Karaoke has a consistent layout and allows its videos to play in other sites (Sing King blocks that) */
+const TRUSTED = /^zoom karaoke( official)?$/i;
 let SK_ID = null;
 async function ytRaw(q, family, env, max, channelId) {
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
@@ -275,20 +275,20 @@ async function ytRaw(q, family, env, max, channelId) {
   return items.map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }))
     .filter(x => !/#shorts?\b|\bshorts\b/i.test(x.title));   /* Shorts are vertical teasers, not the full karaoke video */
 }
-const SK_KEY = 'https://hardin-games.cache/sing-king-channel-id';
+const SK_KEY = 'https://hardin-games.cache/zoom-karaoke-channel-id';
 async function saveSkId(id) { try { await caches.default.put(SK_KEY, new Response(id, { headers: { 'Cache-Control': 'max-age=2592000' } })); } catch (e) {} }
 async function singKingId(env) {
   if (SK_ID) return SK_ID;
   try { const c = await caches.default.match(SK_KEY); if (c) { SK_ID = await c.text(); return SK_ID; } } catch (e) {}
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
-  u.search = new URLSearchParams({ part: 'snippet', type: 'channel', maxResults: '5', q: 'Sing King', key: env.YOUTUBE_API_KEY }).toString();
+  u.search = new URLSearchParams({ part: 'snippet', type: 'channel', maxResults: '5', q: 'Zoom Karaoke Official', key: env.YOUTUBE_API_KEY }).toString();
   const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
   const ch = (j.items || []).find(x => TRUSTED.test((x.snippet && x.snippet.title) || ''));
   if (ch) { SK_ID = ch.snippet.channelId || (ch.id && ch.id.channelId); await saveSkId(SK_ID); }
   return SK_ID;
 }
 /* the result has to be the song that was asked for */
-const STOP = new Set(['karaoke', 'version', 'sing', 'king', 'the', 'a', 'an', 'by', 'lyrics', 'official', 'song', 'and', 'of', 'feat', 'ft']);
+const STOP = new Set(['karaoke', 'version', 'zoom', 'from', 'the', 'a', 'an', 'by', 'lyrics', 'official', 'song', 'and', 'of', 'feat', 'ft']);
 const words = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
 function relevant(q, title) { const need = words(q); if (!need.length) return true; const have = new Set(words(title)); const hit = need.filter(w => have.has(w)).length; return hit >= Math.ceil(need.length * 0.6); }
 async function ytSearch(q, family, env, channels) {
@@ -299,13 +299,13 @@ async function ytSearch(q, family, env, channels) {
   let list = (await ytRaw(q, family, env, mode === 'any' ? 15 : 25)).filter(x => relevant(base, x.title));
   if (mode !== 'any') {
     let sk = list.filter(x => TRUSTED.test(x.channel));
-    if (!sk.length) {   /* look inside the Sing King channel itself */
+    if (!sk.length) {   /* look inside the Zoom Karaoke channel itself */
       const id = await singKingId(env);
       if (id) sk = (await ytRaw(base, family, env, 10, id)).filter(x => relevant(base, x.title));
     }
     const mark = x => ({ id: x.id, title: x.title, channel: x.channel, ok: true });
     const skOut = sk.map(x => ({ ...x, s: karaokeScore(x) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 4).map(mark);
-    if (mode === 'only' || skOut.length) return skOut;   /* if Sing King has it, show only Sing King */
+    if (mode === 'only' || skOut.length) return skOut;   /* if Zoom Karaoke has it, show only Zoom Karaoke */
     const seen = new Set(skOut.map(x => x.id));
     const rest = list.filter(x => !seen.has(x.id) && !TRUSTED.test(x.channel)).map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
       .sort((a, b) => (b.s - a.s) || (a.i - b.i)).map(({ id, title, channel }) => ({ id, title, channel }));
@@ -327,7 +327,7 @@ async function surprise(req, env, cors) {
   const { family = false, avoid = [], trusted = false, channels } = await req.json();
   const mode = channels || (trusted ? 'prefer' : 'any');
   const prompt = `Suggest THREE different well-known, fun sing-along songs for family karaoke night that most people know the words to.
-- Big popular hits that a major karaoke channel like Sing King would have.
+- Big popular hits that a major karaoke channel like Zoom Karaoke would have.
 - ${family ? 'Clean and kid-friendly.' : 'Keep it PG-13.'}
 - Pick something different from: ${avoid.slice(0, 30).map(t => String(t).slice(0, 80)).join('; ') || 'nothing yet'}
 Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]}`;
@@ -351,7 +351,7 @@ Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]
   if (!songs.length) songs = backupSongs([]);
   try {
     let fallback = null;
-    for (const song of songs) {   /* first song with a Sing King version wins */
+    for (const song of songs) {   /* first song with a Zoom Karaoke version wins */
       const results = await ytSearch(`${song.title} ${song.artist} karaoke`, family, env, mode);
       if (results.length && (mode === 'any' || results[0].ok)) return json({ song, results }, cors);
       if (results.length && !fallback) fallback = { song, results };

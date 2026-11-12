@@ -1283,7 +1283,7 @@ function Player(code, mount, fixedPid){
       const id=vidFromText(q); if(id){ beep(); return upd({song:{id,title:'Your YouTube pick',by:pid}}); }
       if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); }
       mic.busy=true; mic.note=''; render();
-      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg=st.mChannels==='only'?'Not on Sing King (or it can\'t play outside YouTube). Try another song.':'No karaoke videos found. Try another song.'; }
+      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg=st.mChannels==='only'?'Not on Zoom Karaoke. Try another song.':'No karaoke videos found. Try another song.'; }
       catch(e){ msg=/YOUTUBE_API_KEY/.test(e.message)?'Search needs the YouTube key. Paste a YouTube link for now.':"Search didn't work: "+e.message; }
       mic.busy=false; return render(); }
     if(k==='msurprise'){ if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); } mic.busy=true; render();
@@ -2654,7 +2654,7 @@ async function AdminPanel(locked){
       <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
       <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div>`)}
     ${sec('mic','🎤 Mic Drop',`${num('mRounds','Rounds',1,4)}${num('mStopMin','Earliest the lyrics go dark (seconds into the song)',20,240,5)}${num('mStopMax','Latest the lyrics go dark (seconds into the song)',20,300,5)}
-      ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${sel('mChannels','Karaoke channels',[['prefer','Sing King first, others if needed'],['only','Sing King only'],['any','Any karaoke channel']])}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
+      ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${sel('mChannels','Karaoke channels',[['prefer','Zoom Karaoke first, others if needed'],['only','Zoom Karaoke only'],['any','Any karaoke channel']])}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
       <h4>Scoring</h4>${num('mNailed','Points for "Nailed it"',0,5000,50)}${num('mClose','Points for "Close"',0,5000,50)}${num('mApplause','Max applause bonus',0,2000,50)}${num('mMult','Last round multiplier',1,5)}
       <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when the music stops'],['all','On for the whole song'],['off','Off']])}
       <h4>Songs</h4>${chk('mAI','"Surprise me" button (AI picks a song)')}<div class="small muted">Song search needs YOUTUBE_API_KEY in Cloudflare. Pasting a YouTube link always works.</div>`)}
