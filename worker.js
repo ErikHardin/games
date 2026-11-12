@@ -31,7 +31,7 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
     if (!okOrigin) return new Response('Forbidden', { status: 403, headers: cors });
     try {
-      if (path === '/tts' && req.method === 'POST') { const { text } = await req.json(); return await tts(text, env, ctx, cors); }
+      if (path === '/tts' && req.method === 'POST') { const { text, take = 0, steady = false } = await req.json(); return await tts(text, env, ctx, cors, take | 0, !!steady); }
       if (path === '/tts' && req.method === 'GET') return await tts('Testing, testing. This is Hardin Games!', env, ctx, cors);
       if (path === '/question' && req.method === 'POST') return await question(req, env, cors);
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
@@ -56,12 +56,12 @@ async function sha(text) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function tts(text, env, ctx, cors) {
+async function tts(text, env, ctx, cors, take = 0, steady = false) {
   if (!text || typeof text !== 'string' || text.length > 800) return json({ error: 'bad text' }, cors, 400);
   if (!env.ELEVENLABS_API_KEY) return json({ error: 'ELEVENLABS_API_KEY is not set in Cloudflare' }, cors, 500);
   if (!env.ELEVEN_VOICE_ID) return json({ error: 'ELEVEN_VOICE_ID is not set in Cloudflare' }, cors, 500);
   const model = env.ELEVEN_MODEL || 'eleven_multilingual_v2';
-  const key = new Request(`https://tts-cache.hardin/${env.ELEVEN_VOICE_ID}/${model}/${await sha(text)}`);
+  const key = new Request(`https://tts-cache.hardin/${env.ELEVEN_VOICE_ID}/${model}/${await sha(text)}${take ? `/t${take}${steady ? 's' : ''}` : ''}`);   // a new take = a fresh recording
   const cache = caches.default;
   const hit = await cache.match(key);
   if (hit) return new Response(hit.body, { headers: { ...cors, 'Content-Type': 'audio/mpeg' } });
@@ -69,7 +69,7 @@ async function tts(text, env, ctx, cors) {
   const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${env.ELEVEN_VOICE_ID}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: model, voice_settings: { stability: 0.45, similarity_boost: 0.85, style: 0.3 } })
+    body: JSON.stringify({ text, model_id: model, voice_settings: steady ? { stability: 0.7, similarity_boost: 0.85, style: 0.1 } : { stability: 0.45, similarity_boost: 0.85, style: 0.3 } })
   });
   if (!r.ok) {
     const body = (await r.text()).slice(0, 400);

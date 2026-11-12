@@ -324,6 +324,9 @@ details.sec:not([open])>.secb{display:none}
 /* Mic Drop */
 .g-mic{border-color:color-mix(in srgb,var(--gmMic) 55%,transparent)}.g-mic h2{color:var(--gmMic)}
 .g-bingo{border-color:color-mix(in srgb,var(--gmBingo) 55%,transparent)}.g-bingo h2{color:var(--gmBingo)}
+.bvbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}.bvbar button{width:auto;padding:8px 14px;font-size:14px}
+.bvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}.bvc{padding:8px 0;font-size:13px;background:var(--t2);color:var(--muted);box-shadow:none;border-radius:10px}
+.bvc.ok{background:color-mix(in srgb,var(--gmBingo) 30%,var(--t2));color:var(--text)}.bvc.sel{box-shadow:0 0 0 3px var(--gold)}
 .bk{display:flex;gap:4cqw;align-items:center;justify-content:center;position:absolute;inset:7cqw 3cqw 7cqw}
 .ball{width:20cqw;height:20cqw;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffe9a8 30%,var(--gold) 70%,#c98a12);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1.2cqw 3cqw #0008,inset 0 -1cqw 2cqw #0003;color:#1b1b1b;font-family:Bungee;line-height:.9;animation:pop .45s}
 .ball .l{font-size:4cqw}.ball .n{font-size:9cqw}
@@ -775,7 +778,8 @@ const app = $('#app');
 async function route(){
   app.className=''; app.innerHTML=''; app._html=null; document.body.style.overflow='';
   if(PARAMS.has('demo')){ /* bot games use your saved Admin settings (voice, volume, colors, timings) */
-    let real=null; try{ if(!S.store||S.mode==='demo') await initStore(false); if(S.mode==='firebase') real=await Promise.race([loadSettings(),sleep(4000).then(()=>null)]); }catch(e){}
+    let real=null; try{ if(!S.store||S.mode==='demo') await initStore(false); if(S.mode==='firebase'){ real=await Promise.race([loadSettings(),sleep(4000).then(()=>null)]);
+      if(PARAMS.get('game')==='bingo') S.bingoPack=await Promise.race([S.store.get(`${ROOT}/${BVP}`),sleep(8000).then(()=>null)]).catch(()=>null); } }catch(e){}
     await initStore(true,'hg_demo'); S.real=real; return Demo(); }
   if(!S.store || S.mode==='demo') await initStore(false);
   if(PARAMS.has('admin')) return Admin();
@@ -2617,6 +2621,21 @@ function WhoHost(code, mount, opts){
 GNAMES.bingo = 'Bingo Night';
 const BPAT = ['line','corners','blackout'], BPNAME = {line:'ANY LINE',corners:'FOUR CORNERS',blackout:'BLACKOUT'};
 const BLETTER = n=>'BINGO'[Math.floor((n-1)/15)];
+const NUMW=(()=>{ const o=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'], t=['','','twenty','thirty','forty','fifty','sixty','seventy'];
+  return n=>n<20?o[n]:t[Math.floor(n/10)]+(n%10?'-'+o[n%10]:''); })();
+const bCallText=n=>`${BLETTER(n)}… ${NUMW(n)}!`;   /* words read more cleanly than digits */
+/* Bingo voice pack: all 75 calls made once in your voice, saved in the database, played instantly */
+const BVP=`voicepack/bingo`, BVM=`voicepack/bingoMeta`;
+async function bvLoad(store){ const pack=(S.bingoPack!==undefined?S.bingoPack:await Promise.race([store.get(`${ROOT}/${BVP}`),sleep(8000).then(()=>null)]).catch(()=>null))||{}; let n=0;
+  for(const [k,v] of Object.entries(pack)){ if(!v||!v.a||v.t!==bCallText(Number(k))) continue;
+    try{ const b=await (await fetch('data:audio/mpeg;base64,'+v.a)).blob(); Voice.cache.set(v.t,URL.createObjectURL(b)); n++; }catch(e){} }
+  return n; }
+async function bvMake(n, take){ const text=bCallText(n);
+  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,take,steady:true})});
+  if(!r.ok){ let m=''; try{ m=(await r.json()).error; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
+  const blob=await r.blob(), a=await new Promise((res,rej)=>{ const f=new FileReader(); f.onload=()=>res(String(f.result).split(',')[1]); f.onerror=rej; f.readAsDataURL(blob); });
+  await S.store.set(`${ROOT}/${BVP}/${n}`,{a,t:text}); await S.store.set(`${ROOT}/${BVM}/${n}`,{t:text,take,at:Date.now()});
+  Voice.cache.set(text,URL.createObjectURL(blob)); return blob; }
 const BLINES = (()=>{ const L=[]; for(let i=0;i<5;i++){ L.push([0,1,2,3,4].map(c=>i*5+c)); L.push([0,1,2,3,4].map(r=>r*5+i)); } L.push([0,6,12,18,24]); L.push([4,8,12,16,20]); return L; })();
 const bPattern = (r,round)=>BPAT[((round||r.round||1)-1)%3];
 function bNewCard(){ const cols=[0,1,2,3,4].map(c=>shuffle(Array.from({length:15},(_,i)=>c*15+i+1)).slice(0,5)), card=[];
@@ -2642,9 +2661,10 @@ function BingoHost(code, mount, opts){
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
   const active=r=>players(r).filter(([,p])=>p.on!==false).map(([id])=>id);
-  const callText=n=>`${BLETTER(n)}… ${n}!`;
+  const callText=bCallText;
 
   tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
+  let packN=-1; bvLoad(store).then(n=>{ packN=n; if(R) render(R); });
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
@@ -2763,7 +2783,7 @@ function BingoHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmBingo)">BINGO NIGHT</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}${st.voice==='clone'&&st.readAloud?(packN<0?' · loading calls…':packN>=75?' · ✓ all 75 calls ready':` · ${packN}/75 calls ready`):''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': { const pat=bPattern(r); body=`<div class="center"><div class="bigintro">${r.round===st.bRounds&&st.bRounds>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro" style="color:var(--gmBingo)">${BPNAME[pat]}</div>
           <div class="note">${pat==='line'?'Any row, column or diagonal':pat==='corners'?'All four corners of your card':'Every square on your card'}${pat==='blackout'?' · worth double!':''}</div></div>`; break; }
@@ -2849,6 +2869,29 @@ function PinPad(){
   const kb=e=>{ if(/^[0-9]$/.test(e.key)) press(e.key); else if(e.key==='Backspace') press('⌫'); };
   document.addEventListener('keydown',kb); CLEAN.push(()=>{ app.onclick=null; document.removeEventListener('keydown',kb); });
 }
+/* Admin: make, review and remake the 75 bingo calls */
+let BV={meta:null,sel:0,busy:false,prog:'',err:''};
+async function bvPanel(el){ if(!el) return;
+  if(!BV.meta){ BV.meta={}; S.store.get(`${ROOT}/${BVM}`).then(m=>{ BV.meta=m||{}; bvPanel($('#bvp')); }).catch(()=>{}); }
+  const ok=n=>BV.meta[n]&&BV.meta[n].t===bCallText(n), have=Array.from({length:75},(_,i)=>i+1).filter(ok).length, sel=BV.sel;
+  el.innerHTML=`<div class="small muted">All 75 calls in your voice, saved so games play them instantly. Tap a call to hear it, and remake any that sound off.</div>
+    <div class="bvbar"><b>${have}/75 ready</b><button class="alt" data-bv="all" ${BV.busy?'disabled':''}>${have?'Make missing calls':'Make all 75 calls'}</button></div>
+    ${BV.prog?`<div class="small">${esc(BV.prog)}</div>`:''}${BV.err?`<div class="err">${esc(BV.err)}</div>`:''}
+    <div class="bvgrid">${Array.from({length:75},(_,i)=>i+1).map(n=>`<button class="bvc ${ok(n)?'ok':''} ${sel===n?'sel':''}" data-bvn="${n}">${BLETTER(n)}${n}</button>`).join('')}</div>
+    ${sel?`<div class="bvbar"><span>${esc(bCallText(sel))}</span><button class="alt" data-bv="play">▶ Play</button><button class="alt" data-bv="redo" ${BV.busy?'disabled':''}>🔄 Remake</button></div>`:''}`;
+  el.onclick=async e=>{ const b=e.target.closest('button'); if(!b) return; Voice.unlock();
+    const st={...DEFAULTS,readAloud:true,voice:'clone'};
+    if(b.dataset.bvn){ BV.sel=Number(b.dataset.bvn); bvPanel(el); if(ok(BV.sel)) bvPlay(BV.sel,st); return; }
+    if(b.dataset.bv==='play') return bvPlay(BV.sel,st);
+    if(b.dataset.bv==='redo') return bvRun([BV.sel],true,el,st);
+    if(b.dataset.bv==='all') return bvRun(Array.from({length:75},(_,i)=>i+1).filter(n=>!ok(n)),false,el,st); }; }
+async function bvPlay(n,st){ const t=bCallText(n);
+  if(!Voice.cache.has(t)){ try{ const v=await S.store.get(`${ROOT}/${BVP}/${n}`); if(v&&v.a){ const b=await (await fetch('data:audio/mpeg;base64,'+v.a)).blob(); Voice.cache.set(t,URL.createObjectURL(b)); } }catch(e){} }
+  if(Voice.cache.has(t)) Voice.say(t,st,{quiet:true}); }
+async function bvRun(list,play,el,st){ if(BV.busy||!list.length) return; BV.busy=true; BV.err=''; let done=0;
+  const work=async n=>{ const take=((BV.meta[n]&&BV.meta[n].take)||0)+1; try{ await bvMake(n,take); BV.meta[n]={t:bCallText(n),take}; }catch(e){ BV.err="Couldn't make "+BLETTER(n)+n+': '+e.message; } done++; BV.prog=list.length>1?`Making calls… ${done}/${list.length}`:''; bvPanel(el); };
+  const q=[...list]; await Promise.all([0,1].map(async()=>{ while(q.length && !BV.err) await work(q.shift()); }));
+  BV.busy=false; BV.prog=''; bvPanel(el); if(play&&!BV.err) bvPlay(list[0],st); }
 async function AdminPanel(locked){
   const st=await loadSettings(); applyTheme(st.theme); let fam=(await S.store.get(`${ROOT}/packs/family`))||{}, flags=(await S.store.get(`${ROOT}/trivia/flagged`))||{};
   const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
@@ -2896,7 +2939,8 @@ async function AdminPanel(locked){
       <h4>Scoring</h4>${num('wRight','Points for a right guess',0,5000,50)}${num('wFool','Points per person you fool',0,5000,50)}
       <h4>Prompts</h4>${chk('wAI','AI writes prompts')}${chk('wPlayerPrompts','Players can add prompts in the lobby')}<label class="small muted">Your own prompts (one per line)</label><textarea data-k="wPrompts" rows="4" placeholder="What's Dad's most famous saying?&#10;What's your favorite family vacation?">${esc(st.wPrompts)}</textarea>`)}
     ${sec('bingo','🎱 Bingo Night',`${num('bRounds','Rounds (line, four corners, blackout, then repeat)',1,6)}${num('bCallTime','Seconds between calls',4,20)}
-      <h4>Scoring</h4>${num('bPoints','Points for a bingo',0,5000,50)}${num('bBlackoutMult','Blackout multiplier',1,5)}${num('bLockout','Lockout after a false bingo (seconds)',3,30)}`)}
+      <h4>Scoring</h4>${num('bPoints','Points for a bingo',0,5000,50)}${num('bBlackoutMult','Blackout multiplier',1,5)}${num('bLockout','Lockout after a false bingo (seconds)',3,30)}
+      <h4>Bingo voice</h4><div id="bvp"></div>`)}
     <button id="save">Save settings</button></div>`;
     $('#back').onclick=()=>nav({});
     const ts=app.querySelector('[data-k=theme]'); if(ts) ts.onchange=()=>applyTheme(ts.value);
@@ -2909,6 +2953,7 @@ async function AdminPanel(locked){
       const lines=['Welcome to Hardin Games!','Grab your phones, it is game time!','Who is ready to play?','Let the games begin!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       const res=await Voice.say(`${lines[Math.floor(Math.random()*lines.length)]} Testing at ${tm}.`,{...st,readAloud:true},{quiet:true});
       o.innerHTML=res.error?`<span class="err">Cloned voice failed: ${esc(res.error)}</span> · used the built-in voice`:(res.mode==='clone'?'<span class="ok">✓ Played in your cloned voice</span>':'<span class="ok">✓ Played the built-in voice</span>'); };
+    bvPanel($('#bvp'));
     $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
     $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
       const id=uid(); fam[id]={t,a,d:[$('#fd1').value.trim(),$('#fd2').value.trim()].filter(Boolean),safe:$('#fsafe').checked}; await S.store.set(`${ROOT}/packs/family/${id}`,fam[id]); collect(); draw(); toast('Added'); };
