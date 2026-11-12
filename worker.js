@@ -38,7 +38,7 @@ export default {
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
       if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
-      if (path === '/yt' && req.method === 'POST') { const { q = '', family = false, trusted = false } = await req.json(); return json({ results: await ytSearch(String(q).slice(0, 120), family, env, trusted) }, cors); }
+      if (path === '/yt' && req.method === 'POST') { const { q = '', family = false, trusted = false, channels } = await req.json(); return json({ results: await ytSearch(String(q).slice(0, 120), family, env, channels || trusted) }, cors); }
       if (path === '/surprise' && req.method === 'POST') return await surprise(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN, youtubeKey: !!env.YOUTUBE_API_KEY }, cors);
     } catch (e) {
@@ -258,49 +258,88 @@ function karaokeScore(x) {
   if (/\b(cover|live|reaction|tutorial|lesson|how to|official (music )?video|remix|piano|guitar|8d|slowed|sped up)\b/.test(t)) s -= 5;
   return s;
 }
-/* Trusted channels have a consistent lyrics layout, so the blur timing works the same every song */
-const TRUSTED = /sing king|karafun/i;
-async function ytRaw(q, family, env, max) {
+/* Sing King has a consistent lyrics layout, so the blur timing works the same every song */
+const TRUSTED = /^sing king$/i;
+let SK_ID = null;
+async function ytRaw(q, family, env, max, channelId) {
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
-  u.search = new URLSearchParams({ part: 'snippet', type: 'video', maxResults: String(max), videoEmbeddable: 'true', safeSearch: family ? 'strict' : 'moderate', q, key: env.YOUTUBE_API_KEY }).toString();
+  const p = { part: 'snippet', type: 'video', maxResults: String(max), videoEmbeddable: 'true', safeSearch: family ? 'strict' : 'moderate', q, key: env.YOUTUBE_API_KEY };
+  if (channelId) p.channelId = channelId;
+  u.search = new URLSearchParams(p).toString();
   const r = await fetch(u.toString());
   const j = await r.json();
   if (!r.ok) { console.error('YouTube error', r.status, JSON.stringify(j).slice(0, 300)); throw new Error((j.error && j.error.message) || `YouTube ${r.status}`); }
-  return (j.items || []).filter(x => x.id && x.id.videoId).map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }));
+  const items = (j.items || []).filter(x => x.id && x.id.videoId);
+  const sk = items.find(x => TRUSTED.test(x.snippet.channelTitle || ''));
+  if (sk && !SK_ID) { SK_ID = sk.snippet.channelId; await saveSkId(SK_ID); }
+  return items.map((x, i) => ({ id: x.id.videoId, title: unent(x.snippet.title), channel: unent(x.snippet.channelTitle), i }));
 }
-async function ytSearch(q, family, env, trusted) {
+const SK_KEY = 'https://hardin-games.cache/sing-king-channel-id';
+async function saveSkId(id) { try { await caches.default.put(SK_KEY, new Response(id, { headers: { 'Cache-Control': 'max-age=2592000' } })); } catch (e) {} }
+async function singKingId(env) {
+  if (SK_ID) return SK_ID;
+  try { const c = await caches.default.match(SK_KEY); if (c) { SK_ID = await c.text(); return SK_ID; } } catch (e) {}
+  const u = new URL('https://www.googleapis.com/youtube/v3/search');
+  u.search = new URLSearchParams({ part: 'snippet', type: 'channel', maxResults: '5', q: 'Sing King', key: env.YOUTUBE_API_KEY }).toString();
+  const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
+  const ch = (j.items || []).find(x => TRUSTED.test((x.snippet && x.snippet.title) || ''));
+  if (ch) { SK_ID = ch.snippet.channelId || (ch.id && ch.id.channelId); await saveSkId(SK_ID); }
+  return SK_ID;
+}
+/* the result has to be the song that was asked for */
+const STOP = new Set(['karaoke', 'version', 'sing', 'king', 'the', 'a', 'an', 'by', 'lyrics', 'official', 'song', 'and', 'of', 'feat', 'ft']);
+const words = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
+function relevant(q, title) { const need = words(q); if (!need.length) return true; const have = new Set(words(title)); const hit = need.filter(w => have.has(w)).length; return hit >= Math.ceil(need.length * 0.6); }
+async function ytSearch(q, family, env, channels) {
   if (!env.YOUTUBE_API_KEY) throw new Error('YOUTUBE_API_KEY is not set in Cloudflare');
   if (!q) return [];
-  let list = await ytRaw(q, family, env, trusted ? 25 : 15);
-  if (trusted) {
-    list = list.filter(x => TRUSTED.test(x.channel));
-    if (!list.length) {   /* one more try aimed at the trusted channels */
-      const base = q.replace(/\bkaraoke\b/ig, '').trim();
-      list = (await ytRaw(`${base} sing king karafun karaoke`, family, env, 25)).filter(x => TRUSTED.test(x.channel));
+  const mode = channels === true ? 'prefer' : (channels || 'any');
+  const base = q.replace(/\bkaraoke\b/ig, '').trim();
+  let list = (await ytRaw(q, family, env, mode === 'any' ? 15 : 25)).filter(x => relevant(base, x.title));
+  if (mode !== 'any') {
+    let sk = list.filter(x => TRUSTED.test(x.channel));
+    if (!sk.length) {   /* look inside the Sing King channel itself */
+      const id = await singKingId(env);
+      if (id) sk = (await ytRaw(base, family, env, 10, id)).filter(x => relevant(base, x.title));
     }
-    return list.map(x => ({ ...x, s: karaokeScore(x) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 9).map(({ id, title, channel }) => ({ id, title, channel }));
+    const mark = x => ({ id: x.id, title: x.title, channel: x.channel, ok: true });
+    const skOut = sk.map(x => ({ ...x, s: karaokeScore(x) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 4).map(mark);
+    if (mode === 'only') return skOut;
+    const seen = new Set(skOut.map(x => x.id));
+    const rest = list.filter(x => !seen.has(x.id) && !TRUSTED.test(x.channel)).map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
+      .sort((a, b) => (b.s - a.s) || (a.i - b.i)).map(({ id, title, channel }) => ({ id, title, channel }));
+    return [...skOut, ...rest].slice(0, 9);
   }
   return list.map(x => ({ ...x, s: karaokeScore(x) })).filter(x => x.s > -3)
     .sort((a, b) => (b.s - a.s) || (a.i - b.i)).slice(0, 9).map(({ id, title, channel }) => ({ id, title, channel }));
 }
 async function surprise(req, env, cors) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
-  const { family = false, avoid = [], trusted = false } = await req.json();
-  const prompt = `Suggest ONE well-known, fun sing-along song for family karaoke night that most people know the words to.
+  const { family = false, avoid = [], trusted = false, channels } = await req.json();
+  const mode = channels || (trusted ? 'prefer' : 'any');
+  const prompt = `Suggest THREE different well-known, fun sing-along songs for family karaoke night that most people know the words to.
+- Big popular hits that a major karaoke channel like Sing King would have.
 - ${family ? 'Clean and kid-friendly.' : 'Keep it PG-13.'}
 - Pick something different from: ${avoid.slice(0, 30).map(t => String(t).slice(0, 80)).join('; ') || 'nothing yet'}
-Respond with only JSON, no other text: {"title":"...","artist":"..."}`;
+Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]}`;
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 120, messages: [{ role: 'user', content: prompt }] })
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
   });
   const j = await r.json();
   if (!r.ok) return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502);
   const m = ((j.content || []).map(c => c.text || '').join('')).match(/\{[\s\S]*\}/);
-  let song = null; try { song = JSON.parse(m ? m[0] : '{}'); } catch (e) {}
-  if (!song || !song.title) return json({ error: 'No song suggestion' }, cors, 502);
-  song = { title: String(song.title).slice(0, 80), artist: String(song.artist || '').slice(0, 60) };
-  try { return json({ song, results: await ytSearch(`${song.title} ${song.artist} karaoke`, family, env, trusted) }, cors); }
-  catch (e) { return json({ error: e.message, song }, cors, 500); }
+  let songs = []; try { const o = JSON.parse(m ? m[0] : '{}'); songs = o.songs || (o.title ? [o] : []); } catch (e) {}
+  songs = songs.filter(s => s && s.title).slice(0, 3).map(s => ({ title: String(s.title).slice(0, 80), artist: String(s.artist || '').slice(0, 60) }));
+  if (!songs.length) return json({ error: 'No song suggestion' }, cors, 502);
+  try {
+    let fallback = null;
+    for (const song of songs) {   /* first song with a Sing King version wins */
+      const results = await ytSearch(`${song.title} ${song.artist} karaoke`, family, env, mode);
+      if (results.length && (mode === 'any' || results[0].ok)) return json({ song, results }, cors);
+      if (results.length && !fallback) fallback = { song, results };
+    }
+    return json(fallback || { song: songs[0], results: [] }, cors);
+  } catch (e) { return json({ error: e.message, song: songs[0] }, cors, 500); }
 }

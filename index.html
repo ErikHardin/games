@@ -461,7 +461,7 @@ const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
-  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6,mPhoneVideo:true,mMic:'stop',mTrusted:true,mLyricsOff:'blur',
+  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6,mPhoneVideo:true,mMic:'stop',mChannels:'prefer',mLyricsOff:'blur',
   wRounds:3,wPerRound:1,wAnswerTime:60,wGuessTime:20,wRight:500,wFool:250,wAI:true,wPlayerPrompts:true,wPrompts:''};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
@@ -1283,13 +1283,13 @@ function Player(code, mount, fixedPid){
       const id=vidFromText(q); if(id){ beep(); return upd({song:{id,title:'Your YouTube pick',by:pid}}); }
       if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); }
       mic.busy=true; mic.note=''; render();
-      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg=st.mTrusted!==false?'Not on Sing King or KaraFun. Try another song.':'No karaoke videos found. Try another song.'; }
+      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg=st.mChannels==='only'?'Not on Sing King (or it can\'t play outside YouTube). Try another song.':'No karaoke videos found. Try another song.'; }
       catch(e){ msg=/YOUTUBE_API_KEY/.test(e.message)?'Search needs the YouTube key. Paste a YouTube link for now.':"Search didn't work: "+e.message; }
       mic.busy=false; return render(); }
     if(k==='msurprise'){ if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); } mic.busy=true; render();
       try{ const x=await micSurprise(st); const top=x.results[0];
         if(top){ mic.busy=false; beep(); return upd({song:{id:top.id,title:x.song?`${x.song.title} · ${x.song.artist}`:top.title,by:pid}}); }
-        msg=st.mTrusted!==false?'That one isn\'t on Sing King or KaraFun. Try again!':'No karaoke version found. Try again!'; }
+        msg='No karaoke version found. Try again!'; }
       catch(e){ msg=/YOUTUBE_API_KEY/.test(e.message)?'Surprise me needs the YouTube key. Paste a YouTube link for now.':"Couldn't pick a song: "+e.message; }
       mic.busy=false; return render(); }
   }
@@ -1302,7 +1302,7 @@ function Player(code, mount, fixedPid){
           <div class="row"><input data-keep="mq${micKey(r)}" placeholder="Song name or YouTube link" autocomplete="off" style="flex:1"><button data-p="msearch" style="flex:0 0 auto">🔍</button></div>
           ${st.mAI!==false?'<button class="pink" data-p="msurprise">🎲 Surprise me</button>':''}${err}
           ${mic.busy?'<div class="muted">Looking…</div>':''}${mic.note?`<div class="small ok">${esc(mic.note)}</div>`:''}
-          ${(mic.results||[]).slice(0,mic.show).map((x,i)=>`<button class="mres" data-p="mpick" data-i="${i}"><span class="thumb" style="background-image:url('https://i.ytimg.com/vi/${x.id}/mqdefault.jpg')"></span><span><span class="t">${esc(x.title)}</span><span class="s">${esc(x.channel||'')}</span></span></button>`).join('')}
+          ${(mic.results||[]).slice(0,mic.show).map((x,i)=>`<button class="mres" data-p="mpick" data-i="${i}"><span class="thumb" style="background-image:url('https://i.ytimg.com/vi/${x.id}/mqdefault.jpg')"></span><span><span class="t">${esc(x.title)}</span><span class="s">${x.ok?'<b style="color:var(--good)">✓</b> ':''}${esc(x.channel||'')}</span></span></button>`).join('')}
           ${mic.results&&mic.results.length>mic.show?'<button class="alt" data-p="mmore" style="padding:10px;font-size:14px">Show more versions</button>':''}
           ${mic.results?'':'<div class="small muted" style="text-align:center">We add "karaoke" to your search automatically</div>'}${micBox(r)}`;
       case 'sing': { const pvOn=!mine&&st.mPhoneVideo!==false;
@@ -2081,13 +2081,13 @@ function mAwards(r){
   return out;
 }
 async function micSearch(q, st){
-  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family',trusted:st.mTrusted!==false})});
+  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family',channels:st.mChannels||'prefer'})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return (j.results||[]).filter(x=>okVid(x.id)).slice(0,8);
 }
 async function micSurprise(st){
   const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/surprise',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({family:st.audience==='family',trusted:st.mTrusted!==false,avoid:LS.get('hg_mused',[]).slice(-30)})});
+    body:JSON.stringify({family:st.audience==='family',channels:st.mChannels||'prefer',avoid:LS.get('hg_mused',[]).slice(-30)})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return {song:j.song||null, results:(j.results||[]).filter(x=>okVid(x.id)).slice(0,8)};
 }
@@ -2654,7 +2654,7 @@ async function AdminPanel(locked){
       <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
       <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div>`)}
     ${sec('mic','🎤 Mic Drop',`${num('mRounds','Rounds',1,4)}${num('mStopMin','Earliest the lyrics go dark (seconds into the song)',20,240,5)}${num('mStopMax','Latest the lyrics go dark (seconds into the song)',20,300,5)}
-      ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${chk('mTrusted','Only use trusted karaoke channels (Sing King, KaraFun)')}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
+      ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${sel('mChannels','Karaoke channels',[['prefer','Sing King first, others if needed'],['only','Sing King only'],['any','Any karaoke channel']])}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
       <h4>Scoring</h4>${num('mNailed','Points for "Nailed it"',0,5000,50)}${num('mClose','Points for "Close"',0,5000,50)}${num('mApplause','Max applause bonus',0,2000,50)}${num('mMult','Last round multiplier',1,5)}
       <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when the music stops'],['all','On for the whole song'],['off','Off']])}
       <h4>Songs</h4>${chk('mAI','"Surprise me" button (AI picks a song)')}<div class="small muted">Song search needs YOUTUBE_API_KEY in Cloudflare. Pasting a YouTube link always works.</div>`)}
