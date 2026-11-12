@@ -375,6 +375,11 @@ details.sec:not([open])>.secb{display:none}
 .judge .j3{background:var(--pink);color:#fff;box-shadow:0 5px 0 var(--accentShadow)}
 .judge button.on{outline:4px solid #fff;outline-offset:2px}
 
+.vidwrap iframe,.vidwrap .ytbox{transition:filter .3s,transform .3s}
+.vidwrap.blur iframe,.vidwrap.blur .ytbox{filter:blur(2.2cqw) saturate(1.2);transform:scale(1.08)}
+.vidwrap.blur.stopped iframe,.vidwrap.blur.stopped .ytbox{filter:blur(2.6cqw) brightness(.6)}
+.lyroff{position:absolute;left:50%;top:9cqw;transform:translateX(-50%);z-index:2;background:#000a;color:#fff;border-radius:3cqw;padding:.8cqw 2.4cqw;font-family:Bungee;font-size:2.4cqw;box-shadow:0 0 0 .25cqw var(--gold);white-space:nowrap;animation:pop .3s}
+.cover.over{inset:7cqw 4cqw 9cqw 4cqw;border-radius:1.6cqw;background:transparent;gap:1.4cqw}.cover.over .big{font-size:7cqw}.cover.over .bigav{transform:scale(.8)}.cover.over .timer{width:7cqw;height:7cqw;font-size:3cqw}
 .darkcover{position:absolute;inset:7cqw 4cqw 9cqw 4cqw;border-radius:1.6cqw;background:radial-gradient(circle at 50% 45%,var(--card2),var(--bg) 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqw}
 .darkcover .big,.darkcover .em{animation:pop .3s}
 .darkcover .em{font-size:7cqw}
@@ -456,7 +461,7 @@ const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
-  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6,mPhoneVideo:true,mMic:'stop',
+  mRounds:2,mStopMin:60,mStopMax:120,mFinishTime:10,mJudgeTime:15,mPickTime:60,mNailed:1000,mClose:500,mApplause:500,mMult:2,mAI:true,mDark:6,mPhoneVideo:true,mMic:'stop',mTrusted:true,mLyricsOff:'blur',
   wRounds:3,wPerRound:1,wAnswerTime:60,wGuessTime:20,wRight:500,wFool:250,wAI:true,wPlayerPrompts:true,wPrompts:''};
 
 const COLORS = ['#ffd23f','#ff4f8b','#2de2c8','#8b7bff','#ff8a3d','#5ef08a','#4fc3ff','#ff6bd6','#c6ff3d','#ff5c5c','#b28cff','#3dffb8','#ffb3c7','#9be7ff','#ffe08a','#d0a36b'];
@@ -1278,13 +1283,13 @@ function Player(code, mount, fixedPid){
       const id=vidFromText(q); if(id){ beep(); return upd({song:{id,title:'Your YouTube pick',by:pid}}); }
       if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); }
       mic.busy=true; mic.note=''; render();
-      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg='No karaoke videos found. Try another song.'; }
+      try{ mic.results=await micSearch(/karaoke/i.test(q)?q:q+' karaoke',st); mic.show=3; if(!mic.results.length) msg=st.mTrusted!==false?'Not on Sing King or KaraFun. Try another song.':'No karaoke videos found. Try another song.'; }
       catch(e){ msg=/YOUTUBE_API_KEY/.test(e.message)?'Search needs the YouTube key. Paste a YouTube link for now.':"Search didn't work: "+e.message; }
       mic.busy=false; return render(); }
     if(k==='msurprise'){ if(!CONFIG.WORKER_URL){ msg='Paste a YouTube link instead'; return render(); } mic.busy=true; render();
       try{ const x=await micSurprise(st); const top=x.results[0];
         if(top){ mic.busy=false; beep(); return upd({song:{id:top.id,title:x.song?`${x.song.title} · ${x.song.artist}`:top.title,by:pid}}); }
-        msg='No karaoke version found. Try again!'; }
+        msg=st.mTrusted!==false?'That one isn\'t on Sing King or KaraFun. Try again!':'No karaoke version found. Try again!'; }
       catch(e){ msg=/YOUTUBE_API_KEY/.test(e.message)?'Surprise me needs the YouTube key. Paste a YouTube link for now.':"Couldn't pick a song: "+e.message; }
       mic.busy=false; return render(); }
   }
@@ -2076,13 +2081,13 @@ function mAwards(r){
   return out;
 }
 async function micSearch(q, st){
-  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family'})});
+  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family',trusted:st.mTrusted!==false})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return (j.results||[]).filter(x=>okVid(x.id)).slice(0,8);
 }
 async function micSurprise(st){
   const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/surprise',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({family:st.audience==='family',avoid:LS.get('hg_mused',[]).slice(-30)})});
+    body:JSON.stringify({family:st.audience==='family',trusted:st.mTrusted!==false,avoid:LS.get('hg_mused',[]).slice(-30)})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return {song:j.song||null, results:(j.results||[]).filter(x=>okVid(x.id)).slice(0,8)};
 }
@@ -2151,7 +2156,9 @@ function MicHost(code, mount, opts){
     if(hr.audio){ const live=micLiveH(r); hr.audio.muted=!live; if(live&&hr.audio.paused) hr.audio.play().catch(()=>{}); } }
   function syncVideo(r){
     const show=['sing','stop','judge'].includes(r.phase) && r.song && okVid(r.song.id);
-    vidwrap.classList.toggle('on',!!show && r.phase!=='stop' && !forceCover);
+    const bl=blurMode(r), off=(dark||forceCover||r.phase==='stop') && r.phase!=='judge';
+    vidwrap.classList.toggle('on',!!show && (bl || (r.phase!=='stop' && !forceCover)));
+    vidwrap.classList.toggle('blur',bl && off); vidwrap.classList.toggle('stopped',bl && (forceCover||r.phase==='stop'));
     if(!yt||!ytReady) return;
     try{
       if(!show){ if(ytLoaded){ yt.stopVideo(); ytLoaded=''; } return; }
@@ -2173,7 +2180,8 @@ function MicHost(code, mount, opts){
       if(ytState===1 && ['sing','judge'].includes(r.phase) && Date.now()-clockAt>4000) pubClock();
     }catch(e){} }
 
-  function goDark(r){ if(dark) return; dark=true; Sound.sfx('whoosh'); render(r); if(!r.mdark) upd({mdark:true}); }
+  const blurMode=r=>r.settings.mLyricsOff!=='black';   /* blur the video instead of covering it */
+  function goDark(r){ if(dark) return; dark=true; if(blurMode(r)) vidwrap.classList.add('blur'); Sound.sfx('whoosh'); render(r); if(!r.mdark) upd({mdark:true}); }
   tap.onclick=()=>{ unlocked=true; tap.remove(); Voice.stop(); Voice.unlock(); Awake.on(); ytInit(); if(R){ Sound.init(R.settings); setMusicFor(R); spoken=''; maybeSpeak(R); } };
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
@@ -2227,7 +2235,7 @@ function MicHost(code, mount, opts){
     const u=LS.get('hg_mused',[]); u.push(r.song.title); LS.set('hg_mused',u.slice(-60));
     upd({phase:'sing',stopAt:null,mdark:null,mclock:null,merr:null,phaseAt:n,endsAt:null}); }
   function beginStop(){ const r=R; if(r.phase!=='sing'||!once('st'+r.games+'_'+r.round+'_'+r.mi)) return; const n=now();
-    forceCover=true; vidwrap.classList.remove('on'); render(r);
+    forceCover=true; if(blurMode(r)) vidwrap.classList.add('blur','stopped'); else vidwrap.classList.remove('on'); render(r);
     let at=r.stopAt; try{ if(yt&&ytReady){ at=Math.round(yt.getCurrentTime()*10)/10; yt.pauseVideo(); } }catch(e){}
     upd({phase:'stop',stopAt:at||r.stopAt||0,phaseAt:n,endsAt:n+r.settings.mFinishTime*1000}); }
   function beginJudge(){ const r=R; if(!once('j'+r.games+'_'+r.round+'_'+r.mi)) return; const n=now();
@@ -2317,9 +2325,10 @@ function MicHost(code, mount, opts){
         const meter=`<div class="meter">APPLAUSE<div class="m"><i style="width:${Math.min(100,applause*5)}%"></i></div></div>`;
         body=`<div class="singer">${sp?avatar(sp):''}<div><div style="font-family:Bungee;color:var(--gold)">${esc(nm(r,sid)).toUpperCase()}</div><div class="small muted" style="font-size:1.4cqw">${esc((r.song&&r.song.title)||'')}${r.phase==='sing'?' · it could stop any second…':''}${hr.on&&r.phase==='sing'?(micLiveH(r)?' · 🔴 mic live':' · 🎙️ phone mic ready'):''}</div></div></div>
           ${r.phase==='judge'?`<div class="judgebar"><b>Did ${esc(nm(r,sid))} nail it?</b> Vote on your phone ${J.map(id=>`<span class="jv ${V[id]?'on':''}">${avatar(r.players[id])}</span>`).join('')}</div><div class="timer"></div>`:meter}
-          ${r.phase==='sing'&&dark?`<div class="darkcover"><div class="em">🙈</div><div class="big">LYRICS OFF!</div><div class="sub">${esc(nm(r,sid))}, keep singing…</div></div>`:''}
+          ${r.phase==='sing'&&dark&&blurMode(r)?`<div class="lyroff">🙈 Lyrics off! Keep singing…</div>`:''}
+          ${r.phase==='sing'&&dark&&!blurMode(r)?`<div class="darkcover"><div class="em">🙈</div><div class="big">LYRICS OFF!</div><div class="sub">${esc(nm(r,sid))}, keep singing…</div></div>`:''}
           ${r.phase==='sing'&&needPlay&&!dark?'<div class="needplay"><button data-act="ytplay">▶ Tap to play the video</button></div>':''}`; break; }
-      case 'stop': body=`<div class="cover"><div class="big">FINISH THE LINE!</div>${sp?`<div class="bigav">${avatar(sp)}</div>`:''}<div class="sub">${esc(nm(r,sid))}, keep singing!</div>${hr.on&&micLiveH(r)?'<div class="sub">🔴 Mic is live</div>':''}${r.phase==='stop'?'<div class="timer"></div>':''}</div>`; cls='mic-stop'; break;
+      case 'stop': body=`<div class="cover ${blurMode(r)?'over':''}"><div class="big">FINISH THE LINE!</div>${sp?`<div class="bigav">${avatar(sp)}</div>`:''}<div class="sub">${esc(nm(r,sid))}, keep singing!</div>${hr.on&&micLiveH(r)?'<div class="sub">🔴 Mic is live</div>':''}${r.phase==='stop'?'<div class="timer"></div>':''}</div>`; cls='mic-stop'; break;
       case 'result': { const m=r.mres||{counts:{}};
         body=`<div class="center">${sp?`<div class="bigav">${avatar(sp)}</div>`:''}${m.drop?'<div class="bigintro">🎤 MIC DROP!</div>':`<div class="bigintro" style="font-size:5cqw">${esc(nm(r,sid)).toUpperCase()}</div>`}
           <div class="note">${esc((r.song&&r.song.title)||'')}</div>
@@ -2645,7 +2654,7 @@ async function AdminPanel(locked){
       <div class="small muted">Flagged questions won't come back${Object.keys(flags).length?'':': none yet'}</div>
       <div class="qlist">${Object.entries(flags).map(([id,f])=>`<div class="qitem"><div>${esc(f.q)}<br><span class="ok small">${esc(f.a)}</span></div><button class="alt" data-unflag="${esc(id)}">Unflag</button></div>`).join('')}</div>`)}
     ${sec('mic','🎤 Mic Drop',`${num('mRounds','Rounds',1,4)}${num('mStopMin','Earliest the lyrics go dark (seconds into the song)',20,240,5)}${num('mStopMax','Latest the lyrics go dark (seconds into the song)',20,300,5)}
-      ${num('mDark','Lyrics go dark before the stop (seconds, 0 = off)',0,20)}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
+      ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${chk('mTrusted','Only use trusted karaoke channels (Sing King, KaraFun)')}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
       <h4>Scoring</h4>${num('mNailed','Points for "Nailed it"',0,5000,50)}${num('mClose','Points for "Close"',0,5000,50)}${num('mApplause','Max applause bonus',0,2000,50)}${num('mMult','Last round multiplier',1,5)}
       <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when the music stops'],['all','On for the whole song'],['off','Off']])}
       <h4>Songs</h4>${chk('mAI','"Surprise me" button (AI picks a song)')}<div class="small muted">Song search needs YOUTUBE_API_KEY in Cloudflare. Pasting a YouTube link always works.</div>`)}
