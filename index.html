@@ -481,7 +481,7 @@ const PACKS = {
 
 const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
-  theme:'sunset',music:true,musicVol:0.7,sfx:true,volume:0.7,readAloud:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
+  theme:'sunset',music:true,musicVol:0.7,sfx:true,volume:0.7,readAloud:true,chatty:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
@@ -818,13 +818,8 @@ function Landing(){
   app.onclick=e=>{ const a=e.target.closest('[data-a]'); if(!a) return; const k=a.dataset.a;
     const g=a.dataset.g||'fibs'; if(k==='host') nav({host:'',game:g}); if(k==='demo') nav({demo:'1',game:g}); if(k==='admin') nav({admin:'1'});
     if(k==='join'){ const c=$('#jc').value.trim().toUpperCase(); if(c.length===4) nav({join:c}); else toast('Enter the 4-letter code'); } };
-  let hst=null, welcomed=false; try{ welcomed=sessionStorage.getItem('hg_welcomed')==='1'; }catch(e){}
-  const WELCOME='Welcome to Hardin Games!';
-  const greet=()=>{ if(welcomed||!hst) return; welcomed=true; try{ sessionStorage.setItem('hg_welcomed','1'); }catch(e){}
-    Voice.unlock(); Voice.say(WELCOME,hst,{keep:true,quiet:true}); };
-  app.addEventListener('pointerdown',greet,{capture:true});
-  CLEAN.push(()=>{ app.onclick=null; app.removeEventListener('pointerdown',greet,{capture:true}); });
-  loadSettings().then(st=>{ applyTheme(st.theme); hst=st; Voice.prefetch(WELCOME,st);
+  CLEAN.push(()=>{ app.onclick=null; });
+  loadSettings().then(st=>{ applyTheme(st.theme);
     app.querySelectorAll('.gamecard .gmeta').forEach(m=>{ m.textContent=m.textContent.replace(/^\d+–\d+ players/,`${st.minPlayers}–${st.maxPlayers} players`); }); }).catch(()=>{});
 }
 
@@ -917,7 +912,7 @@ function Host(code, mount, opts){
     if(!once('start'+(r.games||0))) return;
     const st=r.settings, total=st.rounds*st.perRound;
     upd({phase:'loading',phaseAt:now()});
-    let pool=[]; for(const k in PACKS) if(st.packs[k]) pool.push(...PACKS[k].q.map(x=>({...x,src:k})));
+    let pool=[]; for(const k in PACKS) if(st.packs[k]) pool.push(...PACKS[k].q.filter(x=>!numAns(x.a)).map(x=>({...x,src:k})));   /* word answers only */
     if(st.packs.family){ const fam=(await store.get(`${ROOT}/packs/family`))||{};
       pool.push(...Object.values(fam).filter(x=>st.audience!=='family'||x.safe!==false).map(x=>({t:x.t,a:x.a,d:x.d||[],src:'family'}))); }
     const used=LS.get('hg_used',[]); pool=shuffle(pool).sort((a,b)=>(used.includes(a.t)?1:0)-(used.includes(b.t)?1:0));
@@ -950,6 +945,8 @@ function Host(code, mount, opts){
     const st=r.settings, n=now(), f=st.audience==='family'?1.5:1;
     upd({phase:'vote',options:shuffle(opts),votes:null,phaseAt:n,endsAt:n+st.voteTime*1000*f}); }
   const lieShare=(r,o,ow,n)=>Math.round(r.settings.pointsFool*multFor(r)*n*((r.auto||{})[ow]?0.5:1));
+  const chatty=r=>r.settings.chatty!==false && r.settings.readAloud;
+  const lieMs=r=>chatty(r)?LIE_MS+2200:LIE_MS;
   function beginReveal(){ const r=R; if(!once('r'+r.games+'_'+r.qi)) return;
     const st=r.settings, mult=multFor(r), opts=r.options||[], deltas={}, stats=clone(r.stats||{}); let fooledAll=0;
     const add=(p,v)=>{ if(r.players[p]&&v) deltas[p]=(deltas[p]||0)+v; };
@@ -961,9 +958,9 @@ function Host(code, mount, opts){
     if(r.q.author && fooledAll) add(r.q.author,st.authorBonus*mult*fooledAll);
     const items=opts.filter(o=>!o.truth && voters(r,o.id).length).sort((a,b)=>voters(r,a.id).length-voters(r,b.id).length).map(o=>o.id);
     items.push('truth'); const n=now();
-    upd({phase:'reveal',items,step:0,deltas,stats,phaseAt:n,endsAt:n+(items[0]==='truth'?TRUTH_MS:LIE_MS)}); }
+    upd({phase:'reveal',items,step:0,deltas,stats,phaseAt:n,endsAt:n+(items[0]==='truth'?TRUTH_MS:lieMs(r))}); }
   function nextReveal(){ const r=R; if(!once('s'+r.games+'_'+r.qi+'_'+r.step)) return; const n=now();
-    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?TRUTH_MS:LIE_MS)});
+    if(r.step+1<r.items.length) return upd({step:r.step+1,endsAt:n+(r.items[r.step+1]==='truth'?TRUTH_MS:lieMs(r))});
     const p={phase:'scores',phaseAt:n,endsAt:n+6500};
     if(r.scored!==r.qi){ const st=r.settings, deltas=Object.assign({},r.deltas||{}), opts=r.options||[], cnt={}, lp=st.likePoints||0;
       if(st.likes!==false) for(const [who,m] of Object.entries(r.likes||{})) for(const oid in (m||{})){ const o=opts.find(x=>x.id===oid);
@@ -1033,6 +1030,7 @@ function Host(code, mount, opts){
     if(r.phase==='scores' && r.queue && r.queue[r.qi+1]) Voice.prefetch(readQ(r.queue[r.qi+1].t), r.settings, true);
     if((r.phase==='scores'||r.phase==='intro') && r.queue && r.queue[r.qi+1] && r.settings.lieForMe!==false) Fakes.get(r.queue[r.qi+1], r.settings);
     if((r.phase==='lie'||r.phase==='vote') && r.q) Voice.prefetch(`The truth is… ${r.q.a}!`, r.settings);
+    if(r.phase==='reveal' && (!prev||prev.phase!=='reveal')) (r.items||[]).forEach((x,i)=>{ const t=revealLine(r,i); if(t) Voice.prefetch(t, r.settings, i<2); });
     if(r.phase==='loading'||(r.phase==='lobby'&&!prev)){ ["Let's play Fibs! Round one!",'Final round! Everything is worth double!',...[2,3,4,5].map(n=>`Round ${WORDS[n]}!`).slice(0,Math.max(0,r.settings.rounds-2))].forEach(t=>Voice.prefetch(t,r.settings)); }
     if(r.phase==='scores' && r.queue && r.qi+1>=r.queue.length){ const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; if(top) Voice.prefetch(`And the winner is… ${top[1].name}!`, r.settings); }
     if(unlocked) maybeSpeak(r);
@@ -1040,14 +1038,29 @@ function Host(code, mount, opts){
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){
     switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Fibs! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
       case 'lie': return ['l'+r.games+'_'+r.qi, readQ(r.q.t)];
       case 'vote': return ['v'+r.games+'_'+r.qi, ''];
-      case 'reveal': { const o=(r.options||[]).find(x=>x.id===r.items[r.step]); return ['r'+r.games+'_'+r.qi+'_'+r.step, o&&o.truth?`The truth is… ${o.text}!`:'']; }
-      case 'scores': return ['sc'+r.games+'_'+r.qi, ''];
+      case 'reveal': return ['r'+r.games+'_'+r.qi+'_'+r.step, revealLine(r,r.step)];
+      case 'scores': return ['sc'+r.games+'_'+r.qi, chatty(r)?leaderLine(r):''];
       case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
     } return null; }
+
+  /* Chatty host: the lie, whose it was, who fell for it; then the truth; then who's winning */
+  function revealLine(r,step){ const id=(r.items||[])[step], o=(r.options||[]).find(x=>x.id===id); if(!o) return '';
+    const vs=voters(r,o.id), names=ids=>listNames(ids.map(p=>nm(r,p)));
+    if(o.truth){ const t=`The truth is… ${o.text}!`; if(!chatty(r)) return t;
+      const total=Object.keys(r.votes||{}).length; return !vs.length&&total?`${t} Nobody found it!`:vs.length&&vs.length===total&&total>1?`${t} Everybody found it!`:t; }
+    if(!chatty(r)) return '';
+    const owners=o.owners||[], whose=o.house?'That was a Hardin house lie':`That was ${names(owners)}'s lie`;
+    const others=Object.keys(r.votes||{}).filter(p=>!owners.includes(p)).length, everyone=!o.house&&vs.length>=2&&vs.length===others;
+    return `${o.text}!… ${whose}, and it fooled ${names(vs)}!${everyone?` ${names(owners)} fooled everyone!`:''}`; }
+  let leaderSeen=null;
+  function leaderLine(r){ const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); if(rows.length<2) return '';
+    const [a,b]=rows, gap=(a[1].score||0)-(b[1].score||0);
+    const line=gap===0?`It's a tie at the top between ${a[1].name} and ${b[1].name}!`:leaderSeen&&leaderSeen!==a[0]?`${a[1].name} takes the lead!`:`${a[1].name} is up by ${gap}.`;
+    leaderSeen=a[0]; return line; }
 
   /* ---- rendering ---- */
   function timerUI(){ const r=R, el=$('.timer',stage); if(!r||!el) return; const left=r.paused?(r.remaining||0):Math.max(0,(r.endsAt||0)-now()); const s=Math.ceil(left/1000);
@@ -1066,7 +1079,7 @@ function Host(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname">FIBS</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player question${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player question${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'loading': body=`<div class="center"><div class="bigintro" style="font-size:5cqw">Getting questions ready…</div></div>`; break;
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your lies ready'}</div></div>`; break;
@@ -1107,7 +1120,7 @@ function Host(code, mount, opts){
 function Player(code, mount, fixedPid){
   const store=S.store, P=roomPath(code), inApp=mount===app;
   let R=null, loaded=false, pid=fixedPid||LS.get('hg_pid_'+code,null), msg='', psound=LS.get('hg_psound',false), pctx=null, lastPhase='',
-      selEmoji=null, selPhoto=null, editing=false, lastReact=0, lfm={key:'',open:false,shown:[],cursor:0};
+      selEmoji=LS.get('hg_emoji',null), selPhoto=null, editing=false, lastReact=0, lfm={key:'',open:false,shown:[],cursor:0};
   mount.classList.add('phone'); if(!inApp) mount.classList.add('framed');
   mount.innerHTML='<div class="pwrap" style="display:flex;flex-direction:column;flex:1"><div class="phd"></div><div class="pvid"><div class="ytbox"></div><button class="pvtap">▶ Tap to show the lyrics</button></div><div class="pmain" style="display:flex;flex-direction:column;flex:1"></div></div>';
   const root=$('.pmain',mount), headEl=$('.phd',mount), pvEl=$('.pvid',mount);
@@ -1133,7 +1146,7 @@ function Player(code, mount, fixedPid){
     if(k==='emo'){ selEmoji=selEmoji===b.dataset.e?null:b.dataset.e; selPhoto=null; return render(); }
     if(k==='edit'){ const me=r.players[pid]; editing=true; selEmoji=me.emoji||null; selPhoto=me.photo||null; return render(); }
     if(k==='canceledit'){ editing=false; return render(); }
-    if(k==='savelook'){ if(selEmoji && takenEmojis(r,pid).has(selEmoji)){ msg='Someone just grabbed that one!'; return render(); }
+    if(k==='savelook'){ if(selEmoji && takenEmojis(r,pid).has(selEmoji)){ msg='Someone just grabbed that one!'; return render(); } if(selEmoji) LS.set('hg_emoji',selEmoji);
       await upd({[`players/${pid}/emoji`]:selEmoji, [`players/${pid}/photo`]:r.settings.photos!==false?selPhoto:null}); editing=false; return render(); }
     if(k==='lieforme'){ lfm.open=true; return render(); }
     if(k==='closefibs'){ lfm.open=false; return render(); }
@@ -1163,11 +1176,12 @@ function Player(code, mount, fixedPid){
   async function join(name){ name=String(name||'').trim().slice(0,12); const r=R;
     if(!name){ msg='Enter your name'; return render(); }
     if(r.settings.audience==='family'&&isNaughty(name)){ msg='Pick a different name'; return render(); }
+    LS.set('hg_name',name); if(selEmoji) LS.set('hg_emoji',selEmoji);   /* remembered on this phone for next time */
     const ps=r.players||{}, photo=r.settings.photos!==false?selPhoto:null; const ex=Object.entries(ps).find(([,p])=>!p.bot&&p.name.toLowerCase()===name.toLowerCase());
     if(ex){ pid=ex[0]; const patch={[`players/${pid}/on`]:true};
       if((selEmoji&&!takenEmojis(r,pid).has(selEmoji))||photo){ patch[`players/${pid}/emoji`]=selEmoji; patch[`players/${pid}/photo`]=photo; } await upd(patch); }
     else { if(Object.keys(ps).length>=r.settings.maxPlayers){ msg='Sorry, this room is full.'; return render(); }
-      if(selEmoji && takenEmojis(r,null).has(selEmoji)){ msg='Someone just grabbed that emoji!'; selEmoji=null; return render(); }
+      if(selEmoji && takenEmojis(r,null).has(selEmoji)) selEmoji=null;   /* taken (e.g. a remembered one): get a fresh one */
       const usedC=new Set(Object.values(ps).map(p=>p.color)); let color=0; while(usedC.has(color)&&color<COLORS.length-1) color++;
       pid=uid(); const pl={name,color,score:0,joined:store.now(),on:true,from:r.phase==='lobby'?0:(r.qi??-1)+1};
       if(selEmoji) pl.emoji=selEmoji; if(photo) pl.photo=photo;
@@ -1305,7 +1319,7 @@ function Player(code, mount, fixedPid){
     return micLive(r)?'<div class="micst live">🔴 Your mic is live on the TV</div>':`<div class="micst">🎙️ Mic ready · goes live ${st.mMic==='all'?'when the song starts':'when it\'s time to finish the line'}</div>`; }
   const MCLICK=new Set(['msearch','msurprise','mpick','mvote','mstop','mmore','mmic']);
   async function micClick(k,b,r){ const st=r.settings;
-    if(k==='mstop'){ beep(); return upd({cmd:{t:'stopnow',id:uid()}}); }
+    if(k==='mstop'){ if((r.micQ||[])[r.mi]===pid) return; beep(); return upd({cmd:{t:'stopnow',id:uid()}}); }   /* the singer can't stop their own song */
     if(k==='mvote'){ beep(900); return upd({[`mvotes/${pid}`]:b.dataset.v}); }
     if(k==='mmore'){ mic.show+=3; return render(); }
     if(k==='mmic') return micStart(r);
@@ -1339,9 +1353,9 @@ function Player(code, mount, fixedPid){
       case 'sing': { const pvOn=!mine&&st.mPhoneVideo!==false;
         if(mine&&r.mdark) return `<div class="bigmsg"><div class="em">🙈</div>Lyrics off! Keep singing!<div class="small muted">The music is about to stop</div></div>${micBox(r)}`;
         if(pvOn) return `<div class="bigmsg" style="flex:0;padding:4px 0">${r.mdark?`🙈 Lyrics are off on the TV`:`👂 ${sname} is singing!`}<div class="small muted">${r.mdark?'The music is about to stop. Watch the words!':'Send cheers to fill the applause meter'}</div></div>
-          ${vip?'<button class="pink" data-p="mstop" style="font-size:20px;padding:14px">🛑 Stop now!</button>':''}`;
+          ${vip&&!mine?'<button class="pink" data-p="mstop" style="font-size:20px;padding:14px">🛑 Stop now!</button>':''}`;
         return `<div class="bigmsg"><div class="em">${mine?'🎤':'👂'}</div>${mine?'Sing! It could stop any second…':r.mdark?`Lyrics are off for ${sname}…`:`${sname} is singing!`}<div class="small muted">${esc((r.song&&r.song.title)||'')}</div>${mine?'':'<div class="small muted">Send cheers to fill the applause meter</div>'}</div>
-          ${mine?micBox(r):''}${vip?'<button class="pink" data-p="mstop" style="font-size:22px;padding:20px">🛑 Stop now!</button>':''}`; }
+          ${mine?micBox(r):''}${vip&&!mine?'<button class="pink" data-p="mstop" style="font-size:22px;padding:20px">🛑 Stop now!</button>':''}`; }
       case 'stop': if(!mine&&st.mPhoneVideo!==false) return `<div class="bigmsg" style="flex:0;padding:4px 0">🎤 Can ${sname} finish the line?<div class="small muted">The real words keep going above</div></div>`;
         return `<div class="bigmsg"><div class="em">🎤</div>${mine?'KEEP SINGING!':`Can ${sname} finish the line?`}<div class="small muted">${mine?'Finish the line from memory':'Listen closely…'}</div></div>${mine?micBox(r):''}`;
       case 'judge': { if(mine) return `<div class="bigmsg"><div class="em">🙈</div>The room is judging…<div class="small muted">Watch the real line on the TV</div></div>`;
@@ -1468,7 +1482,7 @@ function Player(code, mount, fixedPid){
     const me=pid && r.players && r.players[pid];
     if(!me){ paint2('',`<div class="pbody"><div class="logo" style="font-size:34px;margin:6px 0">HARDIN<span>GAMES</span></div>
       <div class="muted">Room <b style="font-family:Bungee;color:var(--gold)">${esc(code)}</b> · ${GNAMES[r.game]||'Fibs'}</div>
-      <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
+      <input data-keep="name" maxlength="12" placeholder="Your name" autocomplete="off" value="${esc(LS.get('hg_name',''))}">${picker(r,null)}${err}<button data-p="join">Join game</button></div>`); return bindFiles(); }
     if(r.phase!==lastPhase){ if(lastPhase && ['lie','vote','q','tvote','wcat','draw','judge'].includes(r.phase)) beep(1000); lastPhase=r.phase; if(r.phase!=='lobby') editing=false; }
     const lfmOn=r.game==='doodle'?r.settings.dLieForMe!==false:r.settings.lieForMe!==false;
     const st=r.settings, vip=r.vip===pid, isLate=(me.from||0)>(r.qi??-1) && ['lie','vote','q'].includes(r.phase);
@@ -1776,7 +1790,7 @@ function TriviaHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'tvote': return ['tv'+r.games+'_'+r.round, r.round===1?"Let's play Smarty Pants! Pick a category!":'Pick a category!'];
       case 'tcat': return ['tc'+r.games+'_'+r.round, `Round ${WORDS[r.round]||r.round}: ${r.cat}!`];
       case 'wcat': return ['wc'+r.games, `Final question! The category is ${r.cat}. Place your bets!`];
@@ -1802,7 +1816,7 @@ function TriviaHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmTrivia)">SMARTY PANTS</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'tvote': body=`<div class="center"><div class="bigintro" style="font-size:4.2cqw">PICK A CATEGORY</div>
           <div class="cats">${(r.cats||[]).map((c,i)=>{ const vs=Object.entries(r.tvotes||{}).filter(([,v])=>v===i).map(([id])=>id);
@@ -2057,7 +2071,7 @@ function DoodleHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Doodle Duel! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
       case 'draw': return ['d'+r.games+'_'+r.round, 'Time to draw! Check your phone for your secret prompt.'];
       case 'lie': return ['l'+r.games+'_'+r.qi, `What did ${r.q.by} draw?`];
@@ -2085,7 +2099,7 @@ function DoodleHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmDoodle)">DOODLE DUEL</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Get your drawing fingers ready'}</div>${r.plist?'':'<div class="note late3">Thinking up prompts…</div>'}</div>`; break;
       case 'draw': { const ids=Object.keys(r.dprompts||{}); body=`<div class="center"><div class="bigintro">DRAW!</div><div class="subintro">Check your phone for your secret prompt</div>${tiles(r,id=>(r.draws||{})[id],ids)}</div><div class="timer"></div>`; break; }
@@ -2350,7 +2364,7 @@ function MicHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'intro': return ['i'+r.games+'_'+r.round, multFor(r)>1?'Final round! Everything is worth double!':(r.round===1?"Let's play Mic Drop! Round one!":`Round ${WORDS[r.round]||r.round}!`)];
       case 'pick': return ['p'+r.games+'_'+r.round+'_'+r.mi, `${nm(r,singer(r))}, pick your song!`];
       case 'stop': return ['s'+r.games+'_'+r.round+'_'+r.mi, 'Finish the line!'];
@@ -2375,7 +2389,7 @@ function MicHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmMic)">MIC DROP</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': body=`<div class="center"><div class="bigintro">${multFor(r)>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">${multFor(r)>1?'Everything is worth double!':'Warm up those vocal cords'}</div></div>`; break;
       case 'pick': { const nx=(r.micQ||[]).slice(r.mi+1,r.mi+4).map(id=>r.players[id]).filter(Boolean);
@@ -2570,7 +2584,7 @@ function WhoHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ const st=r.settings; switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'intro': return ['i'+r.games+'_'+r.round, r.round===1?"Let's play Who Said It? Round one!":(r.round===st.wRounds?'Final round!':`Round ${WORDS[r.round]||r.round}!`)];
       case 'answer': return ['a'+r.games+'_'+r.pi, r.q&&r.q.t];
       case 'reveal': return ['r'+r.games+'_'+r.pi+'_'+r.ai, `That was… ${nm(r,cur(r))}!`];
@@ -2594,7 +2608,7 @@ function WhoHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmWho)">WHO SAID IT?</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player prompt${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}${voiceTag(st)}</div>
+          <div class="note">${ps.length}/${max} players${subs?` · ${subs} player prompt${subs>1?'s':''} ready`:''}${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': body=`<div class="center"><div class="bigintro">${r.round===st.wRounds&&st.wRounds>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro">Get ready to spill</div>${r.plist?'':'<div class="note late3">Thinking up prompts…</div>'}</div>`; break;
       case 'answer': body=`<div class="center"><div class="qsrc">${q.by?'Prompt by '+esc(q.by):q.ai?'Fresh AI prompt':'Prompt '+((r.pi||0)+1)}</div><div class="question">${esc(q.t)}</div>
@@ -2762,7 +2776,7 @@ function BingoHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ const pat=bPattern(r), calls=r.calls||[]; switch(r.phase){
-      case 'lobby': return ['lobby'+r.games, r.games?'':'Welcome to Hardin Games! Grab your phones and join with the code on the screen.'];
+      case 'lobby': return null;
       case 'intro': return ['i'+r.games+'_'+r.round, `${r.round===1?"Let's play Bingo! ":''}Round ${WORDS[r.round]||r.round}: ${BPNAME[pat].toLowerCase()}!`];
       case 'play': return calls.length&&!r.hold?['c'+r.games+'_'+r.round+'_'+calls.length, callText(calls[calls.length-1])]:null;
       case 'win': { const ws=r.winners||[]; return ['w'+r.games+'_'+r.round, `Bingo! ${listNames(ws.map(id=>nm(r,id)))} ${ws.length>1?'win':'wins'}!`]; }
@@ -2787,7 +2801,7 @@ function BingoHost(code, mount, opts){
         body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmBingo)">BINGO NIGHT</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
-          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}${voiceTag(st)}${st.voice==='clone'&&st.readAloud?(packN<0?' · loading calls…':packN>=75?' · ✓ all 75 calls ready':` · ${packN}/75 calls ready`):''}</div>
+          <div class="note">${ps.length}/${max} players${st.audience==='family'?' · Family mode':''}</div>
           <div class="tvbtns"><button data-act="start" ${ps.length<st.minPlayers?'disabled':''}>Everybody's in — start!</button></div></div></div>`; break; }
       case 'intro': { const pat=bPattern(r); body=`<div class="center"><div class="bigintro">${r.round===st.bRounds&&st.bRounds>1?'FINAL ROUND':'ROUND '+r.round}</div><div class="subintro" style="color:var(--gmBingo)">${BPNAME[pat]}</div>
           <div class="note">${pat==='line'?'Any row, column or diagonal':pat==='corners'?'All four corners of your card':'Every square on your card'}${pat==='blackout'?' · worth double!':''}</div></div>`; break; }
@@ -2913,7 +2927,7 @@ async function AdminPanel(locked){
     ${sec('sound','Sound & Voice',`${chk('music','Music')}${chk('sfx','Sound effects')}
       <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
       <div class="fld"><label>Music volume</label><input type="range" data-k="musicVol" min="0" max="1" step="0.05" value="${st.musicVol??0.7}"></div>
-      ${chk('readAloud','Read questions and answers aloud')}
+      ${chk('readAloud','Read questions and answers aloud')}${chk('chatty','Chatty host in Fibs (reads each lie, who wrote it, who fell for it, and who\'s winning)')}
       ${sel('voice','Voice',[['builtin','Built-in voice'],['clone','My cloned voice (AI)']])}
       <div class="fld"><label>Built-in voice</label><select data-k="voiceName"><option value="">Default</option>${Voice.loadVoices().map(v=>`<option ${v.name===st.voiceName?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div>
       <div class="fld"><label>Speed</label><input type="range" data-k="voiceRate" min="0.7" max="1.3" step="0.05" value="${st.voiceRate}"></div>
@@ -2960,7 +2974,7 @@ async function AdminPanel(locked){
     app.querySelectorAll('[data-k],[data-pack]').forEach(i=>{ if(['voice','readAloud'].includes(i.dataset.k)) return; i.addEventListener('change',()=>save()); });
     $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); const o=$('#vout');
       o.textContent=st.voice==='clone'?'Calling your cloned voice…':'Speaking…';
-      const lines=['Welcome to Hardin Games!','Grab your phones, it is game time!','Who is ready to play?','Let the games begin!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const lines=['Who is ready to play?','Let the games begin!','Time for game night!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       const res=await Voice.say(`${lines[Math.floor(Math.random()*lines.length)]} Testing at ${tm}.`,{...st,readAloud:true},{quiet:true});
       o.innerHTML=res.error?`<span class="err">Cloned voice failed: ${esc(res.error)}</span> · used the built-in voice`:(res.mode==='clone'?'<span class="ok">✓ Played in your cloned voice</span>':'<span class="ok">✓ Played the built-in voice</span>'); };
     bvPanel($('#bvp'));
