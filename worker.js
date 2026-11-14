@@ -91,6 +91,7 @@ async function question(req, env, cors) {
 Rules:
 - Each prompt states a surprising but TRUE, well-documented fact, with exactly one blank written as "_____".
 - The real answer is 1-4 words and hard to guess, so fake answers can compete with it.
+- The real answer is WORDS: a name, thing, place, word or phrase. Never a number, year, date, amount, measurement or percentage. Decoys follow the same rule.
 - Give 2 decoys: plausible-sounding answers that are definitely FALSE.
 - ${family ? 'Family friendly, fine for kids 8 and up.' : 'Keep it PG-13.'}
 - ${topic ? `Topic: ${topic}.` : 'Mix of topics: history, animals, food, science, pop culture, places.'}

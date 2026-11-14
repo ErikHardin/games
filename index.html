@@ -445,7 +445,7 @@ const PACKS = {
     {t:'Bubble Wrap was first invented to be _____.',a:'wallpaper',d:['a pool cover','a raincoat','a shower curtain','packing peanuts','a mattress pad','a tablecloth']},
     {t:'The inventor of the Pringles can had some of his ashes buried in a _____.',a:'Pringles can',d:['chip bag','pizza box','soda bottle','cookie jar','lunchbox','popcorn tin']},
     {t:'Pluto is smaller than the country of _____.',a:'Russia',d:['Canada','Brazil','China','Australia','United States','India']},
-    {t:'The Eiffel Tower can grow about _____ taller in summer.',a:'6 inches',alt:['six inches'],d:['2 feet','1 inch','3 feet','10 inches','4 feet','half an inch']}
+    {t:'The dot over a lowercase "i" or "j" is called a _____.',a:'tittle',d:['speck','dib','tick','pip','dimple','fleck']}
   ]},
   history: { name: 'History & Inventions', q: [
     {t:'Nintendo was founded in 1889 as a company that made _____.',a:'playing cards',alt:['cards'],d:['umbrellas','rice cookers','kites','sewing machines','paper fans','tea sets']},
@@ -459,13 +459,13 @@ const PACKS = {
     {t:'The first food an American astronaut ate in space was _____.',a:'applesauce',d:['a hot dog','beef jerky','peanut butter','chocolate pudding','freeze-dried ice cream','tuna salad']},
     {t:'The Statue of Liberty\'s official name is "Liberty _____ the World."',a:'Enlightening',d:['Welcoming','Guarding','Embracing','Watching Over','Uniting','Inspiring']},
     {t:'Before rubber erasers, people erased pencil marks with _____.',a:'bread',d:['sand','candle wax','feathers','cheese','potato peels','tree bark']},
-    {t:'The shortest war in history, Britain vs. Zanzibar in 1896, lasted about _____.',a:'38 minutes',alt:['thirty eight minutes'],d:['6 hours','2 days','9 minutes','3 hours','90 minutes','12 hours']}
+    {t:'The plastic tip at the end of a shoelace is called an _____.',a:'aglet',d:['eyelet','lacelock','grommet','tipper','bobbin','nib']}
   ]},
   animals: { name: 'Animals & Nature', q: [
     {t:'A group of flamingos is called a _____.',a:'flamboyance',d:['parade','blush','stand','fiesta','ballet','pinkness']},
     {t:'A group of owls is called a _____.',a:'parliament',d:['council','hoot','senate','library','jury','assembly']},
     {t:'Botanically speaking, a banana is a _____.',a:'berry',d:['legume','drupe','tuber','nut','pome','gourd']},
-    {t:'An octopus has _____ hearts.',a:'three',alt:['3'],d:['two','five','four','eight','nine','six']},
+    {t:'A baby kangaroo is called a _____.',a:'joey',d:['kit','pup','hopper','cub','calf','pouchling']},
     {t:'The national animal of Scotland is the _____.',a:'unicorn',d:['red deer','Loch Ness Monster','Highland cow','golden eagle','Scottish terrier','haggis']},
     {t:'Wombat poop is shaped like _____.',a:'cubes',alt:['cube','squares'],d:['stars','pyramids','spirals','hearts','coins','triangles']},
     {t:'Sea otters hold hands while they _____.',a:'sleep',d:['swim','eat','hunt','play','dance','groom']},
@@ -733,6 +733,8 @@ const Voice = {
 };
 
 /* ============ AI questions via the Worker ============ */
+/* Fibs answers should be words, not numbers, years or amounts */
+const numAns=a=>/\d/.test(a)||/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|dozen|half|percent)\b/i.test(a);
 async function fetchAI(st, count){
   if(!CONFIG.WORKER_URL) throw new Error('No WORKER_URL set');
   const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),20000);
@@ -740,7 +742,7 @@ async function fetchAI(st, count){
     const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/question',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({count, topic:st.aiTopic||'', family:st.audience==='family', avoid:LS.get('hg_used',[]).slice(-25)})});
     const j=await r.json(); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
-    return (j.questions||[]).map(x=>({t:fixBlank(x.text), a:String(x.answer||'').trim(), d:(x.decoys||[]).slice(0,3), src:'ai'})).filter(x=>x.t&&x.a);
+    return (j.questions||[]).map(x=>({t:fixBlank(x.text), a:String(x.answer||'').trim(), d:(x.decoys||[]).slice(0,3), src:'ai'})).filter(x=>x.t&&x.a&&!numAns(x.a));
   } finally { clearTimeout(to); }
 }
 
@@ -822,7 +824,8 @@ function Landing(){
     Voice.unlock(); Voice.say(WELCOME,hst,{keep:true,quiet:true}); };
   app.addEventListener('pointerdown',greet,{capture:true});
   CLEAN.push(()=>{ app.onclick=null; app.removeEventListener('pointerdown',greet,{capture:true}); });
-  loadSettings().then(st=>{ applyTheme(st.theme); hst=st; Voice.prefetch(WELCOME,st); }).catch(()=>{});
+  loadSettings().then(st=>{ applyTheme(st.theme); hst=st; Voice.prefetch(WELCOME,st);
+    app.querySelectorAll('.gamecard .gmeta').forEach(m=>{ m.textContent=m.textContent.replace(/^\d+–\d+ players/,`${st.minPlayers}–${st.maxPlayers} players`); }); }).catch(()=>{});
 }
 
 /* ============ Room creation ============ */
@@ -888,7 +891,7 @@ function Host(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
 
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
@@ -1111,7 +1114,7 @@ function Player(code, mount, fixedPid){
   const paint2=(h,b)=>{ patchHTML(headEl,h); patchHTML(root,b); };
   if(pid && !fixedPid) store.presence(`${P}/players/${pid}/on`);
   const unsub=store.on(P, r=>{ R=r; loaded=true; if(r) applyTheme(r.settings&&r.settings.theme); render(); micSync(r); });
-  const iv=setInterval(()=>{ bingoTick(); const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; }
+  const iv=setInterval(()=>{ bingoTick(); if(R && R.players && R.players[pid] && !!R.paused!==(root.innerHTML.indexOf('>Paused<')>=0)) render(); const el=$('.ptimer',root); if(el&&R&&R.endsAt){ const s=Math.ceil(Math.max(0,(R.paused?(R.remaining||0):R.endsAt-store.now()))/1000); el.textContent=s+'s'; }
     pvSync();
     if(R&&R.game==='doodle'&&R.phase==='draw'&&!R.paused&&pid&&(R.dprompts||{})[pid]&&!(R.draws||{})[pid]){ padFor(R); if(!pad.sent && store.now()>=R.endsAt-800) submitDrawing(R); } },250);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ micStop(); try{ pv.yt&&pv.yt.destroy(); }catch(e){} });
@@ -1299,7 +1302,7 @@ function Player(code, mount, fixedPid){
     if(!mine||!rtc.state) return '<button class="alt" data-p="mmic">🎙️ Use my phone as the mic</button>';
     if(rtc.state==='fail') return `<div class="err">${esc(rtc.err)}</div><button class="alt" data-p="mmic">🎙️ Try the mic again</button>`;
     if(rtc.state!=='on') return '<div class="micst">🎙️ Connecting the mic…</div>';
-    return micLive(r)?'<div class="micst live">🔴 Your mic is live on the TV</div>':`<div class="micst">🎙️ Mic ready · goes live ${st.mMic==='all'?'when the song starts':'when the music stops'}</div>`; }
+    return micLive(r)?'<div class="micst live">🔴 Your mic is live on the TV</div>':`<div class="micst">🎙️ Mic ready · goes live ${st.mMic==='all'?'when the song starts':'when it\'s time to finish the line'}</div>`; }
   const MCLICK=new Set(['msearch','msurprise','mpick','mvote','mstop','mmore','mmic']);
   async function micClick(k,b,r){ const st=r.settings;
     if(k==='mstop'){ beep(); return upd({cmd:{t:'stopnow',id:uid()}}); }
@@ -1472,7 +1475,7 @@ function Player(code, mount, fixedPid){
     const head=`<div class="phead">${avatar(me)}<span class="nm">${esc(me.name)}${vip?' ⭐':''}</span><button class="snd" data-p="snd">${psound?'🔊':'🔈'}</button><span class="sc">${me.score||0}</span></div>`;
     if(editing){ paint2(head,`<div class="pbody">${picker(r,pid)}${err}<div class="row"><button class="alt" data-p="canceledit">Cancel</button><button data-p="savelook">Save</button></div></div>`); return bindFiles(); }
     let b='';
-    if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div>Paused</div>`;
+    if(r.paused) b=`<div class="bigmsg"><div class="em">⏸️</div><span>Paused</span></div>`;
     else if(isLate) b=`<div class="bigmsg"><div class="em">🙌</div>You're in!<div class="small muted">You'll jump in on the next question.</div></div>`;
     else if(r.game==='trivia' && r.phase!=='lobby') b=triviaPhone(r,me,st,err);
     else if(r.game==='doodle' && !['lobby','lie','vote'].includes(r.phase)) b=doodlePhone(r,me,st,err);
@@ -1665,7 +1668,7 @@ function TriviaHost(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -1915,7 +1918,7 @@ function DoodleHost(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2221,7 +2224,7 @@ function MicHost(code, mount, opts){
       const key=r.games+'_'+r.round+'_'+r.mi+'_'+r.song.id;
       if(r.phase==='sing'){ if(ytLoaded!==key){ ytLoaded=key; loadAt=Date.now(); yt.loadVideoById(r.song.id); }
         else if(r.paused) yt.pauseVideo(); else if(ytState===2) yt.playVideo(); }
-      if(r.phase==='stop'){ if(ytState===1) yt.pauseVideo(); }
+      if(r.phase==='stop'){ const end=(r.stopAt||0)+(r.settings.mFinishTime||10); if(r.paused){ if(ytState===1) yt.pauseVideo(); } else if(ytState===2 && yt.getCurrentTime()<end) yt.playVideo(); }
       if(r.phase==='judge'){ if(r.paused){ yt.pauseVideo(); return; }
         if(replayEnd!==r.stopAt){ replayEnd=r.stopAt; yt.seekTo(Math.max(0,(r.stopAt||0)-(r.settings.mDark||0)-3),true); yt.playVideo(); setTimeout(pubClock,300); } }
     }catch(e){ console.warn('video',e); } }
@@ -2232,7 +2235,8 @@ function MicHost(code, mount, opts){
         const t=yt.getCurrentTime(), lead=r.settings.mDark||0;
         if(r.stopAt && lead>0 && !dark && t>=r.stopAt-lead){ goDark(r); }
         if(r.stopAt && t>=r.stopAt) beginStop(); }
-      if(r.phase==='judge' && ytState===1 && r.stopAt && yt.getCurrentTime()>=r.stopAt+10) yt.pauseVideo();
+      if(r.phase==='stop' && ytState===1 && yt.getCurrentTime()>=(r.stopAt||0)+(r.settings.mFinishTime||10)) yt.pauseVideo();
+      if(r.phase==='judge' && ytState===1 && r.stopAt && yt.getCurrentTime()>=r.stopAt+(r.settings.mFinishTime||10)+1) yt.pauseVideo();
       if(ytState===1 && ['sing','judge'].includes(r.phase) && Date.now()-clockAt>4000) pubClock();
     }catch(e){} }
 
@@ -2249,7 +2253,7 @@ function MicHost(code, mount, opts){
     if(hr.k && hr.k!==turnKey) hrClose();
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); syncVideo(r); rtcSync(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); videoTick(R); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); videoTick(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; hrClose(); try{ yt&&yt.destroy(); }catch(e){} });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2292,7 +2296,7 @@ function MicHost(code, mount, opts){
     upd({phase:'sing',stopAt:null,mdark:null,mclock:null,merr:null,phaseAt:n,endsAt:null}); }
   function beginStop(){ const r=R; if(r.phase!=='sing'||!once('st'+r.games+'_'+r.round+'_'+r.mi)) return; const n=now();
     forceCover=true; if(blurMode(r)) vidwrap.classList.add('blur','stopped'); else vidwrap.classList.remove('on'); render(r);
-    let at=r.stopAt; try{ if(yt&&ytReady){ at=Math.round(yt.getCurrentTime()*10)/10; yt.pauseVideo(); } }catch(e){}
+    let at=r.stopAt; try{ if(yt&&ytReady) at=Math.round(yt.getCurrentTime()*10)/10; }catch(e){}   /* the music keeps going; only the words are hidden */
     upd({phase:'stop',stopAt:at||r.stopAt||0,phaseAt:n,endsAt:n+r.settings.mFinishTime*1000}); }
   function beginJudge(){ const r=R; if(!once('j'+r.games+'_'+r.round+'_'+r.mi)) return; const n=now();
     upd({phase:'judge',mvotes:null,phaseAt:n,endsAt:n+r.settings.mJudgeTime*1000}); }
@@ -2338,7 +2342,7 @@ function MicHost(code, mount, opts){
     if(lastCounts && unlocked){ if(c.p>lastCounts.p) Sound.sfx('join'); if(c.v>lastCounts.v) Sound.sfx('lock'); } lastCounts=c;
     if(prev && prev.phase!==r.phase){ setMusicFor(r);
       if(r.phase==='intro') Sound.sfx('start');
-      if(r.phase==='stop') Sound.sfx('buzz');
+      if(r.phase==='stop') Sound.sfx('whoosh');
       if(r.phase==='result'){ Sound.sfx(r.mres&&r.mres.drop?'fanfare':'points'); if(r.mres&&r.mres.drop) confetti(); }
       if(r.phase==='scores') Sound.sfx('points');
       if(r.phase==='final'){ Sound.sfx('fanfare'); confetti(); setTimeout(confetti,1000); } }
@@ -2476,7 +2480,7 @@ function WhoHost(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2672,7 +2676,7 @@ function BingoHost(code, mount, opts){
     if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
     claims(r); effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2934,7 +2938,7 @@ async function AdminPanel(locked){
     ${sec('mic','🎤 Mic Drop',`${num('mRounds','Rounds',1,4)}${num('mStopMin','Earliest the lyrics go dark (seconds into the song)',20,240,5)}${num('mStopMax','Latest the lyrics go dark (seconds into the song)',20,300,5)}
       ${num('mDark','Lyrics go off before the stop (seconds, 0 = off)',0,20)}${sel('mLyricsOff','How lyrics go off',[['blur','Blur the video'],['black','Black screen']])}${sel('mChannels','Karaoke channels',[['prefer','Zoom Karaoke first, others if needed'],['only','Zoom Karaoke only'],['any','Any karaoke channel']])}${num('mFinishTime','Seconds to finish the line',5,30)}${num('mJudgeTime','Seconds to judge',8,40)}${num('mPickTime','Seconds to pick a song',20,180,5)}
       <h4>Scoring</h4>${num('mNailed','Points for "Nailed it"',0,5000,50)}${num('mClose','Points for "Close"',0,5000,50)}${num('mApplause','Max applause bonus',0,2000,50)}${num('mMult','Last round multiplier',1,5)}
-      <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when the music stops'],['all','On for the whole song'],['off','Off']])}
+      <h4>Phones</h4>${chk('mPhoneVideo','Lyrics video on the judges\' phones')}${sel('mMic','Singer\'s phone as the mic',[['stop','On when it\'s time to finish the line'],['all','On for the whole song'],['off','Off']])}
       <h4>Songs</h4>${chk('mAI','"Surprise me" button (AI picks a song)')}<div class="small muted">Song search needs YOUTUBE_API_KEY in Cloudflare. Pasting a YouTube link always works.</div>`)}
     ${sec('doodle','🎨 Doodle Duel',`${num('dRounds','Rounds',1,4)}${num('dDrawTime','Seconds to draw',20,180,5)}${num('dFakeTime','Seconds to write a fake title',15,120,5)}${num('dVoteTime','Seconds to vote',10,90,5)}
       <h4>Scoring</h4>${num('dTruth','Points for spotting the real title',0,5000,50)}${num('dFool','Points per player fooled',0,5000,50)}${num('dArtist','Artist bonus per player who gets it',0,5000,50)}${num('dMult','Last round multiplier',1,5)}
