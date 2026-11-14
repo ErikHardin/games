@@ -2814,7 +2814,12 @@ function BingoHost(code, mount, opts){
 async function HostAny(code, mount, opts){
   if(!code) return Host(null, mount, opts);
   const r=await S.store.get(roomPath(code));
-  return (r && r.game==='trivia' ? TriviaHost : r && r.game==='doodle' ? DoodleHost : r && r.game==='mic' ? MicHost : r && r.game==='who' ? WhoHost : r && r.game==='bingo' ? BingoHost : Host)(code, mount, opts);
+  const out=(r && r.game==='trivia' ? TriviaHost : r && r.game==='doodle' ? DoodleHost : r && r.game==='mic' ? MicHost : r && r.game==='who' ? WhoHost : r && r.game==='bingo' ? BingoHost : Host)(code, mount, opts);
+  /* while the room is in the lobby, Admin changes apply right away; once a game starts its settings stay put */
+  if(r && !r.demo) CLEAN.push(S.store.on(`${ROOT}/settings`, async s=>{ if(!s) return;
+    const cur=await S.store.get(roomPath(code)); if(!cur||cur.phase!=='lobby') return;
+    const fresh=await loadSettings(); if(JSON.stringify(fresh)!==JSON.stringify(cur.settings)) S.store.update(roomPath(code),{settings:fresh}); }));
+  return out;
 }
 
 /* ============ DEMO (preview with bots) ============ */
@@ -2941,13 +2946,14 @@ async function AdminPanel(locked){
     ${sec('bingo','🎱 Bingo Night',`${num('bRounds','Rounds (line, four corners, blackout, then repeat)',1,6)}${num('bCallTime','Seconds between calls',4,20)}
       <h4>Scoring</h4>${num('bPoints','Points for a bingo',0,5000,50)}${num('bBlackoutMult','Blackout multiplier',1,5)}${num('bLockout','Lockout after a false bingo (seconds)',3,30)}
       <h4>Bingo voice</h4><div id="bvp"></div>`)}
-    <button id="save">Save settings</button></div>`;
+    <div class="small muted" style="text-align:center">Changes save automatically and apply to any game still in its lobby.</div></div>`;
     $('#back').onclick=()=>nav({});
     const ts=app.querySelector('[data-k=theme]'); if(ts) ts.onchange=()=>applyTheme(ts.value);
     app.querySelectorAll('[data-k=voice],[data-k=readAloud]').forEach(i=>i.onchange=()=>save(i.dataset.k==='voice'?(i.value==='clone'?'Saved ✓ Games will use your voice':'Saved ✓ Games will use the built-in voice'):'Saved ✓'));
     app.querySelectorAll('details.sec').forEach(d=>d.addEventListener('toggle',()=>{ d.open?openS.add(d.dataset.sec):openS.delete(d.dataset.sec); LS.set('hg_admin_open',[...openS]); }));
     if($('#lockb')) $('#lockb').onclick=()=>{ LS.set('hg_admin_token',''); toast('Admin locked'); nav({}); };
-    $('#save').onclick=save;
+    /* every change saves on its own */
+    app.querySelectorAll('[data-k],[data-pack]').forEach(i=>{ if(['voice','readAloud'].includes(i.dataset.k)) return; i.addEventListener('change',()=>save()); });
     $('#testv').onclick=async()=>{ collect(); Sound.init(st); Voice.unlock(); const o=$('#vout');
       o.textContent=st.voice==='clone'?'Calling your cloned voice…':'Speaking…';
       const lines=['Welcome to Hardin Games!','Grab your phones, it is game time!','Who is ready to play?','Let the games begin!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -2960,7 +2966,9 @@ async function AdminPanel(locked){
     app.querySelectorAll('[data-unflag]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.unflag; delete flags[id]; await S.store.remove(`${ROOT}/trivia/flagged/${id}`); collect(); draw(); });
     app.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ const id=b.dataset.del; delete fam[id]; await S.store.remove(`${ROOT}/packs/family/${id}`); collect(); draw(); });
   };
-  function collect(){ app.querySelectorAll('[data-k]').forEach(i=>{ const k=i.dataset.k; st[k]= i.type==='checkbox'?i.checked : (i.type==='number'||i.type==='range')?Number(i.value) : i.value; });
+  function collect(){ app.querySelectorAll('[data-k]').forEach(i=>{ const k=i.dataset.k; let v=i.type==='checkbox'?i.checked : (i.type==='number'||i.type==='range')?Number(i.value) : i.value;
+      if(i.type==='number'){ if(i.value===''||isNaN(v)) v=st[k]; if(i.min!==''&&v<Number(i.min)) v=Number(i.min); if(i.max!==''&&v>Number(i.max)) v=Number(i.max); }
+      st[k]=v; });
     app.querySelectorAll('[data-pack]').forEach(i=>st.packs[i.dataset.pack]=i.checked);
     if(st.maxPlayers<st.minPlayers) st.maxPlayers=st.minPlayers;
     if(st.mStopMax<st.mStopMin) st.mStopMax=st.mStopMin; }
