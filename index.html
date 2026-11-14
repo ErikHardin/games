@@ -481,7 +481,7 @@ const PACKS = {
 
 const DEFAULTS = {audience:'standard',rounds:3,perRound:3,lieTime:60,voteTime:30,pointsTruth:1000,pointsFool:500,authorBonus:250,finalMult:2,
   minPlayers:3,maxPlayers:8,packs:{weird:true,history:true,animals:true,family:true},aiMix:'off',aiTopic:'',
-  theme:'sunset',music:true,musicVol:0.7,sfx:true,volume:0.7,readAloud:true,chatty:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
+  theme:'sunset',music:true,musicVol:0.7,sfx:true,volume:0.7,readAloud:true,chatty:true,aiQuips:true,voice:'builtin',voiceName:'',voiceRate:1,playerQuestions:true,
   likes:true,likePoints:100,reactions:true,lieForMe:true,aiFakes:true,photos:true,
   tRounds:3,tPerRound:5,tTime:20,tVoteTime:15,tNumbers:true,tWager:true,tStreak:250,tAI:true,tCats:'',
   dRounds:2,dDrawTime:60,dFakeTime:45,dVoteTime:25,dTruth:1000,dFool:500,dArtist:500,dMult:2,dLieForMe:true,dLikes:true,dLikePoints:100,dGallery:true,dAI:true,dPrompts:'',
@@ -933,7 +933,7 @@ function Host(code, mount, opts){
   function beginQuestion(){ const r=R, qi=(r.qi??-1)+1; if(!r.queue||!r.queue[qi]||!once('q'+r.games+'_'+qi)) return;
     const st=r.settings, n=now(), q=r.queue[qi], f=st.audience==='family'?1.5:1;
     const wantF=st.lieForMe!==false && Fakes.want(st), g=r.games;
-    upd({phase:'lie',qi,q,lies:null,auto:null,votes:null,likes:null,lq:null,options:null,items:null,step:0,deltas:null,fakes:null,fk:wantF?'loading':'none',phaseAt:n,endsAt:n+st.lieTime*1000*f});
+    upd({phase:'lie',qi,q,lies:null,auto:null,votes:null,likes:null,lq:null,quips:null,options:null,items:null,step:0,deltas:null,fakes:null,fk:wantF?'loading':'none',phaseAt:n,endsAt:n+st.lieTime*1000*f});
     if(wantF) Fakes.get(q,st).then(list=>{ if(R && R.qi===qi && R.games===g) upd({fakes:list&&list.length?list:null, fk:'ready'}); });
     const u=LS.get('hg_used',[]).filter(x=>x!==q.t); u.push(q.t); LS.set('hg_used',u.slice(-200)); }
   function beginVote(){ const r=R; if(!once('v'+r.games+'_'+r.qi)) return;
@@ -943,7 +943,7 @@ function Host(code, mount, opts){
     const usedN=new Set([norm(q.a),...groups.keys()]); let j=0;
     for(const d of shuffle(q.d||[])){ if(opts.length>=4) break; const k=norm(d); if(usedN.has(k)) continue; usedN.add(k); opts.push({id:'h'+(j++),text:d,house:true}); }
     const st=r.settings, n=now(), f=st.audience==='family'?1.5:1;
-    upd({phase:'vote',options:shuffle(opts),votes:null,phaseAt:n,endsAt:n+st.voteTime*1000*f}); }
+    const sh=shuffle(opts); upd({phase:'vote',options:sh,votes:null,quips:null,phaseAt:n,endsAt:n+st.voteTime*1000*f}); getQuips({...r,options:sh}); }
   const lieShare=(r,o,ow,n)=>Math.round(r.settings.pointsFool*multFor(r)*n*((r.auto||{})[ow]?0.5:1));
   const chatty=r=>r.settings.chatty!==false && r.settings.readAloud;
   const lieMs=r=>chatty(r)?LIE_MS+2200:LIE_MS;
@@ -1047,19 +1047,42 @@ function Host(code, mount, opts){
       case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
     } return null; }
 
-  /* Chatty host: the lie, whose it was, who fell for it; then the truth; then who's winning */
+  /* Chatty host: the lie, whose it was, who fell for it; then the truth; then who's winning. Wording varies; AI jokes ride along. */
+  async function getQuips(r){ const st=r.settings; if(!chatty(r)||st.aiQuips===false||!CONFIG.WORKER_URL||!once('qp'+r.games+'_'+r.qi)) return;
+    const lies=(r.options||[]).filter(o=>!o.truth), qi=r.qi, g=r.games;
+    try{ const res=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/quips',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({question:readQ(r.q.t),truth:r.q.a,family:st.audience==='family',lies:lies.map(o=>({text:o.text,by:o.house?'':listNames((o.owners||[]).map(p=>nm(r,p)))}))})});
+      const j=await res.json(); if(!res.ok||!R||R.qi!==qi||R.games!==g) return;
+      const out={}; lies.forEach((o,i)=>{ if(j.lies&&j.lies[i]) out[o.id]=j.lies[i]; }); if(j.truth) out.truth=j.truth;
+      if(Object.keys(out).length) upd({quips:out}); }catch(e){ console.warn('quips',e); } }
+  const pickV=(r,k,list)=>list[hash(r.games+'_'+r.qi+'_'+k)%list.length];
   function revealLine(r,step){ const id=(r.items||[])[step], o=(r.options||[]).find(x=>x.id===id); if(!o) return '';
-    const vs=voters(r,o.id), names=ids=>listNames(ids.map(p=>nm(r,p)));
-    if(o.truth){ const t=`The truth is… ${o.text}!`; if(!chatty(r)) return t;
-      const total=Object.keys(r.votes||{}).length; return !vs.length&&total?`${t} Nobody found it!`:vs.length&&vs.length===total&&total>1?`${t} Everybody found it!`:t; }
+    const vs=voters(r,o.id), names=ids=>listNames(ids.map(p=>nm(r,p))), Q=(r.quips||{})[o.truth?'truth':o.id], quip=Q&&r.settings.aiQuips!==false?' '+Q:'';
+    if(o.truth){ const T=o.text; if(!chatty(r)) return `The truth is… ${T}!`;
+      const total=Object.keys(r.votes||{}).length, F=names(vs);
+      const line=!vs.length&&total?pickV(r,'tn',[`The truth is… ${T}! Nobody found it!`,`The real answer… ${T}! Not one of you got it!`,`It was… ${T}! Zero for everybody.`,`The truth is… ${T}! You all got fooled!`])
+        :vs.length===1&&total>2?pickV(r,'t1',[`The truth is… ${T}! Only ${F} found it!`,`It was… ${T}! ${F} is the only one who knew!`,`The real answer… ${T}! Nice work, ${F}, you were the only one!`])
+        :vs.length&&vs.length===total&&total>1?pickV(r,'ta',[`The truth is… ${T}! Everybody found it. Too easy!`,`It was… ${T}! You all knew that one.`])
+        :pickV(r,'t',[`The truth is… ${T}!`,`And the real answer is… ${T}!`,`Drumroll please… it's ${T}!`,`The truth, the whole truth… ${T}!`]);
+      return line+quip; }
     if(!chatty(r)) return '';
-    const owners=o.owners||[], whose=o.house?'That was a Hardin house lie':`That was ${names(owners)}'s lie`;
-    const others=Object.keys(r.votes||{}).filter(p=>!owners.includes(p)).length, everyone=!o.house&&vs.length>=2&&vs.length===others;
-    return `${o.text}!… ${whose}, and it fooled ${names(vs)}!${everyone?` ${names(owners)} fooled everyone!`:''}`; }
+    const L=o.text, F=names(vs), W=names(o.owners||[]), others=Object.keys(r.votes||{}).filter(p=>!(o.owners||[]).includes(p)).length, everyone=!o.house&&vs.length>=2&&vs.length===others;
+    let line;
+    if(o.house) line=vs.length>=3?pickV(r,'h'+step,[`${L}! The house fooled ${vs.length} of you. Shame!`,`${L}! That was a Hardin house lie, and it got ${vs.length} of you!`])
+      :pickV(r,'h'+step,[`${L}! That was a Hardin house lie, and it fooled ${F}!`,`${L}! The house wins this one. ${F} fell for it.`,`${L}! That one came from the house. Nice try, ${F}.`]);
+    else if(vs.length===1) line=pickV(r,'l1'+step,[`${L}! Just one victim for ${W}: ${F}.`,`${L}! ${W} made that up, and ${F} bought it.`,`${L}?! Sneaky, ${W}. That one got ${F}.`,`${L}! Sorry, ${F}, that was ${W}'s lie!`]);
+    else line=pickV(r,'l'+step,[`${L}!… That was ${W}'s lie, and it fooled ${F}!`,`${L}! Gotcha! ${F} fell for ${W}'s lie.`,`${L}?! Sneaky, ${W}. That one got ${F}.`,`${L}! ${F}, you've been fooled by ${W}!`,
+      `${L}! Nope! ${W} made that up, and ${F} bought it.`,`${L}! A total fib from ${W}. Sorry, ${F}!`,`${L}! ${W} strikes again! ${F} took the bait.`]);
+    if(everyone) line+=' '+pickV(r,'e'+step,[`${W} fooled everyone!`,`Wow, ${W} got the whole room!`,`Clean sweep for ${W}!`]);
+    return line+quip; }
   let leaderSeen=null;
   function leaderLine(r){ const rows=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0)); if(rows.length<2) return '';
-    const [a,b]=rows, gap=(a[1].score||0)-(b[1].score||0);
-    const line=gap===0?`It's a tie at the top between ${a[1].name} and ${b[1].name}!`:leaderSeen&&leaderSeen!==a[0]?`${a[1].name} takes the lead!`:`${a[1].name} is up by ${gap}.`;
+    const [a,b]=rows, A=a[1].name, B=b[1].name, G=(a[1].score||0)-(b[1].score||0);
+    const line=G===0?pickV(r,'tie',[`It's a tie at the top between ${A} and ${B}!`,`${A} and ${B} are neck and neck!`,`Dead heat! ${A} and ${B} are tied!`])
+      :leaderSeen&&leaderSeen!==a[0]?pickV(r,'new',[`${A} takes the lead!`,`${A} jumps into first place!`,`Look out! ${A} is on top now!`])
+      :G>=1500?pickV(r,'big',[`${A} is running away with it!`,`${A} is up by ${G}. Can anyone catch ${A}?`,`${A} is way out in front!`])
+      :G<=500?pickV(r,'close',[`${A} leads, but ${B} is breathing down ${A}'s neck!`,`${A} is just ${G} ahead of ${B}!`,`It's close! ${A} leads ${B} by ${G}.`])
+      :pickV(r,'lead',[`${A} is up by ${G}.`,`${A} still leads, by ${G}.`,`${A} is in first, ${G} ahead.`]);
     leaderSeen=a[0]; return line; }
 
   /* ---- rendering ---- */
@@ -2915,6 +2938,14 @@ async function bvRun(list,play,el,st){ if(BV.busy||!list.length) return; BV.busy
   const work=async n=>{ const take=((BV.meta[n]&&BV.meta[n].take)||0)+1; try{ await bvMake(n,take); BV.meta[n]={t:bCallText(n),take}; }catch(e){ BV.err="Couldn't make "+BLETTER(n)+n+': '+e.message; } done++; BV.prog=list.length>1?`Making calls… ${done}/${list.length}`:''; bvPanel(el); };
   const q=[...list]; await Promise.all([0,1].map(async()=>{ while(q.length && !BV.err) await work(q.shift()); }));
   BV.busy=false; BV.prog=''; bvPanel(el); if(play&&!BV.err) bvPlay(list[0],st); }
+/* Admin: ElevenLabs credits this month */
+async function showUsage(){ const el=$('#usage'); if(!el||!CONFIG.WORKER_URL) return;
+  try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:LS.get('hg_admin_token','')})});
+    const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); if(!$('#usage')) return;
+    const pct=j.limit?Math.min(100,Math.round(j.used/j.limit*100)):0, reset=j.reset?new Date(j.reset*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    $('#usage').innerHTML=`<b style="color:var(--text)">ElevenLabs: ${Number(j.used||0).toLocaleString()} of ${Number(j.limit||0).toLocaleString()} credits used</b>${reset?` · resets ${reset}`:''}
+      <div class="bar" style="height:8px;border-radius:6px;background:var(--t2);overflow:hidden;margin-top:6px"><i style="display:block;height:100%;width:${pct}%;background:${pct>85?'var(--pink)':'var(--gold)'}"></i></div>`; }
+  catch(e){ if($('#usage')) $('#usage').innerHTML=`<span class="err">Couldn't read ElevenLabs credits: ${esc(e.message)}</span>`; } }
 async function AdminPanel(locked){
   const st=await loadSettings(); applyTheme(st.theme); let fam=(await S.store.get(`${ROOT}/packs/family`))||{}, flags=(await S.store.get(`${ROOT}/trivia/flagged`))||{};
   const num=(k,l,min,max,step=1)=>`<div class="fld"><label>${l}</label><input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${st[k]}"></div>`;
@@ -2927,12 +2958,14 @@ async function AdminPanel(locked){
     ${sec('sound','Sound & Voice',`${chk('music','Music')}${chk('sfx','Sound effects')}
       <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
       <div class="fld"><label>Music volume</label><input type="range" data-k="musicVol" min="0" max="1" step="0.05" value="${st.musicVol??0.7}"></div>
-      ${chk('readAloud','Read questions and answers aloud')}${chk('chatty','Chatty host in Fibs (reads each lie, who wrote it, who fell for it, and who\'s winning)')}
+      ${chk('readAloud','Read questions and answers aloud')}${chk('chatty','Chatty host in Fibs (reads each lie, who wrote it, who fell for it, and who\'s winning)')}${chk('aiQuips','Funny AI comments from the host in Fibs')}
       ${sel('voice','Voice',[['builtin','Built-in voice'],['clone','My cloned voice (AI)']])}
       <div class="fld"><label>Built-in voice</label><select data-k="voiceName"><option value="">Default</option>${Voice.loadVoices().map(v=>`<option ${v.name===st.voiceName?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div>
       <div class="fld"><label>Speed</label><input type="range" data-k="voiceRate" min="0.7" max="1.3" step="0.05" value="${st.voiceRate}"></div>
       ${!CONFIG.WORKER_URL?'<div class="small muted">Cloned voice and AI questions turn on once WORKER_URL is set.</div>':''}
-      <button class="alt" id="testv">Test voice</button><div id="vout" class="small muted"></div>`)}
+      <button class="alt" id="testv">Test voice</button><div id="vout" class="small muted"></div>
+      <h4>Credits</h4><div id="usage" class="small muted">Checking ElevenLabs…</div>
+      <div class="small"><a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic (AI) balance ↗</a></div>`)}
     ${sec('fibs','🤥 Fibs',`${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}${chk('playerQuestions','Players can add questions in the lobby')}
       <h4>Scoring</h4>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}
       <h4>Extras</h4>${chk('likes','Players can 👍 the funniest lies')}${num('likePoints','Points per 👍',0,1000,25)}${chk('lieForMe','"Lie for me" button (half points)')}${chk('aiFakes','AI writes the "Lie for me" choices')}
@@ -2977,7 +3010,7 @@ async function AdminPanel(locked){
       const lines=['Who is ready to play?','Let the games begin!','Time for game night!'], tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       const res=await Voice.say(`${lines[Math.floor(Math.random()*lines.length)]} Testing at ${tm}.`,{...st,readAloud:true},{quiet:true});
       o.innerHTML=res.error?`<span class="err">Cloned voice failed: ${esc(res.error)}</span> · used the built-in voice`:(res.mode==='clone'?'<span class="ok">✓ Played in your cloned voice</span>':'<span class="ok">✓ Played the built-in voice</span>'); };
-    bvPanel($('#bvp'));
+    bvPanel($('#bvp')); showUsage();
     $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
     $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
       const id=uid(); fam[id]={t,a,d:[$('#fd1').value.trim(),$('#fd2').value.trim()].filter(Boolean),safe:$('#fsafe').checked}; await S.store.set(`${ROOT}/packs/family/${id}`,fam[id]); collect(); draw(); toast('Added'); };

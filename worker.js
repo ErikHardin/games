@@ -35,6 +35,8 @@ export default {
       if (path === '/tts' && req.method === 'GET') return await tts('Testing, testing. This is Hardin Games!', env, ctx, cors);
       if (path === '/question' && req.method === 'POST') return await question(req, env, cors);
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
+      if (path === '/usage' && req.method === 'POST') return await usage(req, env, cors);
+      if (path === '/quips' && req.method === 'POST') return await quips(req, env, cors);
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
       if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
@@ -141,6 +143,54 @@ async function admin(req, env, cors) {
   }
   if (body.pin) await new Promise(r => setTimeout(r, 1000));   // slow down guessing
   return json({ ok: false, error: 'Wrong code' }, cors, 401);
+}
+
+async function tokenOk(env, token) {
+  if (!env.ADMIN_PIN) return true;
+  if (typeof token !== 'string' || !token.includes('.')) return false;
+  const [exp, sig] = token.split('.'); return Number(exp) > Date.now() && same(sig, await sign(env.ADMIN_PIN, exp));
+}
+// ---- Admin: ElevenLabs credits used this month (key needs User -> Read) ----
+async function usage(req, env, cors) {
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  if (!(await tokenOk(env, body.token))) return json({ error: 'Signed out' }, cors, 401);
+  if (!env.ELEVENLABS_API_KEY) return json({ error: 'ELEVENLABS_API_KEY is not set in Cloudflare' }, cors, 500);
+  const r = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': env.ELEVENLABS_API_KEY } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return json({ error: r.status === 401 ? 'The ElevenLabs key needs the User → Read permission' : ((j.detail && (j.detail.message || j.detail.status)) || `ElevenLabs ${r.status}`) }, cors, 502);
+  return json({ used: j.character_count, limit: j.character_limit, reset: j.next_character_count_reset_unix, tier: j.tier }, cors);
+}
+// ---- Fibs chatty host: a short joke for each lie and the truth, written while people vote ----
+async function quips(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { question = '', truth = '', lies = [], family = false } = await req.json();
+  if (!question || !truth || question.length > 300 || !Array.isArray(lies) || lies.length > 12) return json({ error: 'bad request' }, cors, 400);
+  const list = lies.map((l, i) => `${i + 1}. "${String(l.text).slice(0, 80)}"${l.by ? ` (written by ${String(l.by).slice(0, 20)})` : ' (a fake the game made up)'}`).join('\n');
+  const prompt = `You're the playful host of a family party game like Fibbage. Players invented fake answers to a fill-in-the-blank fact, then everyone voted on which answer was true.
+
+Fact: ${question.slice(0, 300)}
+Real answer: ${truth.slice(0, 80)}
+Fake answers:
+${list}
+
+Write one short, funny host comment (under 14 words) for EACH fake answer, and one for the real answer.
+- Playful teasing is fine; never mean, never about anyone's looks, age or intelligence. ${family ? 'Clean enough for kids.' : 'PG-13 at most.'}
+- You may use the writer's first name. Don't mention who voted for it (you don't know yet).
+- Make them varied: puns, mock outrage, fake admiration, a silly observation. No emoji, no hashtags.
+- For the real answer, react to how surprising or funny the true fact is.
+
+Respond with only JSON, no other text: {"lies":["comment for 1","comment for 2"],"truth":"comment for the real answer"}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502);
+  const txt = (j.content || []).map(c => c.text || '').join('').replace(/```(json)?/g, '');
+  const m = txt.match(/\{[\s\S]*\}/); let o = {}; try { o = JSON.parse(m ? m[0] : '{}'); } catch (e) {}
+  const clean = s => String(s || '').replace(/[\u{1F000}-\u{1FFFF}]/gu, '').trim().slice(0, 120);
+  return json({ lies: (o.lies || []).slice(0, lies.length).map(clean), truth: clean(o.truth) }, cors);
 }
 
 // ---- "Lie for me": believable wrong answers for one question ----
