@@ -2,6 +2,8 @@
 // Routes:
 //   POST /tts       { text }                         -> audio/mpeg in your cloned voice (ElevenLabs)
 //   POST /question  { count, topic, family, avoid }  -> { questions: [{ text, answer, decoys }] } (Claude)
+//   POST /song      { title, artist, family }        -> { id, dur, title, channel } (Song Snap: the real song on YouTube, with its length)
+//   POST /songs     { theme, count, family, avoid }  -> { songs: [{ title, artist, decoys: [{ title, artist }] }] } (Song Snap: AI song lists)
 //
 // Secrets / vars (wrangler secret put ...):
 //   ELEVENLABS_API_KEY, ELEVEN_VOICE_ID, ANTHROPIC_API_KEY, ADMIN_PIN (4-digit admin code), YOUTUBE_API_KEY (Mic Drop song search)
@@ -42,6 +44,8 @@ export default {
       if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
       if (path === '/yt' && req.method === 'POST') { const { q = '', family = false, trusted = false, channels } = await req.json(); return json({ results: await ytSearch(String(q).slice(0, 120), family, env, channels || trusted) }, cors); }
       if (path === '/surprise' && req.method === 'POST') return await surprise(req, env, cors);
+      if (path === '/song' && req.method === 'POST') return await songVideo(req, env, cors);
+      if (path === '/songs' && req.method === 'POST') return await songIdeas(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN, youtubeKey: !!env.YOUTUBE_API_KEY }, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, cors, 500);
@@ -409,4 +413,67 @@ Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]
     }
     return json(fallback || { song: songs[0], results: [] }, cors);
   } catch (e) { return json({ error: e.message, song: songs[0] }, cors, 500); }
+}
+
+// ---- Song Snap: find the original recording of a song (not karaoke), with its length ----
+const isoSecs = d => { const m = String(d || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
+function originalScore(x, artist) {
+  const t = (x.title || '').toLowerCase(), c = (x.channel || '').toLowerCase(), a = words(artist);
+  let s = 0;
+  if (/official (audio|music video|video|lyric video)/.test(t)) s += 3;
+  if (/ - topic$/.test(c) || /vevo/.test(c)) s += 4;
+  if (a.length && a.some(w => c.includes(w))) s += 3;
+  if (/\b(karaoke|instrumental|cover|live|reaction|tutorial|lesson|remix|piano|guitar|8d|slowed|sped up|nightcore|acoustic|mashup|parody|1 hour|10 hours|extended|bass boosted)\b/.test(t)) s -= 8;
+  return s;
+}
+async function songVideo(req, env, cors) {
+  if (!env.YOUTUBE_API_KEY) return json({ error: 'YOUTUBE_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { title = '', artist = '', family = false } = await req.json();
+  const t = String(title).slice(0, 80).trim(), a = String(artist).slice(0, 60).trim();
+  if (!t) return json({ error: 'No song title' }, cors, 400);
+  const key = 'https://hardin-games.cache/song/' + encodeURIComponent((t + ' ' + a).toLowerCase());
+  try { const c = await caches.default.match(key); if (c) return json(await c.json(), cors); } catch (e) {}
+  const list = (await ytRaw(`${t} ${a} official audio`, family, env, 10)).filter(x => relevant(t, x.title))
+    .map(x => ({ ...x, s: originalScore(x, a) })).filter(x => x.s > -3).sort((p, q) => (q.s - p.s) || (p.i - q.i)).slice(0, 6);
+  if (!list.length) return json({ error: 'Song not found' }, cors, 404);
+  const u = new URL('https://www.googleapis.com/youtube/v3/videos');
+  u.search = new URLSearchParams({ part: 'contentDetails,status', id: list.map(x => x.id).join(','), key: env.YOUTUBE_API_KEY }).toString();
+  const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
+  const info = {}; for (const v of (j.items || [])) info[v.id] = { dur: isoSecs(v.contentDetails && v.contentDetails.duration), embed: !(v.status && v.status.embeddable === false) };
+  const pick = list.find(x => info[x.id] && info[x.id].embed && info[x.id].dur >= 90 && info[x.id].dur <= 600) || list.find(x => !info[x.id] || info[x.id].embed);
+  if (!pick) return json({ error: 'No playable version' }, cors, 404);
+  const out = { id: pick.id, dur: (info[pick.id] || {}).dur || 0, title: pick.title, channel: pick.channel };
+  try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=2592000' } })); } catch (e) {}
+  return json(out, cors);
+}
+// ---- Song Snap: AI song lists for a theme, each with three believable wrong answers ----
+async function songIdeas(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
+  const { theme = 'Big hits', count = 8, family = false, avoid = [] } = await req.json();
+  const n = Math.min(Math.max(3, count | 0), 15);
+  const prompt = `Pick ${n} songs for a family party game called "Song Snap". The TV plays 10 seconds from the middle of a song and everyone picks the title from 4 choices.
+
+Theme: ${String(theme).slice(0, 80)}
+- Real, well-known songs that fit the theme and that most of the room would recognize from the chorus
+- Use the original artist and the exact official song title
+- For each song give 3 wrong answers: other real songs from the same era and style, so the choice is not obvious
+- ${family ? 'Clean, kid-friendly songs only.' : 'Keep it PG-13.'}
+${avoid.length ? `- Don't use any of these:\n${avoid.slice(0, 40).map(t => '  * ' + String(t).slice(0, 80)).join('\n')}` : ''}
+
+Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"...","decoys":[{"title":"...","artist":"..."}]}]}`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return json({ error: (j.error && j.error.message) || `HTTP ${r.status}` }, cors, 502);
+  const text = (j.content || []).map(c => c.text || '').join('');
+  const m = text.match(/\{[\s\S]*\}/);
+  let songs = [];
+  try { songs = JSON.parse(m ? m[0] : '{}').songs || []; } catch (e) { return json({ error: 'AI reply was not valid JSON' }, cors, 502); }
+  const clean = s => s && s.title ? { title: String(s.title).slice(0, 80), artist: String(s.artist || '').slice(0, 60) } : null;
+  songs = songs.map(s => { const a = clean(s); if (!a) return null; const d = (s.decoys || []).map(clean).filter(x => x && x.title.toLowerCase() !== a.title.toLowerCase()).slice(0, 3);
+    return d.length === 3 ? { ...a, decoys: d } : null; }).filter(Boolean).slice(0, n);
+  return json({ songs }, cors);
 }
