@@ -2,8 +2,8 @@
 // Routes:
 //   POST /tts       { text }                         -> audio/mpeg in your cloned voice (ElevenLabs)
 //   POST /question  { count, topic, family, avoid }  -> { questions: [{ text, answer, decoys }] } (Claude)
-//   POST /song      { title, artist, family }        -> { id, dur, title, channel } (Earworm: the real song on YouTube, with its length)
-//   POST /songs     { theme, count, family, avoid }  -> { songs: [{ title, artist, decoys: [{ title, artist }] }] } (Earworm: AI song lists)
+//   POST /song      { title, artist, family }        -> { id, dur, title, channel } (Song Snap: the real song on YouTube, with its length)
+//   POST /songs     { theme, count, family, avoid }  -> { songs: [{ title, artist, decoys: [{ title, artist }] }] } (Song Snap: AI song lists)
 //
 // Secrets / vars (wrangler secret put ...):
 //   ELEVENLABS_API_KEY, ELEVEN_VOICE_ID, ANTHROPIC_API_KEY, ADMIN_PIN (4-digit admin code), YOUTUBE_API_KEY (Mic Drop song search)
@@ -415,7 +415,7 @@ Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]
   } catch (e) { return json({ error: e.message, song: songs[0] }, cors, 500); }
 }
 
-// ---- Earworm: find the original recording of a song (not karaoke), with its length ----
+// ---- Song Snap: find the original recording of a song (not karaoke), with its length ----
 const isoSecs = d => { const m = String(d || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
 function originalScore(x, artist) {
   const t = (x.title || '').toLowerCase(), c = (x.channel || '').toLowerCase(), a = words(artist);
@@ -446,12 +446,12 @@ async function songVideo(req, env, cors) {
   try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=2592000' } })); } catch (e) {}
   return json(out, cors);
 }
-// ---- Earworm: AI song lists for a theme, each with three believable wrong answers ----
+// ---- Song Snap: AI song lists for a theme, each with three believable wrong answers ----
 async function songIdeas(req, env, cors) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY is not set in Cloudflare' }, cors, 500);
   const { theme = 'Big hits', count = 8, family = false, avoid = [] } = await req.json();
   const n = Math.min(Math.max(3, count | 0), 15);
-  const prompt = `Pick ${n} songs for a family party game called "Earworm". The TV plays 10 seconds from the middle of a song and everyone picks the title from 4 choices.
+  const prompt = `Pick ${n} songs for a family party game called "Song Snap". The TV plays 10 seconds from the middle of a song and everyone picks the title from 4 choices.
 
 Theme: ${String(theme).slice(0, 80)}
 - Real, well-known songs that fit the theme and that most of the room would recognize from the chorus

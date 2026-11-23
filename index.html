@@ -429,7 +429,7 @@ button.bingo:disabled{opacity:.4}
 .ocard{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 14px;background:var(--card2);color:var(--text);border:2px dashed var(--line);box-shadow:none;text-transform:none;font-size:18px;min-height:130px;justify-content:center}
 .ocard .em{font-size:36px}.ocard.open{border-style:solid;border-color:var(--gmOdd)}.ocard.imp{border-color:var(--pink)}.ocard .ow{font-family:Bungee;font-size:32px;color:var(--gmOdd);font-weight:400}
 .olist{display:flex;flex-direction:column;gap:6px}.olist div{display:flex;align-items:center;gap:8px;background:var(--t2);border-radius:12px;padding:6px 10px;font-size:15px}.olist .av{width:26px;height:26px;font-size:13px}.olist span{margin-left:auto;font-family:Bungee;color:var(--gold)}
-/* Earworm */
+/* Song Snap */
 .g-song{border-color:color-mix(in srgb,var(--gmSong) 55%,transparent)}.g-song h2{color:var(--gmSong)}
 .svid{position:absolute;inset:0;background:#000;opacity:0;visibility:hidden;transition:opacity .4s,inset .5s,border-radius .5s;overflow:hidden}
 .svid.on{opacity:1;visibility:visible}
@@ -855,7 +855,7 @@ function Landing(){
         <div class="gbtns"><button data-a="host" data-g="bingo">Host</button><button class="alt" data-a="demo" data-g="bingo">Try with bots</button></div></div>
       <div class="gamecard g g-odd"><div class="gtop"><span class="gi">🕵️</span><h2>Odd One Out</h2></div><div class="muted">Everyone knows the word but one. Find them.</div><div class="gmeta">3–8 players · about 15 min</div>
         <div class="gbtns"><button data-a="host" data-g="odd">Host</button><button class="alt" data-a="demo" data-g="odd">Try with bots</button></div></div>
-      <div class="gamecard g g-song"><div class="gtop"><span class="gi">🎧</span><h2>Earworm</h2></div><div class="muted">Hear a few seconds. Name that song.</div><div class="gmeta">2–8 players · about 15 min</div>
+      <div class="gamecard g g-song"><div class="gtop"><span class="gi">🎧</span><h2>Song Snap</h2></div><div class="muted">Hear a few seconds. Snap up the song.</div><div class="gmeta">2–8 players · about 15 min</div>
         <div class="gbtns"><button data-a="host" data-g="song">Host</button><button class="alt" data-a="demo" data-g="song">Try with bots</button></div></div>
     </div>
     <div class="gamecard"><div class="muted">Joining a game?</div>
@@ -1563,7 +1563,7 @@ function Player(code, mount, fixedPid){
         return `<div class="bigmsg"><div class="em">${rank===1?'🏆':'🎈'}</div>You finished #${rank}<b style="font-family:Bungee;color:var(--gold)">${me.score||0} pts</b>
           ${mineA.length?`<div class="awlist">${mineA.map(x=>`<div>${x.icon} <b>${x.title}</b></div>`).join('')}</div>`:''}</div>`; }
     } return `<div class="bigmsg"><div class="em">📺</div>Watch the TV!</div>`; }
-  /* ---- Earworm phone ---- */
+  /* ---- Song Snap phone ---- */
   const SGCLICK=new Set(['sans']);
   async function songClick(k,b,r){
     if(k==='sans'){ if(r.phase!=='listen'||!r.clipAt||r.paused||(r.sanswers||{})[pid]) return; beep(660); return upd({[`sanswers/${pid}`]:{c:Number(b.dataset.c),t:store.now()}}); } }
@@ -3218,8 +3218,8 @@ function OddHost(code, mount, opts){
   }
 }
 
-/* ============ EARWORM (hear a clip from the middle of a song, pick the title) ============ */
-GNAMES.song = 'Earworm';
+/* ============ SONG SNAP (hear a clip from the middle of a song, pick the title) ============ */
+GNAMES.song = 'Song Snap';
 /* "Title|Artist" lists. Wrong answers come from the same theme. */
 const STHEMES = {
   s80:['\'80s Hits','Billie Jean|Michael Jackson;Don\'t Stop Believin\'|Journey;Livin\' on a Prayer|Bon Jovi;Girls Just Want to Have Fun|Cyndi Lauper;Take On Me|a-ha;Sweet Child O\' Mine|Guns N\' Roses;Like a Prayer|Madonna;Eye of the Tiger|Survivor;Jump|Van Halen;Footloose|Kenny Loggins;Walk Like an Egyptian|The Bangles;Total Eclipse of the Heart|Bonnie Tyler;I Wanna Dance with Somebody|Whitney Houston;Africa|Toto;Never Gonna Give You Up|Rick Astley;Don\'t You (Forget About Me)|Simple Minds;Beat It|Michael Jackson;Wake Me Up Before You Go-Go|Wham!'],
@@ -3366,7 +3366,7 @@ function SongHost(code, mount, opts){
   /* ---- engine ---- */
   function startGame(){ const r=R; if(!r||r.phase!=='lobby') return;
     if(active(r).length<r.settings.minPlayers){ toast(`Need at least ${r.settings.minPlayers} players`); return; }
-    if(!CONFIG.WORKER_URL){ toast('Earworm needs the Worker (WORKER_URL) to find songs'); return; }
+    if(!CONFIG.WORKER_URL){ toast('Song Snap needs the Worker (WORKER_URL) to find songs'); return; }
     if(!once('start'+(r.games||0))) return; if(!yt) ytInit();
     const st=r.settings, n=now(), all=shuffle(songThemes(st)), themes=[];
     for(let i=0;i<st.sRounds;i++) themes.push(all[i%all.length]);
@@ -3430,7 +3430,7 @@ function SongHost(code, mount, opts){
     if(unlocked) maybeSpeak(r); }
   function maybeSpeak(r){ const s=speechFor(r); if(!s||s[0]===spoken) return; spoken=s[0]; if(s[1]) Voice.say(s[1], r.settings); }
   function speechFor(r){ const st=r.settings, th=(r.stheme&&r.stheme.name)||''; switch(r.phase){
-      case 'intro': return ['i'+r.games+'_'+r.round, `${r.round===1?"Let's play Earworm! ":''}${r.round===st.sRounds&&st.sRounds>1?'Last round':`Round ${WORDS[r.round]||r.round}`}: ${th.replace(/^'/,'the ')}!`];
+      case 'intro': return ['i'+r.games+'_'+r.round, `${r.round===1?"Let's play Song Snap! ":''}${r.round===st.sRounds&&st.sRounds>1?'Last round':`Round ${WORDS[r.round]||r.round}`}: ${th.replace(/^'/,'the ')}!`];
       case 'final': { const top=players(r).sort((a,b)=>(b[1].score||0)-(a[1].score||0))[0]; return ['f'+r.games, top?`And the winner is… ${top[1].name}!`:'']; }
     } return null; }
 
@@ -3439,7 +3439,7 @@ function SongHost(code, mount, opts){
     if(el.textContent!==String(s)) el.textContent=s; el.classList.toggle('low',s<=5&&!r.paused);
     if(s<=3 && s>0 && s!==lastTick && !r.paused && unlocked && r.phase==='listen' && clipDone===songK(r)) Sound.sfx('tick'); lastTick=s; }
   function top(r){ const n=(r.slist||[]).length, lbl=['lobby','final'].includes(r.phase)?'':['listen','reveal'].includes(r.phase)&&n?`SONG ${(r.si||0)+1} OF ${n} · ${esc(((r.stheme||{}).name||'').toUpperCase())}`:`ROUND ${r.round} OF ${r.settings.sRounds}`;
-    return `<div class="tvtop"><span><b>HARDIN GAMES</b> · EARWORM</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
+    return `<div class="tvtop"><span><b>HARDIN GAMES</b> · SONG SNAP</span><span>${lbl}</span><span>CODE <b>${esc(r.code)}</b></span></div>`; }
   function tiles(r, mark){ return `<div class="strip">${players(r).map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${mark(id)?'<span class="chk">✓</span>':''}${avatar(p)}<span class="nm">${esc(p.name)}</span></div>`).join('')}</div>`; }
   function ctl(r){ if(['lobby','final'].includes(r.phase)) return ''; return `<div class="hostctl"><button class="alt" data-act="${r.paused?'resume':'pause'}">${r.paused?'Resume':'Pause'}</button><button class="alt" data-act="skip">Skip</button></div>`; }
   const opt=(c,i,cls='',extra='')=>`<div class="topt ${cls}" style="--c:${SCOL[i]}"><b>${SLET[i]}</b><span>${esc(c.title)}<i class="sart">${esc(c.artist||'')}</i></span>${extra}</div>`;
@@ -3449,7 +3449,7 @@ function SongHost(code, mount, opts){
       case 'lobby': { const url=joinUrl(r.code), ps=players(r), max=st.maxPlayers, th=songThemes(st);
         const tl=ps.map(([id,p])=>`<div class="tile ${p.on===false?'off':''}">${avatar(p)}<span class="nm">${esc(p.name)}${p.bot?' 🤖':''}${r.vip===id?' ⭐':''}</span></div>`).join('')+
           Array.from({length:Math.max(0,Math.min(8,max)-ps.length)},()=>'<div class="tile empty">open</div>').join('');
-        body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmSong)">EARWORM</div>
+        body=`<div class="lobby"><div><div class="logo">HARDIN<span>GAMES</span></div><div class="gname" style="color:var(--gmSong)">SONG SNAP</div>
           <div class="codebox">${url?'<div class="qr" id="qr"></div>':''}<div><div class="lbl">JOIN ON YOUR PHONE WITH CODE</div><div class="code">${esc(r.code)}</div>${url?`<div class="url">${esc(url.replace(/^https?:\/\//,''))}</div>`:''}</div></div></div>
           <div style="display:flex;flex-direction:column;gap:2cqw"><div class="tiles">${tl}</div>
           <div class="note">${ps.length}/${max} players · ${st.sClip}-second clips · ${th.length} ${th.length===1?'theme':'themes'}${st.audience==='family'?' · Family mode':''}</div>
@@ -3631,7 +3631,7 @@ async function AdminPanel(locked){
     ${sec('odd','🕵️ Odd One Out',`${num('oRounds','Rounds (one secret word each)',1,10)}${num('oLaps','Clues per player each round',1,3)}${num('oClueTime','Seconds to give a clue',10,90,5)}${num('oVoteTime','Seconds to vote',15,120,5)}${num('oStealTime','Seconds for the odd one out to guess the word',10,60,5)}
       <h4>Scoring</h4>${num('oCatch','Points for voting for the odd one out',0,5000,50)}${num('oEscape','Points for the odd one out if they get away',0,5000,50)}${num('oSteal','Points for the odd one out if caught but guesses the word (0 = off)',0,5000,50)}
       <h4>Words</h4><div class="small muted">${OCATS.length} built-in categories. Add your own below, one per line, at least 4 words each.</div><label class="small muted">Your own lists</label><textarea data-k="oWords" rows="4" placeholder="Family Pets: Biscuit, Rex, Goldie, Mittens, Pickles&#10;Our Vacations: Disney, Lake House, Grand Canyon, Cruise">${esc(st.oWords)}</textarea>${chk('oMine','Use my own lists about half the time')}`)}
-    ${sec('song','🎧 Earworm',`${num('sRounds','Rounds (one theme each)',1,6)}${num('sPerRound','Songs per round',2,10)}${num('sClip','Seconds of each song to play',3,30)}${num('sExtra','Extra seconds to answer after the clip stops',0,20)}
+    ${sec('song','🎧 Song Snap',`${num('sRounds','Rounds (one theme each)',1,6)}${num('sPerRound','Songs per round',2,10)}${num('sClip','Seconds of each song to play',3,30)}${num('sExtra','Extra seconds to answer after the clip stops',0,20)}
       ${num('sStart','Where the clip starts (% into the song)',10,80,5)}${num('sRevealTime','Seconds the answer shows (the song keeps playing)',4,20)}${sel('sVideo','Video while guessing',[['blur','Blurred (colors only)'],['hide','Hidden (music only)'],['show','Show it (easier)']])}
       <h4>Scoring</h4>${num('sPoints','Points for a right answer (half if it comes in at the buzzer)',0,5000,50)}
       <h4>Themes</h4>${Object.entries(SBANK).map(([k,t])=>`<div class="fld"><label>${esc(t.name)} <span class="muted small">(${t.songs.length})</span></label><input type="checkbox" data-stheme="${k}" ${(st.sOff||[]).includes(k)?'':'checked'}></div>`).join('')}
