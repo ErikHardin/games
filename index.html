@@ -556,7 +556,20 @@ function applyTheme(t){ t=THEMES[t]?t:'sunset'; const h=document.documentElement
 const hash = s => { let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h); };
 const norm = s => String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\b(a|an|the)\b/g,' ').replace(/\s+/g,' ').trim();
 function lev(a,b){ const m=a.length,n=b.length; if(Math.abs(m-n)>1) return 2; const d=Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[m][n]; }
-function isTruth(text,q){ const n=norm(text); if(!n) return false; return [q.a,...(q.alt||[])].map(norm).some(x => x===n || (x.length>=5 && lev(x,n)<=1)); }
+/* Is a typed lie secretly the real answer? Catches plurals, "the", abbreviations (TV = television) and initials */
+const ABBR={tv:'television',telly:'television',usa:'united states',us:'united states',america:'united states',uk:'united kingdom',britain:'united kingdom',nyc:'new york city',ny:'new york',la:'los angeles',dc:'washington dc',
+  dr:'doctor',mr:'mister',mrs:'missus',st:'saint',mt:'mount',ft:'fort',ave:'avenue',pc:'computer',ufo:'unidentified flying object',diy:'do it yourself',atm:'cash machine',ok:'okay',
+  phone:'telephone',fridge:'refrigerator',bike:'bicycle',car:'automobile',auto:'automobile',plane:'airplane',aeroplane:'airplane',tummy:'stomach',mom:'mother',mum:'mother',dad:'father',kid:'child',
+  nfl:'national football league',nba:'national basketball association',nasa:'national aeronautics and space administration',fbi:'federal bureau of investigation',cia:'central intelligence agency'};
+const tForms=x=>{ const n=norm(x), e=n.split(' ').map(w=>ABBR[w]||w).join(' '), sg=t=>t.split(' ').map(w=>w.length>3&&w.endsWith('s')&&!w.endsWith('ss')?w.slice(0,-1):w).join(' ');
+  return [...new Set([n,e,sg(n),sg(e),n.replace(/ /g,''),e.replace(/ /g,'')])].filter(Boolean); };
+const initials=t=>t.split(' ').filter(Boolean).map(w=>w[0]).join('');
+function isTruth(text,q){ const G=tForms(text); if(!G.length) return false; const T=[q.a,...(q.alt||[])].flatMap(tForms);
+  return T.some(t=>G.some(g=>g===t || (t.length>=5 && lev(t,g)<=1) || (!g.includes(' ')&&g.length>=2&&t.includes(' ')&&g===initials(t)) || (!t.includes(' ')&&t.length>=2&&g.includes(' ')&&t===initials(g)))); }
+/* second opinion from the AI: does this lie mean the same thing as the answer? (gives up after 3 seconds) */
+async function aiSame(q,text){ if(!CONFIG.WORKER_URL) return false; const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),3000);
+  try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/same',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q.t,answer:q.a,alts:q.alt||[],guess:text})});
+    const j=await r.json(); return !!(r.ok&&j.same); }catch(e){ return false; } finally{ clearTimeout(to); } }
 function isNaughty(text){ const w=norm(text).split(' '); return w.some(x=>BAD_WORDS.includes(x)); }
 const fixBlank = t => { t=String(t||'').trim(); return /_{3,}/.test(t) ? t.replace(/_{3,}/g,'_____') : null; };
 const showQ = t => esc(t).replace(/_____/g,'<span class="blank"></span>');
@@ -795,7 +808,7 @@ async function fetchAI(st, count){
     const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/question',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({count, topic:st.aiTopic||'', family:st.audience==='family', avoid:LS.get('hg_used',[]).slice(-25)})});
     const j=await r.json(); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
-    return (j.questions||[]).map(x=>({t:fixBlank(x.text), a:String(x.answer||'').trim(), d:(x.decoys||[]).slice(0,3), src:'ai'})).filter(x=>x.t&&x.a&&!numAns(x.a));
+    return (j.questions||[]).map(x=>({t:fixBlank(x.text), a:String(x.answer||'').trim(), alt:(x.alt||[]).map(String).slice(0,6), d:(x.decoys||[]).slice(0,3), src:'ai'})).filter(x=>x.t&&x.a&&!numAns(x.a));
   } finally { clearTimeout(to); }
 }
 
@@ -1241,7 +1254,10 @@ function Player(code, mount, fixedPid){
       if(!t) msg='Type a lie first!'; else if(t.length>40) msg='Keep it under 40 characters.';
       else if(isTruth(t,r.q)) msg="That's actually the truth! Try a different lie.";
       else if(r.settings.audience==='family'&&isNaughty(t)) msg="Let's keep it family friendly!";
-      else { beep(); await upd({[`lies/${pid}`]:t,[`auto/${pid}`]:null}); return; } return render(); }
+      else { const bt=b, was=bt.textContent; bt.disabled=true; bt.textContent='Checking…'; const same=await aiSame(r.q,t); bt.disabled=false; bt.textContent=was;
+        if(same){ msg="That's actually the truth! Try a different lie."; return render(); }
+        if(!R||R.phase!=='lie'||(R.lies||{})[pid]) return render();
+        beep(); await upd({[`lies/${pid}`]:t,[`auto/${pid}`]:null}); return; } return render(); }
     if(k==='vote'){ if(!(r.votes||{})[pid]){ beep(660); upd({[`votes/${pid}`]:b.dataset.o}); } return; }
     if(k==='like'){ const cur=((r.likes||{})[pid]||{})[b.dataset.o]; beep(1200); return upd({[`likes/${pid}/${b.dataset.o}`]:cur?null:true}); }
     if(k==='react'){ const n=Date.now(), em=b.dataset.e; if(n-lastReact<600||!REACTS.includes(em)) return; lastReact=n;

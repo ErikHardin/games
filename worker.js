@@ -39,6 +39,7 @@ export default {
       if (path === '/admin' && req.method === 'POST') return await admin(req, env, cors);
       if (path === '/usage' && req.method === 'POST') return await usage(req, env, cors);
       if (path === '/quips' && req.method === 'POST') return await quips(req, env, cors);
+      if (path === '/same' && req.method === 'POST') return await sameAnswer(req, env, cors);
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
       if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
@@ -99,12 +100,13 @@ Rules:
 - The real answer is 1-4 words and hard to guess, so fake answers can compete with it.
 - The real answer is WORDS: a name, thing, place, word or phrase. Never a number, year, date, amount, measurement or percentage. Decoys follow the same rule.
 - Give 2 decoys: plausible-sounding answers that are definitely FALSE.
+- Give "alt": other ways to write the SAME real answer (abbreviations, synonyms, spelled-out forms, common misspellings), e.g. TV -> television, telly. Empty list if none.
 - ${family ? 'Family friendly, fine for kids 8 and up.' : 'Keep it PG-13.'}
 - ${topic ? `Topic: ${topic}.` : 'Mix of topics: history, animals, food, science, pop culture, places.'}
 ${avoid.length ? `- Do not repeat these facts:\n${avoid.slice(0, 25).map(t => '  * ' + t).join('\n')}` : ''}
 
 Respond with only JSON, no other text:
-{"questions":[{"text":"...","answer":"...","decoys":["...","..."]}]}`;
+{"questions":[{"text":"...","answer":"...","alt":["..."],"decoys":["...","..."]}]}`;
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -119,7 +121,7 @@ Respond with only JSON, no other text:
   const data = JSON.parse(m[0]);
   const questions = (data.questions || [])
     .filter(q => q && /_{3,}/.test(q.text || '') && q.answer)
-    .map(q => ({ text: q.text, answer: String(q.answer), decoys: (q.decoys || []).map(String).slice(0, 3) }));
+    .map(q => ({ text: q.text, answer: String(q.answer), alt: (q.alt || []).map(String).slice(0, 6), decoys: (q.decoys || []).map(String).slice(0, 3) }));
   return json({ questions }, cors);
 }
 
@@ -153,6 +155,27 @@ async function tokenOk(env, token) {
   if (!env.ADMIN_PIN) return true;
   if (typeof token !== 'string' || !token.includes('.')) return false;
   const [exp, sig] = token.split('.'); return Number(exp) > Date.now() && same(sig, await sign(env.ADMIN_PIN, exp));
+}
+// ---- Fibs: is a player's lie secretly the real answer? (TV vs television) ----
+async function sameAnswer(req, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return json({ same: false }, cors);
+  const { question = '', answer = '', alts = [], guess = '' } = await req.json();
+  if (!answer || !guess || guess.length > 60 || question.length > 300) return json({ same: false }, cors);
+  const prompt = `Fill-in-the-blank fact: ${question.slice(0, 300)}
+Real answer: "${String(answer).slice(0, 80)}"${alts.length ? ` (also accepted: ${alts.slice(0, 6).map(a => '"' + String(a).slice(0, 40) + '"').join(', ')})` : ''}
+A player typed: "${guess.slice(0, 60)}"
+
+Does the player's answer mean the same thing as the real answer, so that it would count as correct? Count synonyms, abbreviations, alternate spellings, singular/plural and minor wording differences as the same. Something merely related, more specific, or in the same category is NOT the same.
+Reply with only YES or NO.`;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: env.FAKES_MODEL || 'claude-haiku-5-5', max_tokens: 5, messages: [{ role: 'user', content: prompt }] })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return json({ same: false }, cors);
+  const txt = (j.content || []).map(c => c.text || '').join('').trim().toUpperCase();
+  return json({ same: txt.startsWith('YES') }, cors);
 }
 // ---- Admin: ElevenLabs credits used this month (key needs User -> Read) ----
 async function usage(req, env, cors) {
