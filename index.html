@@ -118,6 +118,8 @@ input:focus,select:focus{border-color:var(--teal)}
 .pod{display:flex;flex-direction:column;align-items:center;gap:1cqw;font-size:2cqw}
 .pod .av{width:7cqw;height:7cqw;font-size:3.4cqw}
 .pod .blk{width:14cqw;border-radius:1cqw 1cqw 0 0;background:var(--card2);display:flex;align-items:flex-start;justify-content:center;padding-top:1cqw;font-family:Bungee;font-size:3.4cqw;color:var(--gold)}
+.spkov{position:absolute;inset:0;z-index:4;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
+.spkov .em{font-size:72px}.spkov .big{font-family:Bungee;font-size:40px;color:var(--gold)}.spkov button{width:auto;padding:12px 24px}
 .tap{position:absolute;inset:0;background:var(--overlay);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2cqw;z-index:5;cursor:pointer}
 .tap .logo{font-size:7cqw}
 .tap button{font-size:2.4cqw;padding:1.4cqw 3.4cqw}
@@ -590,6 +592,22 @@ function musicFor(r,map){ if(!Sound.ctx) return; Sound.apply(r.settings); const 
   if(tr==='off') return Sound.setMusicLevel(0);
   Sound.setMusicLevel(tr==='reveal'?0.85:(r.game==='mic'&&r.phase==='pick'?0.6:1)); Sound.setTrack(tr);
   Sound.deadline=(tr==='think'&&r.endsAt&&!r.paused)?Date.now()+(r.endsAt-S.store.now()):null; }
+/* Speaker mode: another device plays the sound; the TV goes quiet while it's connected */
+const spkOn=r=>!!(r&&r.speaker&&S.store.now()-(r.speaker.at||0)<9000);
+function tvMute(y,spk){ if(spk) return; try{ const m=!!window.HG_MUTE; if(m&&!y.isMuted()) y.mute(); else if(!m&&y.isMuted()) y.unMute(); }catch(e){} }
+function speakerWatch(code){ let rr=null; const un=S.store.on(roomPath(code),r=>{ rr=r; });
+  const iv=setInterval(()=>{ const m=spkOn(rr); if(m!==!!window.HG_MUTE){ window.HG_MUTE=m; Sound.setMute(m); if(Voice.el) Voice.el.muted=m; if(m&&window.speechSynthesis) speechSynthesis.cancel(); } },1000);
+  CLEAN.push(un,()=>clearInterval(iv),()=>{ window.HG_MUTE=false; Sound.setMute(false); if(Voice.el) Voice.el.muted=false; }); }
+function speakerRun(code, mount){ const P=roomPath(code), beat=()=>S.store.update(P,{speaker:{at:S.store.now()}}).catch(()=>{});
+  const t=$('.tap',mount); if(t){ const b=$('button',t), n=$('.note',t); if(b) b.textContent='Start the speaker'; if(n) n.textContent='Room '+code+' · plays the game\'s sound here'; }
+  const ov=document.createElement('div'); ov.className='spkov'; ov.innerHTML=`<div class="em">🔊</div><div class="big">SPEAKER</div><div class="muted">Room <b>${esc(code)}</b> · playing the game's sound here. Keep this screen open and the volume up.</div><button class="alt" id="spkstop">Stop speaker</button>`;
+  mount.appendChild(ov); $('#spkstop',ov).onclick=e=>{ e.stopPropagation(); nav({admin:1}); };
+  beat(); const iv=setInterval(beat,3000);
+  CLEAN.push(()=>clearInterval(iv),()=>{ S.store.update(P,{speaker:null}).catch(()=>{}); }); }
+async function SpeakerGate(code){ code=String(code||'').toUpperCase().slice(0,6);
+  if(CONFIG.WORKER_URL){ let res={}; try{ const tok=LS.get('hg_admin_token',''); res=await adminCheck(tok?{token:tok}:{}); }catch(e){}
+    if(!res.open&&!res.ok){ toast('Unlock Admin first'); return nav({admin:1},true); } }
+  return HostAny(code, app, {speaker:true}); }
 const voiceTag=st=>!st.readAloud?' · 🔇 Voice off':st.voice==='clone'?' · 🎙️ Your voice':' · 🤖 Built-in voice';
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
 function patchHTML(el, html){
@@ -669,7 +687,8 @@ const Sound = {
     this.musicGain=c.createGain(); this.musicGain.connect(this.master); this.sfxGain=c.createGain(); this.sfxGain.connect(this.master);
     const b=c.createBuffer(1,c.sampleRate*0.5,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; this.noise=b;
     this.apply(st); c.resume && c.resume(); },
-  apply(st){ this.st=st; if(!this.ctx) return; this.master.gain.value=st.volume??0.7; this.sfxGain.gain.value=st.sfx?0.9:0; this.setMusicLevel(this.level); if(st.music) this.startMusic(); else this.stopMusic(); },
+  muted:false, setMute(on){ this.muted=on; if(this.master) this.master.gain.value=on?0:(this.st&&this.st.volume)??1; },
+  apply(st){ this.st=st; if(!this.ctx) return; this.master.gain.value=this.muted?0:st.volume??0.7; this.sfxGain.gain.value=st.sfx?0.9:0; this.setMusicLevel(this.level); if(st.music) this.startMusic(); else this.stopMusic(); },
   setMusicLevel(l){ this.level=l; if(!this.ctx) return; const v=(this.st&&this.st.music?(this.st.musicVol??0.7)*0.62:0)*l*(this.ducked?0.4:1); this.musicGain.gain.setTargetAtTime(v,this.ctx.currentTime,0.25); },
   duck(on){ this.ducked=on; this.setMusicLevel(this.level); },
   mtof:m=>440*Math.pow(2,(m-69)/12),
@@ -787,9 +806,9 @@ const Voice = {
     return new Promise(res=>{ const j={text,go:()=>{ this.active++; res(); }}; hi?this.queue.unshift(j):this.queue.push(j); }); },
   bump(text){ const i=this.queue.findIndex(j=>j.text===text); if(i>0) this.queue.unshift(...this.queue.splice(i,1)); },   /* a line that's needed now jumps the line */  /* at most 2 voice requests at a time */
   prefetch(text, st, hi){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text,hi).catch(()=>{}); },
-  play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
+  play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3); a.muted=!!window.HG_MUTE;
       a.onended=()=>res(true); a.onerror=()=>res(false); a.play().catch(()=>res(false)); setTimeout(()=>res(true),20000); }); },
-  async builtin(text, st, tok){ if(!window.speechSynthesis) return;
+  async builtin(text, st, tok){ if(!window.speechSynthesis||window.HG_MUTE) return;
     /* Reset before every line: stop any clip still playing and clear stuck speech (iOS can jam), then wait, since iOS drops speech that starts right after a cancel */
     try{ this.el && this.el.pause(); speechSynthesis.cancel(); speechSynthesis.resume(); }catch(e){} this.cancelled=false; await sleep(150);
     if(tok!==this.tok) return;
@@ -852,6 +871,7 @@ async function route(){
   if(!S.store || S.mode==='demo') await initStore(false);
   if(PARAMS.has('admin')) return Admin();
   if(PARAMS.has('host')) return HostAny(PARAMS.get('host')||null, app, {});
+  if(PARAMS.has('speaker')) return SpeakerGate(PARAMS.get('speaker'));
   const c=(PARAMS.get('play')||PARAMS.get('join')||'').toUpperCase();
   if(c) return Player(c, app, null);
   Landing();
@@ -939,7 +959,7 @@ function Host(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const multFor=r=> (r.settings.rounds>1 && r.round===r.settings.rounds) ? r.settings.finalMult : 1;
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
@@ -954,10 +974,10 @@ function Host(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
 
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
@@ -1119,7 +1139,7 @@ function Host(code, mount, opts){
     } return null; }
 
   /* Chatty host: the lie, whose it was, who fell for it; then the truth; then who's winning. Wording varies; AI jokes ride along. */
-  async function getQuips(r){ const st=r.settings; if(!chatty(r)||st.aiQuips===false||!CONFIG.WORKER_URL||!once('qp'+r.games+'_'+r.qi)) return;
+  async function getQuips(r){ const st=r.settings; if(SPK||!chatty(r)||st.aiQuips===false||!CONFIG.WORKER_URL||!once('qp'+r.games+'_'+r.qi)) return;
     const lies=(r.options||[]).filter(o=>!o.truth), qi=r.qi, g=r.games;
     try{ const res=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/quips',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({question:readQ(r.q.t),truth:r.q.a,family:st.audience==='family',lies:lies.map(o=>({text:o.text,by:o.house?'':listNames((o.owners||[]).map(p=>nm(r,p)))}))})});
@@ -1829,7 +1849,7 @@ function TriviaHost(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0, flagged=new Set(), flaggedList=[];
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const late=(r,p)=>(p.from||0)>(r.qi??-1);
@@ -1842,10 +1862,10 @@ function TriviaHost(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; if(r.phase==='loading') upd({phase:'lobby'}); Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); loadFlags(); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2076,7 +2096,7 @@ function DoodleHost(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0, galPage=-1;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const late=(r,p)=>(p.from||0)>(r.qi??-1);
@@ -2091,11 +2111,11 @@ function DoodleHost(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id));
-      if(r.phase==='intro' && !r.plist) loadPrompts(r); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+      if(!SPK && r.phase==='intro' && !r.plist) loadPrompts(r); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); if(R&&R.phase==='dgallery'&&galleryPage(R)!==galPage) render(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2347,7 +2367,7 @@ function MicHost(code, mount, opts){
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   let yt=null, ytReady=false, ytState=-1, ytLoaded='', turnKey='', applause=0, needPlay=false, loadAt=0, replayEnd=0, dark=false, forceCover=false;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
@@ -2371,7 +2391,7 @@ function MicHost(code, mount, opts){
   /* Video clock so the judges' phones can follow along */
   let clockAt=0;
   function pubClock(){ const r=R; if(!yt||!ytReady||!r||!r.song||!['sing','judge'].includes(r.phase)||forceCover) return;
-    if(r.settings.mPhoneVideo===false) return;
+    if(r.settings.mPhoneVideo===false && !spkOn(r)) return;
     let t=0; try{ t=yt.getCurrentTime()||0; }catch(e){} clockAt=Date.now();
     upd({mclock:{k:turnKey+'_'+r.song.id,t:Math.round(t*100)/100,at:now(),p:ytState===1?1:0}}); }
   /* Singer's phone mic: answer its WebRTC offer, keep the voice muted until it goes live */
@@ -2385,11 +2405,16 @@ function MicHost(code, mount, opts){
     try{ await pc.setRemoteDescription({type:'offer',sdp:o.offer}); await pc.setLocalDescription(await pc.createAnswer()); await iceDone(pc);
       if(hr.pc===pc) upd({'rtc/answer':pc.localDescription.sdp}); }
     catch(e){ console.warn('mic',e); if(hr.pc===pc) upd({'rtc/err':"The TV couldn't start the mic. Try again."}); } }
-  function rtcSync(r){ if(!window.RTCPeerConnection) return;
+  function rtcSync(r){ if(SPK||!window.RTCPeerConnection) return;
     const o=r.rtc, ok=r.settings.mMic!=='off' && ['pick','sing','stop'].includes(r.phase) && o && o.k===turnKey && o.offer && o.from===singer(r);
     if(ok && o.offer!==hr.offer) hrAnswer(r);
     else if(!ok && hr.pc && !(r.phase==='judge')) hrClose();
     if(hr.audio){ const live=micLiveH(r); hr.audio.muted=!live; if(live&&hr.audio.paused) hr.audio.play().catch(()=>{}); } }
+  let spkSeek=0;
+  function spkFollow(r){ if(!r.song||!['sing','judge'].includes(r.phase)) return; const c=r.mclock; if(!c||c.k!==turnKey+'_'+r.song.id) return;
+    try{ const t=c.p?c.t+Math.max(0,now()-c.at)/1000:c.t, cur=yt.getCurrentTime()||0;
+      if(c.p && ytState!==1 && ytState!==3) yt.playVideo(); if(!c.p && ytState===1) yt.pauseVideo();
+      if(Math.abs(cur-t)>0.8 && Date.now()-spkSeek>3000){ spkSeek=Date.now(); yt.seekTo(t,true); } }catch(e){} }
   function syncVideo(r){
     const show=['sing','stop','judge'].includes(r.phase) && r.song && okVid(r.song.id);
     const bl=blurMode(r), off=(dark||forceCover||r.phase==='stop') && r.phase!=='judge';
@@ -2405,7 +2430,7 @@ function MicHost(code, mount, opts){
       if(r.phase==='judge'){ if(r.paused){ yt.pauseVideo(); return; }
         if(replayEnd!==r.stopAt){ replayEnd=r.stopAt; yt.seekTo(Math.max(0,(r.stopAt||0)-(r.settings.mDark||0)-3),true); yt.playVideo(); setTimeout(pubClock,300); } }
     }catch(e){ console.warn('video',e); } }
-  function videoTick(r){ if(!yt||!ytReady||!r) return;
+  function videoTick(r){ if(!yt||!ytReady||!r) return; tvMute(yt,SPK); if(SPK) spkFollow(r);
     try{
       if(r.phase==='sing' && !r.paused){
         if(ytState!==1 && loadAt && Date.now()-loadAt>4000 && !needPlay){ needPlay=true; render(r); }
@@ -2424,13 +2449,13 @@ function MicHost(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     const tk=r.games+'_'+r.round+'_'+r.mi; if(tk!==turnKey){ turnKey=tk; applause=0; needPlay=false; replayEnd=0; dark=false; forceCover=false; }
     if(r.phase!=='sing'){ dark=false; forceCover=false; }
     if(hr.k && hr.k!==turnKey) hrClose();
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); syncVideo(r); rtcSync(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); videoTick(R); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); videoTick(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; hrClose(); try{ yt&&yt.destroy(); }catch(e){} });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2636,7 +2661,7 @@ function WhoHost(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
@@ -2653,11 +2678,11 @@ function WhoHost(code, mount, opts){
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
-    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); if(r.phase==='intro' && !r.plist) loadPrompts(r); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); if(!SPK && r.phase==='intro' && !r.plist) loadPrompts(r); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -2837,7 +2862,7 @@ function BingoHost(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0, nextNum=null, alertIx=0, alertAt=0;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
@@ -2850,10 +2875,10 @@ function BingoHost(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     claims(r); effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -3044,7 +3069,7 @@ function OddHost(code, mount, opts){
   const stage=$('.stage',mount), fx=$('.fx',mount), tap=$('.tap',mount);
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const nm=(r,id)=>(r.players&&r.players[id]&&r.players[id].name)||'Someone';
@@ -3060,10 +3085,10 @@ function OddHost(code, mount, opts){
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
     if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -3324,7 +3349,7 @@ function SongHost(code, mount, opts){
   let R=null, first=true, cmdSeen=null, spoken='', lastCounts=null, lastTick=-1, done=new Set(), botMark=new Set(), unlocked=false, seenR=new Set(), lastClean=0;
   let yt=null, ytReady=false, ytState=-1, ytLoaded='', loadAt=0, needPlay=false, clipDone='';
   const once=k=>{ if(done.has(k)) return false; done.add(k); return true; };
-  const upd=patch=>store.update(P,clone(patch));
+  const SPK=!!(opts&&opts.speaker), upd=patch=>SPK?Promise.resolve():store.update(P,clone(patch));   /* a speaker device only listens */
   const now=()=>store.now();
   const players=r=>Object.entries(r.players||{}).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0));
   const active=r=>players(r).filter(([,p])=>p.on!==false).map(([id])=>id);
@@ -3356,7 +3381,7 @@ function SongHost(code, mount, opts){
         else if(ytState===2 && clipDone!==key) yt.playVideo(); }
       if(r.phase==='reveal'){ if(r.paused){ if(ytState===1) yt.pauseVideo(); } else if(ytState!==1 && ytState!==3) yt.playVideo(); }   /* the song keeps going while the answer shows */
     }catch(e){ console.warn('video',e); } }
-  function videoTick(r){ if(!yt||!ytReady||!r) return;
+  function videoTick(r){ if(!yt||!ytReady||!r) return; tvMute(yt,SPK);
     try{ if(r.phase==='listen' && !r.paused){ const key=songK(r);
         if(!r.clipAt && ytState!==1 && loadAt && Date.now()-loadAt>5000 && !needPlay){ needPlay=true; render(r); }
         if(!r.clipAt && loadAt && Date.now()-loadAt>20000 && once('to'+key)){ swapSong(r,"That song didn't load. Here's another one!"); return; }
@@ -3366,11 +3391,11 @@ function SongHost(code, mount, opts){
   const unsub=store.on(P, r=>{
     if(!r){ patchHTML(stage,`<div class="center"><div class="bigintro" style="font-size:5cqw">Room not found</div><button data-act="home">Back</button></div>`); return; }
     const prev=R; R=r; applyTheme(r.settings&&r.settings.theme);
-    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); if(r.phase==='intro' && !r.slist) loadRound(r); }
-    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; act(r.cmd.t); }
+    if(first){ first=false; cmdSeen=r.cmd&&r.cmd.id; Object.keys(r.reactions||{}).forEach(id=>seenR.add(id)); if(!SPK && r.phase==='intro' && !r.slist) loadRound(r); }
+    if(r.cmd && r.cmd.id!==cmdSeen){ cmdSeen=r.cmd.id; if(!SPK) act(r.cmd.t); }
     effects(prev,r); if(unlocked) setMusicFor(r); reactions(r); syncVideo(r); render(r);
   });
-  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); tick(); timerUI(); cleanReacts(); videoTick(R); },200);
+  const iv=setInterval(()=>{ if(R && !!R.paused!==!!$('.paused',stage)) render(R); if(!SPK) tick(); timerUI(); cleanReacts(); videoTick(R); },200);
   CLEAN.push(unsub,()=>clearInterval(iv),()=>{ mount.onclick=null; try{ yt&&yt.destroy(); }catch(e){} });
   mount.onclick=e=>{ const b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); };
 
@@ -3513,8 +3538,9 @@ async function HostAny(code, mount, opts){
   if(!code) return Host(null, mount, opts);
   const r=await S.store.get(roomPath(code));
   const out=(r && r.game==='trivia' ? TriviaHost : r && r.game==='doodle' ? DoodleHost : r && r.game==='mic' ? MicHost : r && r.game==='who' ? WhoHost : r && r.game==='bingo' ? BingoHost : r && r.game==='odd' ? OddHost : r && r.game==='song' ? SongHost : Host)(code, mount, opts);
+  if(opts&&opts.speaker) speakerRun(code, mount); else if(r && !r.demo) speakerWatch(code);
   /* while the room is in the lobby, Admin changes apply right away; once a game starts its settings stay put */
-  if(r && !r.demo) CLEAN.push(S.store.on(`${ROOT}/settings`, async s=>{ if(!s) return;
+  if(r && !r.demo && !(opts&&opts.speaker)) CLEAN.push(S.store.on(`${ROOT}/settings`, async s=>{ if(!s) return;
     const cur=await S.store.get(roomPath(code)); if(!cur||cur.phase!=='lobby') return;
     const fresh=await loadSettings(); if(JSON.stringify(fresh)!==JSON.stringify(cur.settings)) S.store.update(roomPath(code),{settings:fresh}); }));
   return out;
@@ -3611,6 +3637,8 @@ async function AdminPanel(locked){
   const openS=new Set(LS.get('hg_admin_open',['general']));
   const sec=(id,title,inner)=>`<details class="sec" data-sec="${id}" ${openS.has(id)?'open':''}><summary><h3>${title}</h3></summary><div class="secb">${inner}</div></details>`;
   const draw=()=>{ app.innerHTML=`<div class="admin"><div class="row" style="align-items:center"><div class="logo" style="text-align:left">HARDIN<span>GAMES</span></div>${locked?'<button class="alt" id="lockb" style="flex:0 0 auto">🔒 Lock</button>':''}<button class="alt" id="back" style="flex:0 0 auto">Done</button></div>
+    ${sec('speaker','🔊 Speaker mode',`<div class="small muted">TV not playing sound (like a Roku)? Open this on another phone or tablet paired with a Bluetooth speaker or soundbar. It plays all the game's sound, and the TV goes quiet while it's connected.</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><input id="spkcode" maxlength="6" placeholder="ROOM CODE" autocomplete="off" style="text-transform:uppercase"><button id="spkgo" style="width:auto;white-space:nowrap">Start speaker</button></div>`)}
     ${sec('general','General · all games',`${sel('theme','Color scheme',Object.entries(THEMES))}${sel('audience','Audience',[['standard','Standard'],['family','Family (kid-friendly)']])}${num('minPlayers','Min players',2,16)}${num('maxPlayers','Max players',2,16)}${chk('photos','Players can use a photo')}${chk('reactions','Emoji reactions on the TV')}`)}
     ${sec('sound','Sound & Voice',`${chk('music','Music')}${chk('sfx','Sound effects')}
       <div class="fld"><label>Volume</label><input type="range" data-k="volume" min="0" max="1" step="0.05" value="${st.volume}"></div>
@@ -3677,6 +3705,7 @@ async function AdminPanel(locked){
       const res=await Voice.say(`${lines[Math.floor(Math.random()*lines.length)]} Testing at ${tm}.`,{...st,readAloud:true},{quiet:true});
       o.innerHTML=res.error?`<span class="err">Cloned voice failed: ${esc(res.error)}</span> · used the built-in voice`:(res.mode==='clone'?'<span class="ok">✓ Played in your cloned voice</span>':'<span class="ok">✓ Played the built-in voice</span>'); };
     bvPanel($('#bvp')); showUsage();
+    if($('#spkgo')) $('#spkgo').onclick=()=>{ const c=($('#spkcode').value||'').trim().toUpperCase(); if(c.length<4) return toast('Enter the room code from the TV'); nav({speaker:c}); };
     $('#testai').onclick=async()=>{ collect(); $('#aiout').textContent='Thinking…'; try{ const [q]=await fetchAI(st,1); $('#aiout').innerHTML=q?`${showQ(q.t)}<br><span class="ok">${esc(q.a)}</span> · fakes: ${esc((q.d||[]).join(', '))}`:'No question returned'; }catch(e){ $('#aiout').textContent='AI not available: '+e.message; } };
     $('#fadd').onclick=async()=>{ const t=fixBlank($('#ft').value), a=$('#fa').value.trim(); if(!t) return toast('Put ___ where the answer goes'); if(!a) return toast('Add the answer');
       const id=uid(); fam[id]={t,a,d:[$('#fd1').value.trim(),$('#fd2').value.trim()].filter(Boolean),safe:$('#fsafe').checked}; await S.store.set(`${ROOT}/packs/family/${id}`,fam[id]); collect(); draw(); toast('Added'); };
