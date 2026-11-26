@@ -646,7 +646,12 @@ const Sound = {
     const c=this.ctx; c.onstatechange=()=>{ if(c.state!=='running' && document.visibilityState==='visible') setTimeout(()=>this.ensure(true),300); };
     this.comp=c.createDynamicsCompressor(); const k=this.comp;
     k.threshold.value=-22; k.knee.value=10; k.ratio.value=4; k.attack.value=0.004; k.release.value=0.2;
-    this.boost=c.createGain(); this.boost.gain.value=2.2; k.connect(this.boost); this.boost.connect(c.destination);   /* loudness booster: louder without distortion */
+    this.boost=c.createGain(); this.boost.gain.value=2.2; k.connect(this.boost);   /* loudness booster: louder without distortion */
+    /* Play through a plain audio element so AirPlay (Roku, Apple TV) carries it like any other audio; fall back to the speakers directly */
+    const direct=()=>{ if(this.direct) return; this.direct=true; try{ this.boost.connect(c.destination); }catch(e){} };
+    try{ if(!c.createMediaStreamDestination) throw 0; this.dest=c.createMediaStreamDestination(); this.boost.connect(this.dest);
+      const el=this.outEl=new Audio(); el.playsInline=true; el.autoplay=true; el.srcObject=this.dest.stream;
+      el.play().catch(()=>direct()); setTimeout(()=>{ if(el.paused) direct(); },1500); }catch(e){ direct(); }
     this.master=c.createGain(); this.master.connect(k); this.voiceGain=c.createGain(); this.voiceGain.gain.value=1.6; this.voiceGain.connect(k);
     this.musicGain=c.createGain(); this.musicGain.connect(this.master); this.sfxGain=c.createGain(); this.sfxGain.connect(this.master);
     const b=c.createBuffer(1,c.sampleRate*0.5,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; this.noise=b;
@@ -704,7 +709,8 @@ const Sound = {
   /* iPhones can pause the sound engine (other audio starting, a call, a notification). Turn it back on. */
   lastEnsure:0,
   ensure(force){ const c=this.ctx; if(!c) return; const n=Date.now(); if(!force && n-this.lastEnsure<1000) return; this.lastEnsure=n;
-    if(c.state!=='running'){ try{ c.resume().catch(()=>{}); }catch(e){} } },
+    if(c.state!=='running'){ try{ c.resume().catch(()=>{}); }catch(e){} }
+    if(this.outEl && !this.direct && this.outEl.paused){ this.outEl.play().catch(()=>{}); } },
   sfx(name){ this.ensure(); if(!this.ctx||!this.st||!this.st.sfx) return; const t=this.ctx.currentTime, m=f=>this.mtof(f);
     switch(name){
       case 'join': this.tone(m(76),t,0.12,'square',0.08); this.tone(m(83),t+0.08,0.18,'square',0.08); break;
@@ -769,9 +775,6 @@ const Voice = {
   bump(text){ const i=this.queue.findIndex(j=>j.text===text); if(i>0) this.queue.unshift(...this.queue.splice(i,1)); },   /* a line that's needed now jumps the line */  /* at most 2 voice requests at a time */
   prefetch(text, st, hi){ if(st && st.readAloud && st.voice==='clone' && CONFIG.WORKER_URL && text) this.tts(text,hi).catch(()=>{}); },
   play(url, st){ return new Promise(res=>{ if(!this.el){ this.el=new Audio(); this.el.playsInline=true; } const a=this.el; a.src=url; a.volume=Math.min(1,(st.volume??0.7)+0.3);
-      /* on the TV, send the voice through the loudness booster too */
-      if(!this.src && Sound.ctx && Sound.voiceGain && Sound.ctx.state==='running'){ try{ this.src=Sound.ctx.createMediaElementSource(a); this.src.connect(Sound.voiceGain); }catch(e){ this.src='no'; } }
-      if(this.src && this.src!=='no'){ Sound.ensure(true); Sound.voiceGain.gain.value=1.6*Math.max(0.3,st.volume??1); }
       a.onended=()=>res(true); a.onerror=()=>res(false); a.play().catch(()=>res(false)); setTimeout(()=>res(true),20000); }); },
   async builtin(text, st, tok){ if(!window.speechSynthesis) return;
     /* Reset before every line: stop any clip still playing and clear stuck speech (iOS can jam), then wait, since iOS drops speech that starts right after a cancel */
