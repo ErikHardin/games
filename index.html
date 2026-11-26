@@ -604,7 +604,7 @@ function speakerRun(code, mount){ const P=roomPath(code), beat=()=>S.store.updat
     <button data-act="ytplay" class="spkplay" style="display:none;font-size:22px;padding:18px 28px">▶ Tap to play the song</button><button class="alt" id="spkstop">Stop speaker</button>`;
   mount.appendChild(ov); $('#spkstop',ov).onclick=e=>{ e.stopPropagation(); nav({admin:1}); };
   /* iPhones need a tap before a song can play with sound; the game's own button is under this screen, so show it here */
-  const pb=$('.spkplay',ov), wait=setInterval(()=>{ const need=!!$('.stage [data-act=ytplay]',mount); if(pb.style.display!==(need?'':'none')) pb.style.display=need?'':'none'; },400);
+  const pb=$('.spkplay',ov), wait=setInterval(()=>{ const need=mount.dataset.needplay==='1'||!!$('.stage [data-act=ytplay]',mount); if(pb.style.display!==(need?'':'none')) pb.style.display=need?'':'none'; },400);
   beat(); const iv=setInterval(beat,3000);
   CLEAN.push(()=>clearInterval(iv),()=>clearInterval(wait),()=>{ S.store.update(P,{speaker:null}).catch(()=>{}); }); }
 async function SpeakerGate(code){ code=String(code||'').toUpperCase().slice(0,6);
@@ -3384,7 +3384,14 @@ function SongHost(code, mount, opts){
         else if(ytState===2 && clipDone!==key) yt.playVideo(); }
       if(r.phase==='reveal'){ if(r.paused){ if(ytState===1) yt.pauseVideo(); } else if(ytState!==1 && ytState!==3) yt.playVideo(); }   /* the song keeps going while the answer shows */
     }catch(e){ console.warn('video',e); } }
+  let spkTry=0;
   function videoTick(r){ if(!yt||!ytReady||!r) return; tvMute(yt,SPK);
+    /* speaker: play the clip in step with the TV; if the phone won't start it, ask for a tap */
+    if(SPK){ let need=false;
+      try{ if(r.phase==='listen' && !r.paused && r.clipAt && now()<r.clipAt+clipMs(r) && ytState!==1 && ytState!==3){
+          if(Date.now()-spkTry>1500){ spkTry=Date.now(); yt.seekTo((r.sq.start||0)+Math.max(0,now()-r.clipAt)/1000,true); yt.playVideo(); }
+          need=loadAt && Date.now()-loadAt>2500; } }catch(e){}
+      mount.dataset.needplay=need?'1':''; }
     try{ if(r.phase==='listen' && !r.paused){ const key=songK(r);
         if(!r.clipAt && ytState!==1 && loadAt && Date.now()-loadAt>5000 && !needPlay){ needPlay=true; render(r); }
         if(!r.clipAt && loadAt && Date.now()-loadAt>20000 && once('to'+key)){ swapSong(r,"That song didn't load. Here's another one!"); return; }
@@ -3405,7 +3412,7 @@ function SongHost(code, mount, opts){
   function act(t){ const r=R; if(!r) return; const n=now();
     if(t==='home') return nav({});
     if(t==='start') return startGame();
-    if(t==='ytplay'){ needPlay=false; try{ yt&&yt.playVideo(); }catch(e){} return render(r); }
+    if(t==='ytplay'){ needPlay=false; spkTry=0; try{ if(SPK&&r.clipAt&&r.sq) yt.seekTo((r.sq.start||0)+Math.max(0,now()-r.clipAt)/1000,true); yt&&yt.playVideo(); }catch(e){} return render(r); }
     if(t==='pause' && !r.paused && !['lobby','final'].includes(r.phase)) return upd({paused:true,pausedAt:n,remaining:r.endsAt?Math.max(0,r.endsAt-n):null});
     if(t==='resume' && r.paused) return upd({paused:false,endsAt:r.endsAt?n+(r.remaining||0):null,clipAt:r.clipAt?r.clipAt+(n-(r.pausedAt||n)):null});
     if(t==='skip'){ if(r.paused) upd({paused:false});
