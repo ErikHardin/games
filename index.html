@@ -2427,7 +2427,8 @@ function MicHost(code, mount, opts){
     try{
       if(!show){ if(ytLoaded){ yt.stopVideo(); ytLoaded=''; } return; }
       const key=r.games+'_'+r.round+'_'+r.mi+'_'+r.song.id;
-      if(r.phase==='sing'){ if(ytLoaded!==key){ ytLoaded=key; loadAt=Date.now(); yt.loadVideoById(r.song.id); }
+      if(r.phase==='sing'){ if(ytLoaded!==key){ ytLoaded=key; loadAt=Date.now(); tvMute(yt,SPK);   /* with a speaker on, the TV loads songs muted so they start without a tap */
+         yt.loadVideoById(r.song.id); }
         else if(r.paused) yt.pauseVideo(); else if(ytState===2) yt.playVideo(); }
       if(r.phase==='stop'){ const end=(r.stopAt||0)+(r.settings.mFinishTime||10); if(r.paused){ if(ytState===1) yt.pauseVideo(); } else if(ytState===2 && yt.getCurrentTime()<end) yt.playVideo(); }
       if(r.phase==='judge'){ if(r.paused){ yt.pauseVideo(); return; }
@@ -3379,7 +3380,8 @@ function SongHost(code, mount, opts){
     try{
       if(!show){ if(ytLoaded){ yt.stopVideo(); ytLoaded=''; } return; }
       const key=songK(r);
-      if(r.phase==='listen'){ if(ytLoaded!==key){ ytLoaded=key; loadAt=Date.now(); needPlay=false; yt.loadVideoById({videoId:r.sq.id,startSeconds:r.sq.start||0}); }
+      if(r.phase==='listen'){ if(ytLoaded!==key){ ytLoaded=key; loadAt=Date.now(); tvMute(yt,SPK);   /* with a speaker on, the TV loads songs muted so they start without a tap */
+         needPlay=false; yt.loadVideoById({videoId:r.sq.id,startSeconds:r.sq.start||0}); }
         else if(r.paused){ if(ytState===1) yt.pauseVideo(); }
         else if(ytState===2 && clipDone!==key) yt.playVideo(); }
       if(r.phase==='reveal'){ if(r.paused){ if(ytState===1) yt.pauseVideo(); } else if(ytState!==1 && ytState!==3) yt.playVideo(); }   /* the song keeps going while the answer shows */
