@@ -600,10 +600,13 @@ function speakerWatch(code){ let rr=null; const un=S.store.on(roomPath(code),r=>
   CLEAN.push(un,()=>clearInterval(iv),()=>{ window.HG_MUTE=false; Sound.setMute(false); if(Voice.el) Voice.el.muted=false; }); }
 function speakerRun(code, mount){ const P=roomPath(code), beat=()=>S.store.update(P,{speaker:{at:S.store.now()}}).catch(()=>{});
   const t=$('.tap',mount); if(t){ const b=$('button',t), n=$('.note',t); if(b) b.textContent='Start the speaker'; if(n) n.textContent='Room '+code+' · plays the game\'s sound here'; }
-  const ov=document.createElement('div'); ov.className='spkov'; ov.innerHTML=`<div class="em">🔊</div><div class="big">SPEAKER</div><div class="muted">Room <b>${esc(code)}</b> · playing the game's sound here. Keep this screen open and the volume up.</div><button class="alt" id="spkstop">Stop speaker</button>`;
+  const ov=document.createElement('div'); ov.className='spkov'; ov.innerHTML=`<div class="em">🔊</div><div class="big">SPEAKER</div><div class="muted">Room <b>${esc(code)}</b> · playing the game's sound here. Keep this screen open and the volume up.</div>
+    <button data-act="ytplay" class="spkplay" style="display:none;font-size:22px;padding:18px 28px">▶ Tap to play the song</button><button class="alt" id="spkstop">Stop speaker</button>`;
   mount.appendChild(ov); $('#spkstop',ov).onclick=e=>{ e.stopPropagation(); nav({admin:1}); };
+  /* iPhones need a tap before a song can play with sound; the game's own button is under this screen, so show it here */
+  const pb=$('.spkplay',ov), wait=setInterval(()=>{ const need=!!$('.stage [data-act=ytplay]',mount); if(pb.style.display!==(need?'':'none')) pb.style.display=need?'':'none'; },400);
   beat(); const iv=setInterval(beat,3000);
-  CLEAN.push(()=>clearInterval(iv),()=>{ S.store.update(P,{speaker:null}).catch(()=>{}); }); }
+  CLEAN.push(()=>clearInterval(iv),()=>clearInterval(wait),()=>{ S.store.update(P,{speaker:null}).catch(()=>{}); }); }
 async function SpeakerGate(code){ code=String(code||'').toUpperCase().slice(0,6);
   if(CONFIG.WORKER_URL){ let res={}; try{ const tok=LS.get('hg_admin_token',''); res=await adminCheck(tok?{token:tok}:{}); }catch(e){}
     if(!res.open&&!res.ok){ toast('Unlock Admin first'); return nav({admin:1},true); } }
