@@ -18,6 +18,7 @@ export default {
   async fetch(req, rawEnv, ctx) {
     // Ignore stray spaces / line breaks pasted into secrets
     const env = Object.fromEntries(Object.entries(rawEnv).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
+    env.__yt = { n: 0 };   // YouTube searches used by this request (each costs 1 of the 100 a day)
     const path = new URL(req.url).pathname;
     const origin = (req.headers.get('Origin') || '').replace(/\/$/, '');
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean);
@@ -43,13 +44,13 @@ export default {
       if (path === '/fakes' && req.method === 'POST') return await fakes(req, env, cors);
       if (path === '/trivia' && req.method === 'POST') return await trivia(req, env, cors);
       if (path === '/prompts' && req.method === 'POST') return await prompts(req, env, cors);
-      if (path === '/yt' && req.method === 'POST') { const { q = '', family = false, trusted = false, channels } = await req.json(); return json({ results: await ytSearch(String(q).slice(0, 120), family, env, channels || trusted) }, cors); }
+      if (path === '/yt' && req.method === 'POST') { const { q = '', family = false, trusted = false, channels } = await req.json(); const results = await ytSearch(String(q).slice(0, 120), family, env, channels || trusted); return json({ results, searches: env.__yt.n }, cors); }
       if (path === '/surprise' && req.method === 'POST') return await surprise(req, env, cors);
       if (path === '/song' && req.method === 'POST') return await songVideo(req, env, cors);
       if (path === '/songs' && req.method === 'POST') return await songIdeas(req, env, cors);
       return json({ ok: true, name: 'Hardin Games worker', voiceKey: !!env.ELEVENLABS_API_KEY, voiceId: !!env.ELEVEN_VOICE_ID, aiKey: !!env.ANTHROPIC_API_KEY, originLock: allowed.length > 0, adminPin: !!env.ADMIN_PIN, youtubeKey: !!env.YOUTUBE_API_KEY }, cors);
     } catch (e) {
-      return json({ error: String(e && e.message || e) }, cors, 500);
+      return json({ error: String(e && e.message || e), searches: (env.__yt || {}).n || 0 }, cors, 500);
     }
   }
 };
@@ -339,14 +340,20 @@ function karaokeScore(x) {
 /* Zoom Karaoke has a consistent layout and allows its videos to play in other sites (Sing King blocks that) */
 const TRUSTED = /^zoom karaoke( official)?$/i;
 let SK_ID = null;
+function ytErr(status, j) {
+  const reason = ((j.error && j.error.errors && j.error.errors[0]) || {}).reason || '', msg = (j.error && j.error.message) || '';
+  if (/quota|rateLimit|dailyLimit/i.test(reason + ' ' + msg)) return "YouTube's daily song search limit is used up. It resets at midnight Pacific time.";
+  return msg || `YouTube ${status}`;
+}
 async function ytRaw(q, family, env, max, channelId) {
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
   const p = { part: 'snippet', type: 'video', maxResults: String(max), videoEmbeddable: 'true', safeSearch: family ? 'strict' : 'moderate', q, key: env.YOUTUBE_API_KEY };
   if (channelId) p.channelId = channelId;
   u.search = new URLSearchParams(p).toString();
+  env.__yt.n++;
   const r = await fetch(u.toString());
   const j = await r.json();
-  if (!r.ok) { console.error('YouTube error', r.status, JSON.stringify(j).slice(0, 300)); throw new Error((j.error && j.error.message) || `YouTube ${r.status}`); }
+  if (!r.ok) { console.error('YouTube error', r.status, JSON.stringify(j).slice(0, 300)); throw new Error(ytErr(r.status, j)); }
   const items = (j.items || []).filter(x => x.id && x.id.videoId);
   const sk = items.find(x => TRUSTED.test(x.snippet.channelTitle || ''));
   if (sk && !SK_ID) { SK_ID = sk.snippet.channelId; await saveSkId(SK_ID); }
@@ -360,7 +367,7 @@ async function singKingId(env) {
   try { const c = await caches.default.match(SK_KEY); if (c) { SK_ID = await c.text(); return SK_ID; } } catch (e) {}
   const u = new URL('https://www.googleapis.com/youtube/v3/search');
   u.search = new URLSearchParams({ part: 'snippet', type: 'channel', maxResults: '5', q: 'Zoom Karaoke Official', key: env.YOUTUBE_API_KEY }).toString();
-  const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
+  env.__yt.n++; const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
   const ch = (j.items || []).find(x => TRUSTED.test((x.snippet && x.snippet.title) || ''));
   if (ch) { SK_ID = ch.snippet.channelId || (ch.id && ch.id.channelId); await saveSkId(SK_ID); }
   return SK_ID;
@@ -431,11 +438,11 @@ Respond with only JSON, no other text: {"songs":[{"title":"...","artist":"..."}]
     let fallback = null;
     for (const song of songs) {   /* first song with a Zoom Karaoke version wins */
       const results = await ytSearch(`${song.title} ${song.artist} karaoke`, family, env, mode);
-      if (results.length && (mode === 'any' || results[0].ok)) return json({ song, results }, cors);
+      if (results.length && (mode === 'any' || results[0].ok)) return json({ song, results, searches: env.__yt.n }, cors);
       if (results.length && !fallback) fallback = { song, results };
     }
-    return json(fallback || { song: songs[0], results: [] }, cors);
-  } catch (e) { return json({ error: e.message, song: songs[0] }, cors, 500); }
+    return json({ ...(fallback || { song: songs[0], results: [] }), searches: env.__yt.n }, cors);
+  } catch (e) { return json({ error: e.message, song: songs[0], searches: env.__yt.n }, cors, 500); }
 }
 
 // ---- Song Snap: find the original recording of a song (not karaoke), with its length ----
@@ -458,14 +465,14 @@ async function songVideo(req, env, cors) {
   try { const c = await caches.default.match(key); if (c) return json(await c.json(), cors); } catch (e) {}
   const list = (await ytRaw(`${t} ${a} official audio`, family, env, 10)).filter(x => relevant(t, x.title))
     .map(x => ({ ...x, s: originalScore(x, a) })).filter(x => x.s > -3).sort((p, q) => (q.s - p.s) || (p.i - q.i)).slice(0, 6);
-  if (!list.length) return json({ error: 'Song not found' }, cors, 404);
+  if (!list.length) return json({ error: 'Song not found', searches: env.__yt.n }, cors, 404);
   const u = new URL('https://www.googleapis.com/youtube/v3/videos');
   u.search = new URLSearchParams({ part: 'contentDetails,status', id: list.map(x => x.id).join(','), key: env.YOUTUBE_API_KEY }).toString();
   const r = await fetch(u.toString()); const j = await r.json().catch(() => ({}));
   const info = {}; for (const v of (j.items || [])) info[v.id] = { dur: isoSecs(v.contentDetails && v.contentDetails.duration), embed: !(v.status && v.status.embeddable === false) };
   const pick = list.find(x => info[x.id] && info[x.id].embed && info[x.id].dur >= 90 && info[x.id].dur <= 600) || list.find(x => !info[x.id] || info[x.id].embed);
-  if (!pick) return json({ error: 'No playable version' }, cors, 404);
-  const out = { id: pick.id, dur: (info[pick.id] || {}).dur || 0, title: pick.title, channel: pick.channel };
+  if (!pick) return json({ error: 'No playable version', searches: env.__yt.n }, cors, 404);
+  const out = { id: pick.id, dur: (info[pick.id] || {}).dur || 0, title: pick.title, channel: pick.channel, searches: env.__yt.n };
   try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=2592000' } })); } catch (e) {}
   return json(out, cors);
 }

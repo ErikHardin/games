@@ -870,7 +870,7 @@ async function route(){
   if(PARAMS.has('demo')){ /* bot games use your saved Admin settings (voice, volume, colors, timings) */
     let real=null; try{ if(!S.store||S.mode==='demo') await initStore(false); if(S.mode==='firebase'){ real=await Promise.race([loadSettings(),sleep(4000).then(()=>null)]);
       if(PARAMS.get('game')==='bingo') S.bingoPack=await Promise.race([S.store.get(`${ROOT}/${BVP}`),sleep(8000).then(()=>null)]).catch(()=>null); } }catch(e){}
-    await initStore(true,'hg_demo'); S.real=real; return Demo(); }
+    S.fire=S.mode==='firebase'?S.store:null; await initStore(true,'hg_demo'); S.real=real; return Demo(); }
   if(!S.store || S.mode==='demo') await initStore(false);
   if(PARAMS.has('admin')) return Admin();
   if(PARAMS.has('host')) return HostAny(PARAMS.get('host')||null, app, {});
@@ -2339,15 +2339,23 @@ function mAwards(r){
   b=best('applause'); if(b.m) out.push({icon:'👏',title:'Crowd Favorite',ids:b.ids,names:names(b.ids),detail:`${b.m} cheers`});
   return out;
 }
+/* YouTube allows 100 searches a day: count them, and remember results so a repeat search is free */
+const FS=()=>S.fire||S.store;   /* the real database, even during a bot game */
+const ptDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles'}).format(new Date());
+async function ytCount(n){ n=Number(n)||0; if(!n) return; const k=`${ROOT}/ytcount/${ptDay()}`;
+  try{ const cur=Number(await FS().get(k))||0; await FS().set(k,cur+n); }catch(e){} }
 async function micSearch(q, st){
-  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family',channels:st.mChannels||'prefer'})});
-  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
-  return (j.results||[]).filter(x=>okVid(x.id)).slice(0,8);
+  const ch=st.mChannels||'prefer', ck=`${ROOT}/ytcache/${hash(norm(q)+'|'+ch+'|'+(st.audience==='family'?1:0))}`;
+  try{ const c=await Promise.race([FS().get(ck),sleep(3000).then(()=>null)]); if(c&&c.results&&Date.now()-(c.at||0)<30*86400000) return c.results; }catch(e){}
+  const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/yt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,family:st.audience==='family',channels:ch})});
+  const j=await r.json().catch(()=>({})); ytCount(j.searches); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+  const out=(j.results||[]).filter(x=>okVid(x.id)).slice(0,8); if(out.length) FS().set(ck,{at:Date.now(),results:out}).catch(()=>{});
+  return out;
 }
 async function micSurprise(st){
   const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/surprise',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({family:st.audience==='family',channels:st.mChannels||'prefer',avoid:LS.get('hg_mused',[]).slice(-30)})});
-  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+  const j=await r.json().catch(()=>({})); ytCount(j.searches); if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
   return {song:j.song||null, results:(j.results||[]).filter(x=>okVid(x.id)).slice(0,8)};
 }
 const ICE=[{urls:'stun:stun.l.google.com:19302'}];
@@ -3301,12 +3309,12 @@ function sAwards(r){
 }
 /* Find the song on YouTube. Saved in the database once found, so the next game starts instantly. */
 async function songFind(s, st){ const k=songKey(s), base=(CONFIG.WORKER_URL||'').replace(/\/$/,'');
-  try{ const c=await Promise.race([S.store.get(`${ROOT}/songcache/${k}`),sleep(4000).then(()=>null)]); if(c&&c.bad) return null; if(c&&okVid(c.id)) return {...s,id:c.id,dur:c.dur||0}; }catch(e){}
+  try{ const c=await Promise.race([FS().get(`${ROOT}/songcache/${k}`),sleep(4000).then(()=>null)]); if(c&&c.bad) return null; if(c&&okVid(c.id)) return {...s,id:c.id,dur:c.dur||0}; }catch(e){}
   if(!base) return null;
-  const save=v=>S.store.set(`${ROOT}/songcache/${k}`,v).catch(()=>{});
+  const save=v=>FS().set(`${ROOT}/songcache/${k}`,v).catch(()=>{});
   try{ const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),12000);
     const r=await fetch(base+'/song',{method:'POST',signal:ctrl.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,artist:s.artist,family:st.audience==='family'})}).finally(()=>clearTimeout(to));
-    const j=await r.json().catch(()=>({}));
+    const j=await r.json().catch(()=>({})); ytCount(j.searches);
     if(r.ok && okVid(j.id)){ save({id:j.id,dur:j.dur||0}); return {...s,id:j.id,dur:j.dur||0}; }
     if(r.status===404 && j.error){ save({bad:true}); return null; }
     if(!(r.ok && j.name)) return null;   /* an older Worker without /song: use the karaoke search instead */
@@ -3314,13 +3322,13 @@ async function songFind(s, st){ const k=songKey(s), base=(CONFIG.WORKER_URL||'')
   try{ const res=await micSearch(`${s.title} ${s.artist} official audio`,{...st,mChannels:'any'}); const x=res[0]; if(!x) return null; return {...s,id:x.id,dur:0}; }
   catch(e){ console.warn('song search',e); return null; }
 }
-function songBad(s){ if(s&&s.title) S.store.set(`${ROOT}/songcache/${songKey(s)}`,{bad:true}).catch(()=>{}); }
+function songBad(s){ if(s&&s.title) FS().set(`${ROOT}/songcache/${songKey(s)}`,{bad:true}).catch(()=>{}); }
 /* this game's themes: the built-in ones that are switched on, plus your own (AI picks the songs) */
 function songThemes(st){ const off=new Set(st.sOff||[]), out=Object.keys(SBANK).filter(k=>!off.has(k)).map(k=>({id:k,name:SBANK[k].name}));
   String(st.sCustom||'').split(/\n/).map(x=>x.trim().slice(0,60)).filter(Boolean).forEach((name,i)=>out.push({id:'c'+i,name,custom:true}));
   return out.length?out:[{id:'s80',name:SBANK.s80.name}]; }
 /* Songs for one round, each with 4 choices; extras stand by in case a video won't play */
-async function songRound(theme, n, st, avoid){
+async function songRound(theme, n, st, avoid, opt={}){
   const used=new Set([...(avoid||[]),...LS.get('hg_sused',[])].map(norm)); let cands=[];
   if((theme.custom || st.sAI) && CONFIG.WORKER_URL){
     const ctrl=new AbortController(), to=setTimeout(()=>ctrl.abort(),20000);
@@ -3331,10 +3339,16 @@ async function songRound(theme, n, st, avoid){
   }
   const bank=SBANK[theme.id]||SBANK[Object.keys(SBANK)[Math.floor(Math.random()*Object.keys(SBANK).length)]];
   if(cands.length<n){ const fresh=shuffle(bank.songs).sort((a,b)=>used.has(norm(a.title))-used.has(norm(b.title)));
-    for(const s of fresh){ if(cands.length>=n+4) break; if(cands.some(c=>norm(c.title)===norm(s.title))) continue;
+    for(const s of fresh){ if(cands.length>=n+40) break;   /* consider the whole theme so songs already in the library get picked */ if(cands.some(c=>norm(c.title)===norm(s.title))) continue;
       cands.push({...s,decoys:shuffle(bank.songs.filter(x=>norm(x.title)!==norm(s.title))).slice(0,3)}); } }
+  /* Library first: songs found before cost no searches. Add at most one new song a round (none in bot games) unless the library is short. */
+  const lib=(await Promise.race([FS().get(`${ROOT}/songcache`),sleep(4000).then(()=>null)]).catch(()=>null))||{};
+  const inLib=c=>{ const v=lib[songKey(c)]; return !!(v&&!v.bad&&okVid(v.id)); }, isBad=c=>{ const v=lib[songKey(c)]; return !!(v&&v.bad); };
+  cands=cands.filter(c=>!isBad(c)); const have=cands.filter(inLib), fresh=cands.filter(c=>!inLib(c));
+  const maxNew=opt.demo?0:(have.length>=n+1?1:n+1-have.length);
+  cands=opt.demo&&have.length>=n?have:[...fresh.slice(0,maxNew),...have,...fresh.slice(maxNew)];
   const found=[]; let i=0;
-  const worker=async()=>{ while(i<cands.length && found.filter(Boolean).length<n+2){ const c=cands[i++], f=await songFind(c,st); if(f) found.push(f); } };
+  let busy=0; const worker=async()=>{ while(i<cands.length && found.length+busy<n+1){ const c=cands[i++]; busy++; const f=await songFind(c,st); busy--; if(f) found.push(f); } };   /* never look up more than needed */
   await Promise.all([worker(),worker(),worker()]);
   const out=found.map(s=>{ const ch=shuffle([{title:s.title,artist:s.artist},...s.decoys]); return {title:s.title,artist:s.artist,id:s.id,dur:s.dur||0,ai:!!s.ai,choices:ch,ans:ch.findIndex(x=>x.title===s.title)}; });
   LS.set('hg_sused',[...LS.get('hg_sused',[]),...out.slice(0,n).map(s=>s.title)].slice(-150));
@@ -3437,7 +3451,7 @@ function SongHost(code, mount, opts){
     for(const id in r.players){ p[`players/${id}/score`]=0; p[`players/${id}/from`]=0; }
     upd(p).then(()=>loadRound({...r,...p})); }
   function loadRound(r){ const g=r.games, round=r.round; if(!once('lr'+g+'_'+round)) return;
-    songRound(r.stheme||{id:'s80',name:'\'80s Hits'},per(r),r.settings,r.sused||[]).then(({list,spare})=>{
+    songRound(r.stheme||{id:'s80',name:'\'80s Hits'},per(r),r.settings,r.sused||[],{demo:!!r.demo}).then(({list,spare})=>{
       if(!R||R.games!==g||R.round!==round) return;
       if(!list.length){ toast("Couldn't find songs. Check YOUTUBE_API_KEY in Cloudflare."); return upd({slist:[],phase:'final',endsAt:null}); }
       upd({slist:list,spare,sused:[...(R.sused||[]),...list.map(s=>s.title)]}); }); }
@@ -3634,7 +3648,8 @@ async function bvRun(list,play,el,st){ if(BV.busy||!list.length) return; BV.busy
   const q=[...list]; await Promise.all([0,1].map(async()=>{ while(q.length && !BV.err) await work(q.shift()); }));
   BV.busy=false; BV.prog=''; bvPanel(el); if(play&&!BV.err) bvPlay(list[0],st); }
 /* Admin: ElevenLabs credits this month */
-async function showUsage(){ const el=$('#usage'); if(!el||!CONFIG.WORKER_URL) return;
+async function showUsage(){ FS().get(`${ROOT}/ytcount/${ptDay()}`).then(n=>{ const e=$('#ytuse'); if(e) e.innerHTML=`<b style="color:var(--text)">YouTube searches today: ${Number(n)||0} of 100</b> · resets at midnight Pacific`; }).catch(()=>{});
+  const el=$('#usage'); if(!el||!CONFIG.WORKER_URL) return;
   try{ const r=await fetch(CONFIG.WORKER_URL.replace(/\/$/,'')+'/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:LS.get('hg_admin_token','')})});
     const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); if(!$('#usage')) return;
     const pct=j.limit?Math.min(100,Math.round(j.used/j.limit*100)):0, reset=j.reset?new Date(j.reset*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
@@ -3662,6 +3677,7 @@ async function AdminPanel(locked){
       ${!CONFIG.WORKER_URL?'<div class="small muted">Cloned voice and AI questions turn on once WORKER_URL is set.</div>':''}
       <button class="alt" id="testv">Test voice</button><div id="vout" class="small muted"></div>
       <h4>Credits</h4><div id="usage" class="small muted">Checking ElevenLabs…</div>
+      <div id="ytuse" class="small muted" style="margin-top:6px"></div>
       <div class="small"><a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic (AI) balance ↗</a></div>`)}
     ${sec('fibs','🤥 Fibs',`${num('rounds','Rounds',1,10)}${num('perRound','Questions per round',1,10)}${num('lieTime','Seconds to write a lie',15,180,5)}${num('voteTime','Seconds to vote',10,120,5)}${chk('playerQuestions','Players can add questions in the lobby')}
       <h4>Scoring</h4>${num('pointsTruth','Points for finding the truth',0,5000,50)}${num('pointsFool','Points per player fooled',0,5000,50)}${num('authorBonus','Question writer bonus per player fooled',0,5000,50)}${num('finalMult','Final round multiplier',1,5)}
