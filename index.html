@@ -931,7 +931,7 @@ async function createRoom(demo, game='fibs'){
   if(demo){ settings.lieTime=Math.min(settings.lieTime,45); settings.voteTime=Math.min(settings.voteTime,20); settings.minPlayers=2;
     settings.dDrawTime=Math.min(settings.dDrawTime,45); settings.dFakeTime=Math.min(settings.dFakeTime,30); settings.dVoteTime=Math.min(settings.dVoteTime,20); settings.minPlayers=2;
     settings.wAnswerTime=Math.min(settings.wAnswerTime,45); settings.wGuessTime=Math.min(settings.wGuessTime,15); settings.bCallTime=Math.min(settings.bCallTime,5);
-    settings.oClueTime=Math.min(settings.oClueTime,20); settings.oVoteTime=Math.min(settings.oVoteTime,25); settings.oRounds=Math.min(settings.oRounds,3); settings.sRounds=Math.min(settings.sRounds,2); settings.sPerRound=Math.min(settings.sPerRound,3); }
+    settings.oClueTime=Math.min(settings.oClueTime,20); settings.oVoteTime=Math.min(settings.oVoteTime,25); settings.oRounds=Math.min(settings.oRounds,3); }   /* Song Snap bot games play with your full Admin settings */
   let code; for(let i=0;i<25;i++){ code=randCode(); if(!(await S.store.get(roomPath(code)))) break; }
   const now=S.store.now();
   const room={code,game:GNAMES[game]?game:'fibs',created:now,phase:'lobby',settings,players:{},demo:!!demo,qi:-1,round:0,games:0};
@@ -3713,7 +3713,7 @@ async function AdminPanel(locked){
     ${sec('odd','🕵️ Odd One Out',`${num('oRounds','Rounds (one secret word each)',1,10)}${num('oLaps','Clues per player each round',1,3)}${num('oClueTime','Seconds to give a clue',10,90,5)}${num('oVoteTime','Seconds to vote',15,120,5)}${num('oStealTime','Seconds for the odd one out to guess the word',10,60,5)}
       <h4>Scoring</h4>${num('oCatch','Points for voting for the odd one out',0,5000,50)}${num('oEscape','Points for the odd one out if they get away',0,5000,50)}${num('oSteal','Points for the odd one out if caught but guesses the word (0 = off)',0,5000,50)}
       <h4>Words</h4><div class="small muted">${OCATS.length} built-in categories. Add your own below, one per line, at least 4 words each.</div><label class="small muted">Your own lists</label><textarea data-k="oWords" rows="4" placeholder="Family Pets: Biscuit, Rex, Goldie, Mittens, Pickles&#10;Our Vacations: Disney, Lake House, Grand Canyon, Cruise">${esc(st.oWords)}</textarea>${chk('oMine','Use my own lists about half the time')}`)}
-    ${sec('song','🎧 Song Snap',`${num('sRounds','Rounds (one theme each)',1,6)}${num('sPerRound','Songs per round',2,10)}${num('sClip','Seconds of each song to play',3,30)}${num('sExtra','Extra seconds to answer after the clip stops',0,20)}
+    ${sec('song','🎧 Song Snap',`${num('sRounds','Rounds (one theme each)',1,6)}${num('sPerRound','Songs per round',2,10)}${num('sClip','Seconds of each song to play',1,30)}${num('sExtra','Extra seconds to answer after the clip stops',0,20)}
       ${num('sStart','Where the clip starts (% into the song)',10,80,5)}${num('sRevealTime','Seconds the answer shows (the song keeps playing)',4,20)}${sel('sVideo','Video while guessing',[['blur','Blurred (colors only)'],['hide','Hidden (music only)'],['show','Show it (easier)']])}
       <h4>Scoring</h4>${num('sPoints','Points for a right answer (half if it comes in at the buzzer)',0,5000,50)}
       <h4>Themes</h4>${Object.entries(SBANK).map(([k,t])=>`<div class="fld"><label>${esc(t.name)} <span class="muted small">(${t.songs.length})</span></label><input type="checkbox" data-stheme="${k}" ${(st.sOff||[]).includes(k)?'':'checked'}></div>`).join('')}
